@@ -9,13 +9,13 @@ Python 3.12+ et `make`. Aucun paquet Python, compte cloud ni API payante n'est n
 ```sh
 make doctor        # versions et SQLite
 make fixture       # campagne fictive, idempotent
-make start         # http://127.0.0.1:8765
+make start         # http://127.0.0.1:8899
 make check         # tests et compilation
 make reset         # efface la base locale de test (serveur arrêté)
 make resume        # santé + état de reprise
 ```
 
-`make demo` charge la fixture puis démarre le serveur. `DB=/tmp/essai.db PORT=8899 make demo` permet une base et un port isolés. Arrêter avec Ctrl+C.
+`make demo` charge la fixture puis démarre le serveur. `DB=/tmp/essai.db PORT=8900 make demo` permet une base et un port isolés. Arrêter avec Ctrl+C.
 
 ## Démonstration actuelle
 

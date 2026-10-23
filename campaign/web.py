@@ -137,7 +137,7 @@ def make_handler(db_path):
     return Handler
 
 
-def serve(db_path, port=8765):
+def serve(db_path, port=8899):
     with ThreadingHTTPServer(("127.0.0.1", port), make_handler(db_path)) as server:
         print(f"Atelier local : http://127.0.0.1:{port}", flush=True)
         try:

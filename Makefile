@@ -1,6 +1,6 @@
 PYTHON ?= python3
 DB ?= data/campaign.db
-PORT ?= 8765
+PORT ?= 8899
 
 .PHONY: doctor start test check fixture reset demo resume
 doctor:

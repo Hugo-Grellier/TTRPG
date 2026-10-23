@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description="Atelier de campagne local")
     parser.add_argument("command", choices=["serve", "fixture", "reset", "check"])
     parser.add_argument("--db", default=os.environ.get("CAMPAIGN_DB", "data/campaign.db"))
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int, default=8899)
     args = parser.parse_args()
     path = Path(args.db)
     if args.command == "reset":
