@@ -1,12 +1,12 @@
-# Règles de produit et d'autorité
+# Product and authority rules
 
-La destination détaillée est dans [VISION.md](../VISION.md). Ces règles servent aux décisions quotidiennes.
+The full destination is in [VISION.md](../VISION.md). These rules guide day-to-day decisions.
 
-1. **Le jeu fait foi.** Un AP, un PDF et une note inspirent ou documentent ; seuls les événements de table confirmés et les arbitrages du MJ établissent le canon de cette campagne.
-2. **Chaque état porte son autorité.** Une *source* est un document ou témoignage identifié par titre et repère, sans autorité canonique automatique. Une *observation* est ce qui a été relevé, éventuellement incertain, hors jeu ou simulé. Une *proposition* est un contenu suggéré pour revue, ni observé ni retenu. Une *décision* est un arbitrage explicite du MJ, traçable vers les éléments examinés. Un *fait canonique* est une assertion retenue par décision pour cette campagne. Le prototype implémente sources, observations, décisions et faits ; les propositions restent un prochain jalon.
-3. **Provenance avant affirmation.** Une recherche donne le fait, sa décision et le repère de source ; une traduction, interprétation ou invention reste identifiée. Le repère actuel est saisi par le MJ et n'est pas vérifié contre un PDF.
-4. **Visibilité par défaut privée.** Secrets, sources, brouillons et aide live restent MJ. Une publication joueur future sera une sélection explicite, testée contre les fuites ; les corrections tardives signaleront ce qui a déjà été vu.
-5. **Le MJ dirige sans approuver chaque ligne.** Les agents peuvent proposer et préparer ; le MJ arbitre les désaccords significatifs et tout effet visible par les joueurs.
-6. **Langue de campagne.** Le contenu destiné au MJ ou aux joueurs suit sa langue. Titres, pages et extraits de sources gardent une référence fidèle.
-7. **Honnêteté des états.** Implémenté, testé automatiquement, démontré sur l'environnement cible et jugé satisfaisant par le propriétaire sont quatre preuves distinctes. Les limites restent visibles.
-8. **Jouable en panne.** Le dossier et le matériel préparé restent lisibles sans modèle, transcription ni Internet. Le plafond payant par séance est dur : une opération différable attend ou bascule vers du local.
+1. **Play establishes truth.** An AP, PDF, or note may inspire or document; confirmed table events and GM rulings establish this campaign's canon.
+2. **Each state has distinct authority.** A *source* is a document or testimony identified by title and locator, without automatic canonical authority. An *observation* records what was noticed and may be uncertain, out of game, or simulated. A *proposal* is suggested content for review, neither observed nor accepted. A *decision* is an explicit GM ruling traceable to the items considered. A *canonical fact* is an assertion accepted by a decision for this campaign. The prototype implements sources, observations, decisions, and facts; proposals belong to the next milestone.
+3. **Provenance before assertion.** Search returns the fact, its decision, and its source locator; translation, interpretation, and invention remain identified. The current locator is entered by the GM and has not been checked against a PDF.
+4. **Private by default.** Secrets, sources, drafts, and live assistance remain GM-only. Future player publication will be an explicit selection tested against leaks; late corrections will identify what players have already seen.
+5. **The GM directs without approving every line.** Agents may propose and prepare; the GM arbitrates meaningful disagreements and anything players will see.
+6. **Campaign language.** Content intended for the GM or players follows their chosen language. Source titles, pages, and excerpts retain faithful references.
+7. **Honest status.** Implemented, automatically tested, demonstrated in the target environment, and judged satisfactory by the owner are four separate kinds of evidence. Keep limitations visible.
+8. **Usable during outages.** The campaign dossier and prepared material remain readable without a model, transcription, or internet connection. The paid per-session cap is hard: deferrable work waits or falls back to local resources.

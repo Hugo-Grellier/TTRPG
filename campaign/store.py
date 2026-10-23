@@ -9,7 +9,7 @@ from .core import DomainError, required, visibility
 SCHEMA = """
 PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS campaigns (
-  id INTEGER PRIMARY KEY, name TEXT NOT NULL, language TEXT NOT NULL DEFAULT 'fr'
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, language TEXT NOT NULL DEFAULT 'en'
 );
 CREATE TABLE IF NOT EXISTS sources (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
@@ -51,17 +51,17 @@ def connect(path: str | Path) -> sqlite3.Connection:
     return db
 
 
-def create_campaign(db, name: str, language: str = "fr") -> int:
-    name = required(name, "Nom", 100)
-    language = required(language, "Langue", 16)
+def create_campaign(db, name: str, language: str = "en") -> int:
+    name = required(name, "field.name", 100)
+    language = required(language, "field.language", 16)
     with db:
         return db.execute("INSERT INTO campaigns(name, language) VALUES (?, ?)", (name, language)).lastrowid
 
 
 def add_source(db, campaign_id: int, title: str, locator: str, note: str) -> int:
-    title = required(title, "Titre", 200)
-    locator = required(locator, "Repère", 200)
-    note = required(note, "Description", 2000)
+    title = required(title, "field.title", 200)
+    locator = required(locator, "label.locator", 200)
+    note = required(note, "field.description", 2000)
     _campaign(db, campaign_id)
     with db:
         return db.execute(
@@ -71,10 +71,10 @@ def add_source(db, campaign_id: int, title: str, locator: str, note: str) -> int
 
 
 def add_observation(db, campaign_id: int, source_id: int, text: str, kind: str = "note", access: str = "gm") -> int:
-    text = required(text, "Observation", 2000)
+    text = required(text, "label.observation", 2000)
     visibility(access)
     if kind not in ("note", "simulated_play"):
-        raise DomainError("Type d'observation inconnu.")
+        raise DomainError("error.unknown_kind")
     _owned(db, "sources", source_id, campaign_id)
     with db:
         return db.execute(
@@ -84,8 +84,8 @@ def add_observation(db, campaign_id: int, source_id: int, text: str, kind: str =
 
 
 def establish_fact(db, campaign_id: int, observation_id: int, instruction: str, fact: str, access: str = "gm") -> int:
-    instruction = required(instruction, "Décision", 1000)
-    fact = required(fact, "Fait", 2000)
+    instruction = required(instruction, "label.decision", 1000)
+    fact = required(fact, "field.canonical_fact", 2000)
     visibility(access)
     _owned(db, "observations", observation_id, campaign_id)
     with db:
@@ -102,14 +102,14 @@ def establish_fact(db, campaign_id: int, observation_id: int, instruction: str, 
 def _campaign(db, campaign_id):
     row = db.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id,)).fetchone()
     if row is None:
-        raise DomainError("Campagne introuvable.")
+        raise DomainError("error.campaign_missing")
     return row
 
 
 def _owned(db, table, item_id, campaign_id):
     # table is a constant supplied only by this module.
     if db.execute(f"SELECT 1 FROM {table} WHERE id = ? AND campaign_id = ?", (item_id, campaign_id)).fetchone() is None:
-        raise DomainError("Élément introuvable dans cette campagne.")
+        raise DomainError("error.item_missing")
 
 
 def campaign_view(db, campaign_id: int, query: str = ""):

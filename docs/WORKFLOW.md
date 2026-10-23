@@ -1,25 +1,29 @@
-# Exécution autonome
+# Autonomous execution
 
-## Continuer la roadmap
+## Continue the roadmap
 
-1. Lire `docs/STATE.md`, l'entrée du premier jalon prêt dans `docs/ROADMAP.md` et les principes pertinents. `make resume` donne la santé locale. Regarder `git status` avant toute modification. Ne pas reprendre une tâche déjà achevée sur la foi d'un ancien message.
-2. Choisir le plus petit parcours qui démontre une capacité du jalon. Écrire un plan interne proportionné. Rechercher la documentation officielle ou faire un essai court lorsqu'un risque technique est réel. Ne pas soumettre ce plan à validation ordinaire.
-3. Travailler dans une branche ou un worktree si les changements se chevauchent ; garder les changements petits et intégrables. Une seule source canonique dans l'application. Les adaptateurs utilisent des contrats versionnés avec fixtures. Les données privées restent hors Git.
-4. Lancer `make check`, puis démarrer et parcourir réellement l'application ; capturer une preuve visuelle si le résultat est visuel. Pour une capacité critique, faire examiner les cas adverses par un agent indépendant si disponible, ou refaire une passe QA séparée depuis `docs/QA.md`. Corriger puis rejouer les contrôles touchés.
-5. Mettre à jour les quatre états I/T/D/P du jalon, ses limites et `docs/STATE.md`. Une preuve indique commande, environnement et observation. Ne jamais annoncer une intégration externe après un simple test de fixture.
-6. Intégrer rapidement un changement réversible en développement après contrôles et dans les permissions Git accordées ; pas de revue humaine PR systématique. Le propriétaire voit d'abord l'application ou la preview, puis le parcours reproductible, les preuves et les décisions produit. Continuer un autre résultat seulement si la vérification précédente est satisfaisante.
+1. Read `docs/STATE.md`, the first ready milestone in `docs/ROADMAP.md`, and relevant principles. `make resume` checks local health. Inspect `git status` before edits. Do not redo work merely because an old message lacks its completion report.
+2. Choose the smallest journey that demonstrates a milestone capability. Write a proportionate internal plan. Consult official documentation or run a small experiment when a technical risk warrants it. Routine plans do not wait for approval.
+3. Use a branch or worktree when changes overlap; keep changes small and integrable. The application has one canonical source of truth. Adapters use versioned contracts with fixtures. Keep private data out of Git.
+4. Run `make check`, then start and actually navigate the application; capture visual evidence for visual outcomes. For critical capabilities, have an independent agent challenge the result when available, or run a separate QA pass from `docs/QA.md`. Fix findings and rerun affected checks.
+5. Update the milestone's four I/T/D/P states, limitations, and `docs/STATE.md`. Evidence names the command, environment, and observation. Never claim an external integration based only on a fixture test.
+6. Integrate reversible development changes promptly after defined checks and within granted Git permissions; human PR review is not the default gate. Show the owner the application or preview first, then a reproducible journey, evidence, and relevant product decisions. Continue to another outcome only when the previous one is satisfactorily verified.
 
-**Blocage :** reproduire et diagnostiquer, tenter une solution, réduire le périmètre de manière réversible, essayer une alternative, puis escalader seulement si l'accès matériel, les données privées, le coût, la production ou une décision de vision l'exigent. Un test rouge est du travail pour l'agent. L'escalade tient en problème, impact, options, recommandation et décision nécessaire.
+**Blockers:** reproduce and diagnose, try a fix, narrow scope reversibly, try an alternative, then escalate only when hardware access, private data, spending, production, or a vision decision truly requires it. A failing test is agent work. An escalation states the problem, impact, concrete options, recommendation, and decision needed.
 
-**Interruption :** conserver dans `docs/STATE.md` le jalon, la dernière preuve, les fichiers touchés, la prochaine commande et l'incertitude. Les sorties temporaires et PDF restent hors dépôt. À la reprise, vérifier l'état réel et les marqueurs de traitement avant de réexécuter une opération longue. Les travaux futurs d'import auront identifiants idempotents et curseurs ; la reprise d'une conversation CLI ne suffit pas.
+**Interruption:** record the milestone, last evidence, touched files, next command, and uncertainty in `docs/STATE.md`. Temporary outputs and PDFs stay out of the repository. On resumption, inspect real state and processing markers before rerunning long work. Future import jobs need idempotent IDs and cursors; resuming a CLI conversation alone is insufficient.
 
-## Feedback produit
+## Product feedback
 
-Observer la page ou le parcours cité avec une fixture représentative. Reformuler en interne le résultat utilisateur, comparer aux invariants, modifier directement ce qui est réversible, vérifier les parcours adjacents et montrer la nouvelle expérience. Modifier roadmap seulement si priorité ou résultat change ; documenter une décision durable seulement si elle évite un futur contresens. Une préférence créative qui change la vision ou une publication irréversible revient au propriétaire.
+Inspect the cited page or journey with a representative fixture. Infer the user outcome, compare it with product invariants, make reversible improvements directly, verify adjacent journeys, and show the new experience. Update the roadmap only if the priority or outcome changes; record a durable decision only when it prevents future misunderstanding. A creative preference that changes the vision or an irreversible publication returns to the owner.
 
-## Capacités réellement disponibles au bootstrap
+## Language conventions
 
-- `codex exec` et `codex exec resume`, `claude -p` et `claude --resume` existent dans les CLI installées ; Codex et Claude proposent des worktrees et des mécanismes de sessions/sous-agents. Les capacités ont été vérifiées via `--help`, pas par une exécution autonome nocturne. Voir [Codex CLI](https://learn.chatgpt.com/docs/developer-commands?surface=cli) et [Claude Code CLI](https://code.claude.com/docs/en/cli-reference).
-- Git est local sans commit ni remote initial ; `gh auth status` signale un jeton invalide. Le fichier GitHub Actions existe, mais aucune CI distante n'a tourné. GitHub n'est donc pas un prérequis pour continuer.
-- Test HTTP local et navigateur sont deux preuves distinctes. Le test HTTP couvre les formulaires ; la disponibilité du navigateur automatisé dépend de l'environnement de la session. Ne pas inventer une inspection si elle n'a pas eu lieu.
-- Aucun daemon permanent, scheduler ou budget d'API de développement n'est présumé. Pour automatiser sans supervision, installer et mesurer d'abord l'exécuteur choisi ; les documents du dépôt demeurent l'état durable.
+Repository code, comments, tests, documentation, and default interface copy use English. The product supports campaign language through explicit translation catalogs: English is the default and French is available when chosen for the campaign. Content authored for a campaign follows its language; source titles and locators remain faithful to the original. Add new interface copy to the catalogs and verify both languages rather than embedding translations in templates.
+
+## Capabilities actually available at bootstrap
+
+- `codex exec` and `codex exec resume`, `claude -p` and `claude --resume` exist in the installed CLIs; Codex and Claude offer worktrees and session/subagent mechanisms. These capabilities were checked with `--help`, not a permanent unattended run. See the [Codex CLI](https://learn.chatgpt.com/docs/developer-commands?surface=cli) and [Claude Code CLI](https://code.claude.com/docs/en/cli-reference).
+- Git has local bootstrap commits but no remote; `gh auth status` reports an invalid token. A GitHub Actions workflow exists, but no remote CI has run. GitHub is not a prerequisite for continuing.
+- Local HTTP tests and browser inspection are separate evidence. The HTTP test covers forms; browser automation availability depends on the session environment. Do not claim an inspection that did not happen.
+- No permanent daemon, scheduler, or development API budget is assumed. To automate without supervision, first install and measure the chosen executor; repository documents remain the durable state.

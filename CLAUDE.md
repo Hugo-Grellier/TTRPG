@@ -1,1 +1,1 @@
-Lire `AGENTS.md` : il contient les règles communes à Claude Code et Codex. La phrase « Continue la roadmap » suit son workflow.
+Read `AGENTS.md` for instructions shared by Claude Code and Codex. “Continue the roadmap” follows its workflow.

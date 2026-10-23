@@ -1,80 +1,80 @@
-# Roadmap par résultats observables
+# Roadmap by observable user outcomes
 
-**Lecture des preuves :** `I` = implémenté, `T` = tests automatiques passés, `D` = démontré sur environnement réel pertinent, `P` = qualité jugée satisfaisante par le propriétaire. Un `T` de fixture ne vaut jamais `D` sur Foundry, Discord ou AP complet. État « démontré » exige le parcours indiqué et ses limites publiées.
+**Evidence key:** `I` = implemented, `T` = automated tests passed, `D` = demonstrated in the relevant real environment, `P` = owner judged the quality satisfactory. A fixture `T` never counts as `D` for Foundry, Discord, or a complete AP. “Demonstrated” requires the stated journey and published limitations.
 
-## Maintenant
+## Now
 
-### M0 — Fondation locale et provenance élémentaire
+### M0 — Local foundation and basic provenance
 
-- **Résultat utilisateur :** le MJ crée une campagne fictive, relie une observation à une source, décide d'un fait et le retrouve avec sa provenance.
-- **Démonstration :** `make demo` ; chercher « promis » dans la fixture, puis créer une autre campagne, sa source, une observation, une décision et rechercher le fait après rechargement.
-- **Critères :** persistance SQLite, observation non canonique avant décision, source et décision visibles avec le résultat, refus des références entre campagnes et de la visibilité joueur.
-- **Dépendances/risques :** Python local ; pas de source documentaire vérifiée ni d'identité utilisateur.
-- **État :** I oui ; T oui (unitaire et trajet HTTP) ; D local HTTP et captures Chrome bureau/mobile oui ; P non demandé.
-- **Limites :** saisie manuelle, une seule vue MJ, pas de correction, pas de PDF, aucun VTT.
+- **User outcome:** the GM creates a fictional campaign, links an observation to a source, decides a fact, and finds it with provenance.
+- **Demonstration:** `make demo`; search for “promised” in the fixture, then create another campaign, source, observation, and decision; search for the fact after reloading.
+- **Success criteria:** SQLite persistence; observation remains noncanonical until a decision; source and decision appear with the result; cross-campaign references and player visibility are rejected.
+- **Dependencies/risks:** local Python; no verified documentary source or user identity.
+- **Status:** I yes; T yes (unit and HTTP journey); D local HTTP and desktop/mobile Chrome screenshots yes; P not requested.
+- **Known limitations:** manual entry, GM-only view, no correction, PDF, or VTT.
 
-### M1 — Une boucle de campagne hors table
+### M1 — An offline campaign loop
 
-- **Résultat utilisateur :** partir d'une source fictive, modifier une proposition de campagne, préparer une situation, jouer une bifurcation simulée, consolider et retrouver pourquoi l'état a changé.
-- **Démonstration :** scénario fixe « gué de Mira » : le MJ corrige une proposition, ouvre une fiche de préparation, choisit une action de joueurs simulés, arbitre le retour, puis recherche la promesse et ses conséquences avec provenance.
-- **Critères :** les propositions ne sont pas canoniques ; préparation et simulation sont marquées comme telles ; la correction d'un fait signale les éléments dépendants ; aucun secret n'entre dans un contenu publiable ; le parcours reste lisible après redémarrage. Tests de régression et inspection navigateur.
-- **Dépendances/risques :** modèle de propositions, correction et liens de dépendance ; il faut garder l'édition simple. Commencer par un seul scénario fictif et des choix explicites, sans génération IA.
-- **État :** prévu, prochain jalon prêt. I non ; T non ; D non ; P non.
-- **Limites connues :** simulation manuelle, pas de vraie séance ni de PDF.
-- **Unités proches :** (1) modéliser proposition et correction traçable ; (2) fiche de préparation liée au canon ; (3) événement simulé et revue groupée minimale ; (4) recherche des conséquences ; (5) parcours navigateur et QA adversariale. Livrer une unité seulement si le parcours entier reste vérifiable.
+- **User outcome:** start from a fictional source, revise a campaign proposal, prepare a situation, play a simulated branch, consolidate it, and find why the state changed.
+- **Demonstration:** fixed “Mira's ford” scenario: the GM corrects a proposal, opens a prep sheet, chooses a simulated player action, rules on the outcome, then searches for the promise and its consequences with provenance.
+- **Success criteria:** proposals are noncanonical; preparation and simulation are labeled; fact correction identifies dependent elements; no secret enters publishable content; the journey remains readable after restart. Regression tests and browser inspection.
+- **Dependencies/risks:** proposal model, corrections, and dependency links; keep editing simple. Begin with one fictional scenario and explicit choices, without AI generation.
+- **Status:** planned, next ready milestone. I no; T no; D no; P no.
+- **Known limitations:** manual simulation, no real session or PDF.
+- **Near-term units:** (1) model proposals and traceable correction; (2) prep sheet linked to canon; (3) simulated event and minimal grouped review; (4) consequence search; (5) browser journey and adversarial QA. Deliver an individual unit only if the whole journey stays verifiable.
 
-## Ensuite
+## Later
 
-### M2 — Dossier éditorial et mémoire longue
+### M2 — Editorial dossier and long memory
 
-- **Résultat utilisateur :** retrouver personnes, lieux, promesses, contradictions et « what next » après une longue histoire fictive.
-- **Démonstration :** rejouer plusieurs années simulées, corriger une attribution tardive et examiner les conséquences sans confondre hypothèse et fait.
-- **Critères :** requêtes avec preuves, conflits ciblés, droits de lecture, corrections suivies jusqu'aux préparations et publications concernées.
-- **Dépendances/risques :** M1 ; ergonomie des relations et historique des corrections.
-- **État :** prévu. I/T/D/P : non.
-- **Limites connues :** la qualité narrative demandera une revue humaine.
+- **User outcome:** find people, places, promises, contradictions, and “what next” after a long fictional history.
+- **Demonstration:** replay several simulated years, correct a late attribution, and inspect consequences without confusing a hypothesis with a fact.
+- **Success criteria:** evidence-backed queries, focused conflicts, read permissions, corrections propagated to relevant preparations and publications.
+- **Dependencies/risks:** M1; relationship UX and correction history.
+- **Status:** planned. I/T/D/P: no.
+- **Known limitations:** narrative quality requires human review.
 
-### M3 — Bibliothèque puis AP entier reprenable
+### M3 — Library and resumable complete AP
 
-- **Résultat utilisateur :** rechercher dans ses PDF avec titre/page et parcourir tous les chapitres d'un AP possédé, avec couverture et lacunes visibles.
-- **Démonstration :** prototype précoce sur PDF complexes fictifs/publics, interruption/reprise ; ensuite Kingmaker entier dans un environnement privé, chaque chapitre vérifié avant déclaration de complétude.
-- **Critères :** citations contrôlables, tâches idempotentes, progression et couverture, distinction AP/campagne/proposition, reprise sans duplication.
-- **Dépendances/risques :** M2 pour la transformation en dossier ; extraction PDF, droits, éditions et coût de traitement. Prototype d'extraction à démarrer en parallèle de M1/M2.
-- **État :** prévu. I/T/D/P : non.
-- **Limites connues :** l'essai fictif ne valide pas Kingmaker ; ses PDF restent privés.
+- **User outcome:** search owned PDFs with title/page and browse every chapter of an owned AP, with coverage and gaps visible.
+- **Demonstration:** early prototype on complex fictional/public PDFs with interruption/resume; later, all of Kingmaker in a private environment, verifying each chapter before claiming completion.
+- **Success criteria:** checkable citations, idempotent jobs, progress and coverage, AP/campaign/proposal separation, no duplicate work on resume.
+- **Dependencies/risks:** M2 for turning an AP into a dossier; PDF extraction, rights, editions, and processing cost. Start an extraction prototype alongside M1/M2.
+- **Status:** planned. I/T/D/P: no.
+- **Known limitations:** a fictional trial does not validate Kingmaker; its PDFs remain private.
 
-### M4 — Préparation jouable et qualité des assets
+### M4 — Playable preparation and asset quality
 
-- **Résultat utilisateur :** obtenir une vue « séance dans une heure », avec situations, PNJ, bifurcations et état exact du matériel.
-- **Démonstration :** une semaine fictive sans préparation, puis revue de la fiche et des éléments prêts/manquants ; comparer un prototype de carte à des références professionnelles sur lisibilité et temps de retouche.
-- **Critères :** fiche utilisable hors ligne, références et incertitudes, alternatives plausibles, qualité éditoriale présentée au propriétaire.
-- **Dépendances/risques :** M1 et mémoire M2 ; qualité créative, droits des assets, coût de production. Prototype de cartes tôt, avant pipeline définitif.
-- **État :** prévu. I/T/D/P : non.
-- **Limites connues :** une carte techniquement valide peut rester médiocre à jouer.
+- **User outcome:** get a “session in an hour” view with situations, NPCs, branches, and the exact state of the materials.
+- **Demonstration:** a fictional week without preparation, then review the prep sheet and ready/missing items; compare a map prototype with professional references for readability and editing time.
+- **Success criteria:** offline-usable sheet, references and uncertainty, plausible alternatives, editorial quality shown to the owner.
+- **Dependencies/risks:** M1 and M2 memory; creative quality, asset rights, production cost. Prototype maps early, before choosing a pipeline.
+- **Status:** planned. I/T/D/P: no.
+- **Known limitations:** a technically valid map may still be poor to play on.
 
-### M5 — Scène Foundry retouchable
+### M5 — Editable Foundry scene
 
-- **Résultat utilisateur :** synchroniser une scène PF2e prête à inspecter sans effacer les retouches dans Foundry.
-- **Démonstration :** instance Foundry v14 de test isolée, scène d'exploration puis dialogue/combat, retouche manuelle, resynchronisation et aperçu de conflit.
-- **Critères :** murs/lumières/objets attendus vérifiés ; pas de doublon ; retouches préservées ; visibilité joueur testée ; qualité visuelle revue séparément.
-- **Dépendances/risques :** M4 ; licence/instance de test, API Foundry, assets. Prototype de synchronisation précoce avec une scène fictive.
-- **État :** prévu. I/T/D/P : non.
-- **Limites connues :** aucune compatibilité Foundry prouvée aujourd'hui.
+- **User outcome:** synchronize an inspectable PF2e scene without erasing GM edits in Foundry.
+- **Demonstration:** isolated Foundry v14 test instance, exploration then dialogue/combat scene, manual edit, resynchronization, and conflict preview.
+- **Success criteria:** expected walls/lights/objects verified; no duplication; edits preserved; player visibility tested; visual quality reviewed separately.
+- **Dependencies/risks:** M4; license/test instance, Foundry API, assets. Prototype synchronization early with one fictional scene.
+- **Status:** planned. I/T/D/P: no.
+- **Known limitations:** no Foundry compatibility has been proven yet.
 
-### M6 — Retour de séance et aide live contrôlée
+### M6 — Session review and controlled live assistance
 
-- **Résultat utilisateur :** consulter chronologie provisoire, corriger les voix et le hors jeu, recevoir une aide courte privée puis publier seulement ce qu'il choisit.
-- **Démonstration :** audio mixte fabriqué, désaccord de locuteur, panne de modèle, suggestion expirée, publication après geste du MJ ; budget de séance atteint.
-- **Critères :** transcription ambiguë signalée, aucune promotion automatique au canon, secrets protégés, délai et coût mesurés, matériel préparé disponible en panne.
-- **Dépendances/risques :** M2/M4/M5 ; Discord, consentement, voix partagées, 1–2 s de latence et plafond dur. Prototype audio coût/latence tôt, avant bot complet.
-- **État :** prévu. I/T/D/P : non.
-- **Limites connues :** un enregistrement fabriqué ne prédit pas la qualité d'une séance réelle.
+- **User outcome:** read a provisional timeline, correct speakers and out-of-game talk, receive short private help, then publish only what the GM chooses.
+- **Demonstration:** manufactured mixed audio, speaker disagreement, model outage, expired suggestion, publication after GM action, and a reached session budget.
+- **Success criteria:** ambiguous transcription flagged, no automatic promotion to canon, secrets protected, latency and cost measured, prepared material available during outages.
+- **Dependencies/risks:** M2/M4/M5; Discord, consent, shared microphones, 1–2 s latency, and hard spending cap. Prototype audio cost/latency early, before a full bot.
+- **Status:** planned. I/T/D/P: no.
+- **Known limitations:** manufactured recordings do not predict quality in a real session.
 
-### M7 — Installation, sauvegarde et campagne Kingmaker hors table complète
+### M7 — Installation, backup, and complete offline Kingmaker campaign
 
-- **Résultat utilisateur :** installer, restaurer et parcourir la même campagne AP transformée de bout en bout avant toute séance réelle.
-- **Démonstration :** restauration sur machine de test ; AP entier, bifurcations simulées, plusieurs scènes Foundry, aide live simulée, corrections et coût affichés.
-- **Critères :** couverture de l'AP vérifiée, restauration testée, parcours intégré inspectable et décision du propriétaire sur l'usage réel.
-- **Dépendances/risques :** M3–M6 ; packaging non technique, qualité globale et données privées.
-- **État :** prévu. I/T/D/P : non.
-- **Limites connues :** la valeur durable se mesurera seulement dans l'usage accepté par le MJ.
+- **User outcome:** install, restore, and traverse the same transformed AP campaign end to end before any real session.
+- **Demonstration:** restore on a test machine; entire AP, simulated branches, several Foundry scenes, simulated live help, corrections, and visible cost.
+- **Success criteria:** verified AP coverage, tested restore, inspectable integrated journey, and owner decision about real use.
+- **Dependencies/risks:** M3–M6; nontechnical packaging, overall quality, and private data.
+- **Status:** planned. I/T/D/P: no.
+- **Known limitations:** durable value can only be measured in GM-approved real use.

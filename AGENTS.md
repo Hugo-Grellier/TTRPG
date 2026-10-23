@@ -1,11 +1,11 @@
-# Point d'entrée agent
+# Agent entry point
 
-`VISION.md` fixe la destination produit et reste intact sans décision du propriétaire. Pour une tâche, lire seulement les branches utiles : `docs/PRODUCT_PRINCIPLES.md` pour l'autorité et la confidentialité, `docs/ARCHITECTURE.md` pour les frontières, `docs/ROADMAP.md` pour la suite, `docs/WORKFLOW.md` pour l'exécution, `docs/STATE.md` pour reprendre.
+`VISION.md` defines the product destination. Change it only for an explicit product decision or faithful translation requested by the owner. For a task, read only the relevant branch: `docs/PRODUCT_PRINCIPLES.md` for authority and privacy, `docs/ARCHITECTURE.md` for boundaries, `docs/ROADMAP.md` for what comes next, `docs/WORKFLOW.md` for execution, and `docs/STATE.md` for resuming work.
 
-**« Continue la roadmap »** : lire `docs/STATE.md` puis le premier jalon prêt dans `docs/ROADMAP.md`, exécuter `make resume`, réaliser le parcours, vérifier l'application réelle, demander une revue indépendante si disponible, mettre à jour preuves et état. Poursuivre sans validation technique ordinaire. Présenter au propriétaire un parcours manipulable et ses limites.
+**“Continue the roadmap”**: read `docs/STATE.md` and the first ready milestone in `docs/ROADMAP.md`, run `make resume`, build the user journey, inspect the running application, seek independent review if available, and update the evidence and state. Continue without routine technical approval. Show the owner a usable journey and its limitations.
 
-**Feedback produit** : observer le parcours concerné, interpréter l'intention, corriger directement ce qui est réversible, rejouer les parcours touchés, ne modifier roadmap ou principes que si l'orientation change, montrer l'expérience résultante.
+**Product feedback**: inspect the affected journey, infer the intended outcome, make reversible improvements directly, rerun affected journeys, update the roadmap or principles only when the direction changes, and show the resulting experience.
 
-Le serveur actuel est privé au MJ et local. Toute publication joueur exige une action explicite du MJ et une nouvelle frontière de lecture testée. Sources, observations et propositions ne deviennent jamais canoniques seules. Les intégrations n'écrivent pas directement dans la mémoire durable. Aucune donnée privée ou sous licence dans Git.
+The current server is local and GM-only. Any player publication requires an explicit GM action and a tested player-read boundary. Sources, observations, and proposals never become canonical on their own. Integrations do not write directly to durable campaign memory. Keep private and licensed data out of Git.
 
-Escalader seulement pour vision substantiellement modifiée, dépense, données privées, production, risque juridique/sécurité majeur ou accès matériel indispensable. Les plans, tests, choix techniques et changements réversibles relèvent de l'agent.
+Escalate only for a substantial change to the product vision, unauthorized spending, private data, production resources, significant legal or security risk, or indispensable hardware access. Agents own ordinary plans, tests, technical choices, and reversible changes.

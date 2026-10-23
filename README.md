@@ -1,28 +1,28 @@
-# Atelier de campagne (nom de travail)
+# Campaign Workbench (working name)
 
-Assistant de campagne pour MJ, au stade de fondation locale. [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [État de reprise](docs/STATE.md).
+A campaign assistant for game masters, currently at the local foundation stage. [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Resume state](docs/STATE.md).
 
-## Prérequis et commandes
+## Requirements and commands
 
-Python 3.12+ et `make`. Aucun paquet Python, compte cloud ni API payante n'est nécessaire.
+Python 3.12+ and `make`. No Python package, cloud account, or paid API is required.
 
 ```sh
-make doctor        # versions et SQLite
-make fixture       # campagne fictive, idempotent
+make doctor        # Python version and SQLite check
+make fixture       # fictional campaign, safe to rerun
 make start         # http://127.0.0.1:8899
-make check         # tests et compilation
-make reset         # efface la base locale de test (serveur arrêté)
-make resume        # santé + état de reprise
+make check         # tests and compilation
+make reset         # delete the local test database (stop the server first)
+make resume        # environment health and resume state
 ```
 
-`make demo` charge la fixture puis démarre le serveur. `DB=/tmp/essai.db PORT=8900 make demo` permet une base et un port isolés. Arrêter avec Ctrl+C.
+`make demo` loads the fixture and starts the server. `DB=/tmp/demo.db PORT=8900 make demo` uses an isolated database and port. Stop with Ctrl+C.
 
-## Démonstration actuelle
+## Current demonstration
 
-Ouvrir une campagne fictive. Chercher « promis » : le fait renvoie à une décision, une observation et un repère dans une source fictive. Créer ensuite une campagne, enregistrer une source localisée, relever une observation (note ou jeu simulé), formuler une décision du MJ et un fait établi, puis retrouver ce fait par recherche. Recharger la page : SQLite conserve les données. Une observation seule reste non canonique.
+Open the fictional campaign. Search for “promised”: the fact links to a decision, an observation, and a locator in a fictional source. Then create another campaign, add a source with a locator, record an observation (note or simulated play), state the GM's decision and a canonical fact, and search for that fact. Reload the page: SQLite retains the data. An observation alone remains noncanonical.
 
-Ce prototype ne lit aucun PDF, ne prépare pas de séance et n'a ni connexion Foundry/Discord ni compte utilisateur. Il écoute uniquement sur `127.0.0.1` et ne doit pas être exposé tel quel au réseau. La seule visibilité disponible est MJ. La fixture est inventée et peut être supprimée avec `make reset`.
+The interface uses English by default and a French catalog when a campaign's language is `fr`; the repository itself is written in English. This prototype does not read PDFs, prepare sessions, connect to Foundry or Discord, or manage user accounts. It listens only on `127.0.0.1` and must not be exposed to the network as it stands. Only GM visibility exists. The fixture is invented and can be removed with `make reset`.
 
-## Travail avec un agent
+## Working with an agent
 
-Dans une nouvelle session Claude Code ou Codex, saisir **« Continue la roadmap. »**. Pour une remarque sur l'expérience, formuler directement le ressenti et le résultat voulu. Le protocole est dans [WORKFLOW.md](docs/WORKFLOW.md) ; aucune approbation de ticket ou de plan n'est requise.
+In a new Claude Code or Codex session, enter **“Continue the roadmap.”** For product feedback, describe the experience and the outcome you want. The process is in [WORKFLOW.md](docs/WORKFLOW.md); ordinary ticket or plan approvals are not required.

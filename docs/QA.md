@@ -1,18 +1,18 @@
-# Scénarios adverses et preuves
+# Adversarial scenarios and evidence
 
-La fixture versionnée `make fixture` est entièrement fictive. Elle vérifie un trajet court, pas la qualité d'un AP ou d'une séance. Les nouveaux scénarios doivent partir des sept réussites de `VISION.md` et chercher comment une assertion pourrait être fausse.
+The versioned `make fixture` data is entirely fictional. It checks a short journey, not the quality of an AP or session. New scenarios should start from the seven success scenarios in `VISION.md` and ask how each claim could be false.
 
-| Risque à falsifier | Jeu d'essai avant intégration | Preuve exigée |
+| Risk to falsify | Pre-integration test case | Required evidence |
 | --- | --- | --- |
-| Mémoire longue / provenance | promesse ancienne, deux sources divergentes, repères cassés | réponse avec source et incertitude, correction testée |
-| AP / canon / proposition | chapitre source contredit la table, idée rejetée | états distincts à l'écran et dans les requêtes |
-| Correction tardive | attribution changée après préparation et publication | dépendances corrigées, publication déjà vue signalée |
-| Confidentialité | secret MJ dans plusieurs objets liés | test négatif de toute lecture/publication joueur |
-| Bifurcation / préparation | joueurs simulés suivent puis quittent l'AP | fiche jouable et conséquences durables, revue éditoriale |
-| Foundry | scène retouchée entre deux synchronisations | test sur v14 réel, aperçu de conflit, aucun écrasement/doublon |
-| Transcription | deux voix sur une piste et apartés hors jeu | locuteur incertain, aucune promotion abusive au canon |
-| Panne / plafond | fournisseur indisponible et coût au plafond | accès aux préparations, refus de dépense, reprise idempotente |
+| Long memory / provenance | old promise, two conflicting sources, broken locators | answer with source and uncertainty; tested correction |
+| AP / canon / proposal | source chapter contradicts the table; rejected idea | distinct states on screen and in queries |
+| Late correction | attribution changed after preparation and publication | dependencies corrected; already-viewed publication flagged |
+| Privacy | GM secret in several linked objects | negative tests for every player read/publication path |
+| Branching / preparation | simulated players follow and then leave the AP | playable prep and durable consequences; editorial review |
+| Foundry | scene edited between synchronizations | test on real v14 instance, conflict preview, no overwrite or duplicate |
+| Transcription | two voices on one track and out-of-game chatter | uncertain speaker, no improper promotion to canon |
+| Outage / spending cap | unavailable provider and cost at cap | access to preparations, rejected expense, idempotent resume |
 
-Pour chaque jalon, enregistrer séparément test automatique, essai intégré, inspection visuelle si pertinente, environnement réel externe, revue de qualité ressentie, limites. Une QA indépendante reçoit la vision, le scénario et le produit, puis tente de produire une contre-preuve sans adopter les hypothèses d'implémentation. Si aucun agent séparé n'est disponible, effectuer une seconde passe depuis cette matrice après l'implémentation.
+For each milestone, record automated tests, integrated trial, visual inspection where relevant, real external environment, review of perceived quality, and limitations separately. Independent QA receives the vision, scenario, and product, then seeks counterexamples without adopting implementation assumptions. If no separate agent is available, run a second QA pass from this matrix after implementation.
 
-Les PDF sous licence, extraits longs, transcriptions réelles et audio brut restent dans l'environnement privé de test. Les fixtures publiques et les rapports ne contiennent que des inventions ou des références autorisées.
+Licensed PDFs, long excerpts, real transcripts, and raw audio remain in the private test environment. Public fixtures and reports contain only invented material or permitted references.
