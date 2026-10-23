@@ -17,7 +17,7 @@ GM browser -> campaign.web -> campaign.store -> SQLite
 
 Repository code and documentation are in English. The interface renders English by default and French for campaigns whose language is `fr`, using explicit JSON catalogs instead of translated strings in templates. Campaign-authored content follows the chosen campaign language; source titles and locators retain their original wording. Keep new UI copy in both catalogs and test the language selection.
 
-The initial core keeps `campaign_id` on each element even where an indirect link might suffice, making read queries and ownership checks explicit. Facts are added through a decision linked to an observation and source. SQL constraints reject missing and cross-campaign references and any visibility other than `gm`; the domain API also rejects cross-campaign references. No player-read path exists yet, so the GM screen does not prove separation of player views.
+The core keeps `campaign_id` on each element even where an indirect link might suffice, making read queries and ownership checks explicit. Facts are added through a decision linked to an observation and source. Proposal revisions, prep sheets, simulated events, and corrections retain their links; correcting a fact flags prep sheets that cite it. SQL constraints reject missing and cross-campaign references and any visibility other than `gm`; the domain API also rejects cross-campaign references. No player-read path exists yet, so the GM screen does not prove separation of player views.
 
 ## Boundaries to open in later milestones
 

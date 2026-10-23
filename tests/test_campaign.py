@@ -11,7 +11,9 @@ from urllib.request import Request, urlopen
 
 from campaign.core import DomainError
 from campaign.i18n import catalog, t
-from campaign.store import add_observation, add_source, campaign_view, connect, create_campaign, establish_fact
+from campaign.store import (add_observation, add_preparation, add_proposal, add_simulated_event,
+                            add_source, campaign_view, connect, correct_fact, create_campaign,
+                            establish_fact, journey_view)
 from campaign.web import make_handler
 
 
@@ -56,6 +58,42 @@ class CampaignRulesTest(unittest.TestCase):
         self.assertEqual(t("facts.title", "fr"), "Faits établis")
         self.assertEqual(t("facts.title", "en"), "Established facts")
 
+    def test_offline_loop_correction_and_campaign_boundary(self):
+        draft = add_proposal(self.db, self.a, self.source, "Mira has abandoned the ford")
+        revised = add_proposal(self.db, self.a, self.source, "Mira still guards the ford", draft)
+        self.assertEqual(campaign_view(self.db, self.a)[3], [])
+        observed = add_observation(self.db, self.a, self.source, "Mira promised to hold the crossing")
+        original = establish_fact(self.db, self.a, observed, "Accept promise", "Mira holds the crossing until dawn")
+        prep = add_preparation(self.db, self.a, original, revised, "Travelers reach Mira's ford", "Wait for dawn or seek a boat")
+        event = add_simulated_event(self.db, self.a, prep, "Players seek a boat", "Mira sends a guide")
+        proposals, preparations, events, corrections = journey_view(self.db, self.a)
+        self.assertEqual((proposals[0]["revised_from"], events[0]["id"]), (draft, event))
+        self.assertIsNone(events[0]["consequence"])
+        self.assertEqual(campaign_view(self.db, self.a)[1][0]["title"], "Simulated play record")
+        consequence = establish_fact(self.db, self.a, events[0]["observation_id"], "Confirm branch", "Mira's guide helps the travelers cross")
+        correction = correct_fact(self.db, self.a, original, observed, "Promise was conditional", "Mira holds the crossing only if the bell rings")
+        _, preparations, events, corrections = journey_view(self.db, self.a)
+        self.assertEqual((preparations[0]["new_fact_id"], events[0]["consequence"], corrections[0]["new_fact_id"]),
+                         (correction, "Mira's guide helps the travelers cross", correction))
+        self.assertEqual(campaign_view(self.db, self.a, "guide")[3][0]["id"], consequence)
+        self.assertIn(consequence, [f["id"] for f in campaign_view(self.db, self.a, "dawn")[3]])
+        with self.assertRaises(DomainError):
+            add_preparation(self.db, self.b, original, revised, "Leak", "Leak")
+        with self.assertRaises(DomainError):
+            add_proposal(self.db, self.b, self.source, "Leak")
+        with self.assertRaises(DomainError):
+            add_simulated_event(self.db, self.b, prep, "Leak", "Leak")
+        with self.assertRaises(DomainError):
+            add_proposal(self.db, self.a, self.source, "Player draft", access="player")
+        with self.assertRaises(DomainError):
+            add_preparation(self.db, self.a, original, revised, "Player prep", "Leak", access="player")
+        with self.assertRaises(DomainError):
+            add_simulated_event(self.db, self.a, prep, "Player event", "Leak", access="player")
+        with self.assertRaises(DomainError):
+            correct_fact(self.db, self.a, consequence, observed, "Player correction", "Leak", access="player")
+        with self.assertRaises(DomainError):
+            correct_fact(self.db, self.a, original, observed, "Again", "Again")
+
     def test_http_form_to_sqlite_to_search(self):
         server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(Path(self.tmp.name) / "http.db"))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -79,11 +117,33 @@ class CampaignRulesTest(unittest.TestCase):
         post(f"/campaign/{cid}/observation", {"source_id": "1", "text": "Mira promises", "kind": "simulated_play"}).close()
         post(f"/campaign/{cid}/fact", {"observation_id": "1", "instruction": "Confirm", "fact": "Mira promises the bridge"}).close()
         with urlopen(base + f"/campaign/{cid}?q=bridge") as response:
+            self.assertEqual(response.headers["Referrer-Policy"], "same-origin")
             body = response.read().decode()
         self.assertIn("Mira promises the bridge", body)
         self.assertIn("Notebook", body)
         self.assertIn("page 7", body)
         self.assertIn("Established facts", body)
+        post(f"/campaign/{cid}/proposal", {"source_id": "1", "text": "Draft crossing", "revised_from": ""}).close()
+        post(f"/campaign/{cid}/proposal", {"source_id": "1", "text": "Revised crossing", "revised_from": "1"}).close()
+        post(f"/campaign/{cid}/preparation", {"fact_id": "1", "proposal_id": "2", "situation": "At the crossing", "alternatives": "Wait or boat"}).close()
+        post(f"/campaign/{cid}/event", {"preparation_id": "1", "player_action": "Take the boat", "ruling": "They cross"}).close()
+        with urlopen(base + f"/campaign/{cid}") as response:
+            body = response.read().decode()
+        self.assertIn("Revised crossing", body)
+        self.assertIn("Take the boat", body)
+        self.assertIn("Awaiting GM consolidation", body)
+        with connect(Path(self.tmp.name) / "http.db") as db:
+            event_observation = journey_view(db, cid)[2][0]["observation_id"]
+        post(f"/campaign/{cid}/fact", {"observation_id": str(event_observation), "instruction": "Confirm", "fact": "The boat crosses safely"}).close()
+        post(f"/campaign/{cid}/correction", {"old_fact_id": "1", "observation_id": "1", "instruction": "Correct", "fact": "Mira promises the crossing only at dawn"}).close()
+        with urlopen(base + f"/campaign/{cid}?q=Mira") as response:
+            body = response.read().decode()
+        self.assertIn("Dependent prep sheets", body)
+        self.assertIn("Needs review: based on corrected fact", body)
+        with urlopen(base + f"/campaign/{cid}?q=bridge") as response:
+            body = response.read().decode()
+        self.assertIn("The boat crosses safely", body)
+        self.assertIn("Consequence of simulated branch", body)
         with urlopen(base + "/?lang=fr") as response:
             self.assertIn("Vos campagnes", response.read().decode())
         with post("/campaign", {"name": "French UI", "language": "fr"}) as response:

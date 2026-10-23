@@ -19,9 +19,9 @@
 - **Demonstration:** fixed “Mira's ford” scenario: the GM corrects a proposal, opens a prep sheet, chooses a simulated player action, rules on the outcome, then searches for the promise and its consequences with provenance.
 - **Success criteria:** proposals are noncanonical; preparation and simulation are labeled; fact correction identifies dependent elements; no secret enters publishable content; the journey remains readable after restart. Regression tests and browser inspection.
 - **Dependencies/risks:** proposal model, corrections, and dependency links; keep editing simple. Begin with one fictional scenario and explicit choices, without AI generation.
-- **Status:** planned, next ready milestone. I no; T no; D no; P no.
-- **Known limitations:** manual simulation, no real session or PDF.
-- **Near-term units:** (1) model proposals and traceable correction; (2) prep sheet linked to canon; (3) simulated event and minimal grouped review; (4) consequence search; (5) browser journey and adversarial QA. Deliver an individual unit only if the whole journey stays verifiable.
+- **Status:** I yes; T yes (`make check`, five tests on Python 3.14.4, including HTTP form journey, correction, privacy and campaign ownership); D yes (local Chrome 155 browser form journey against a fresh SQLite database on October 23, 2026, plus desktop and mobile visual inspection); P not requested.
+- **Known limitations:** manually authored preparation and simulation; one-hop consequence search; correction flags dependent prep sheets for GM review without rewriting them; no player publication route, real session, or PDF.
+- **Delivered units:** proposal revisions, fact correction and dependent-prep warning, prep linked to canon, simulated event and explicit GM consolidation, linked consequence search, browser journey and adversarial QA.
 
 ## Later
 

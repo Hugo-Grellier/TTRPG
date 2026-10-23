@@ -1,6 +1,6 @@
 # Campaign Workbench (working name)
 
-A campaign assistant for game masters, currently at the local foundation stage. [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Resume state](docs/STATE.md).
+A local campaign workbench for game masters. [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Resume state](docs/STATE.md).
 
 ## Requirements and commands
 
@@ -19,9 +19,11 @@ make resume        # environment health and resume state
 
 ## Current demonstration
 
-Open the fictional campaign. Search for “promised”: the fact links to a decision, an observation, and a locator in a fictional source. Then create another campaign, add a source with a locator, record an observation (note or simulated play), state the GM's decision and a canonical fact, and search for that fact. Reload the page: SQLite retains the data. An observation alone remains noncanonical.
+Open **Mira's ford — offline loop**. Its fictional source leads to an initial proposal and a revision. The prep sheet uses the revised proposal and an established fact. A simulated boat branch produces an observation; the GM's decision establishes its consequence. The corrected crossing fact flags the dependent prep sheet. Search for “bell” to see the promise, correction, and linked consequence with their decisions and source locators. Reload to check persistence.
 
-The interface uses English by default and a French catalog when a campaign's language is `fr`; the repository itself is written in English. This prototype does not read PDFs, prepare sessions, connect to Foundry or Discord, or manage user accounts. It listens only on `127.0.0.1` and must not be exposed to the network as it stands. Only GM visibility exists. The fixture is invented and can be removed with `make reset`.
+To repeat the journey yourself, create a campaign and use the page's jump links: add a source, propose and revise, record an observation and establish a fact, prepare a situation, simulate an action, consolidate the resulting observation with a decision, and search. A proposal, prep sheet, or simulated event never becomes canon on its own.
+
+The interface uses English by default and a French catalog when a campaign's language is `fr`; the repository itself is written in English. Preparation and simulation are manually authored. Corrections flag dependent prep sheets for GM review; they do not rewrite them. This prototype does not read PDFs, connect to Foundry or Discord, publish to players, or manage user accounts. It listens only on `127.0.0.1` and must not be exposed to the network as it stands. The fixture is invented and can be removed with `make reset`.
 
 ## Working with an agent
 
