@@ -193,8 +193,10 @@ def make_handler(db_path):
                         elif parts[2] == "comment":
                             kind, item_id = val("target_kind"), int(val("target_id"))
                             start, end = val("line_start"), val("line_end")
+                            offset = val("char_offset")
                             add_comment(db, campaign_id, kind, item_id, val("quote"), val("body"),
-                                        line_start=int(start) if start else None, line_end=int(end) if end else None)
+                                        line_start=int(start) if start else None, line_end=int(end) if end else None,
+                                        char_offset=int(offset) if offset else None)
                             self._send(303, "", f"/workspace/{campaign_id}?doc={kind}:{item_id}")
                             return
                         elif parts[2] == "chat":

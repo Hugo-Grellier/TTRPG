@@ -1,54 +1,96 @@
 const documentArea = document.getElementById('document');
 const commentForm = document.getElementById('comment-form');
 if (documentArea && commentForm) {
-  const rows = [...documentArea.querySelectorAll('.doc-line')];
+  const blocks = [...documentArea.querySelectorAll('.commentable-block')];
   const quote = document.getElementById('quote');
   const startField = document.getElementById('line-start');
   const endField = document.getElementById('line-end');
-  let firstLine = null;
-  const showComment = (start, end) => {
+  const offsetField = document.getElementById('char-offset');
+  const preview = document.getElementById('selected-quote');
+  const blockFor = node => (node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement)?.closest('.commentable-block');
+  const highlight = range => {
+    if (CSS.highlights && window.Highlight) CSS.highlights.set('comment-selection', new Highlight(range));
+    else {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  };
+  const showComment = (text, startBlock, endBlock, range) => {
+    if (!text.trim() || text.length > 2000) return;
+    const start = +startBlock.dataset.lineStart;
+    const end = +endBlock.dataset.lineEnd;
     if (end - start > 20) return;
-    rows.forEach(row => row.classList.toggle('selected-line', +row.dataset.line >= start && +row.dataset.line <= end));
+    const content = startBlock.querySelector('.block-content') || startBlock;
+    if (!content.contains(range.startContainer)) return;
+    quote.value = text;
     startField.value = start;
     endField.value = end;
-    quote.value = rows.filter(row => +row.dataset.line >= start && +row.dataset.line <= end)
-      .map(row => row.querySelector('.line-text').textContent.replaceAll('\u200b', '')).join('\n').slice(0, 500);
+    const prefix = document.createRange();
+    prefix.selectNodeContents(content);
+    prefix.setEnd(range.startContainer, range.startOffset);
+    offsetField.value = prefix.toString().length;
+    preview.textContent = text;
     document.getElementById('selected-lines').textContent = start === end ? `L${start}` : `L${start}–${end}`;
+    blocks.forEach(block => block.classList.toggle('selected-line', block === startBlock || block === endBlock ||
+      (+block.dataset.lineStart >= start && +block.dataset.lineEnd <= end)));
     commentForm.hidden = false;
-    rows.find(row => +row.dataset.line === end).after(commentForm);
-    commentForm.querySelector('#comment').focus();
+    endBlock.after(commentForm);
+    highlight(range);
   };
   documentArea.addEventListener('click', event => {
     const button = event.target.closest('.line-number');
     if (!button) return;
-    const line = +button.dataset.line;
-    if (event.shiftKey && firstLine !== null) showComment(Math.min(firstLine, line), Math.max(firstLine, line));
-    else { firstLine = line; showComment(line, line); }
+    const row = button.closest('.commentable-block');
+    const content = row.querySelector('.block-content');
+    const range = document.createRange();
+    range.selectNodeContents(content);
+    showComment(content.textContent.trim(), row, row, range);
   });
   const fromSelection = () => {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return;
-    const row = node => (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)?.closest('.doc-line');
-    const anchor = row(selection.anchorNode);
-    const focus = row(selection.focusNode);
-    if (!anchor || !focus || !documentArea.contains(anchor) || !documentArea.contains(focus)) return;
-    const start = Math.min(+anchor.dataset.line, +focus.dataset.line);
-    const end = Math.max(+anchor.dataset.line, +focus.dataset.line);
-    firstLine = start;
-    showComment(start, end);
+    const range = selection.getRangeAt(0).cloneRange();
+    const start = blockFor(range.startContainer);
+    const end = blockFor(range.endContainer);
+    if (start && end && documentArea.contains(start) && documentArea.contains(end))
+      showComment(selection.toString(), start, end, range);
   };
   documentArea.addEventListener('mouseup', event => { if (!event.target.closest('.line-number')) fromSelection(); });
-  documentArea.addEventListener('touchend', fromSelection);
-  document.querySelectorAll('.comment blockquote').forEach(block => {
+  documentArea.addEventListener('touchend', () => setTimeout(fromSelection, 0));
+  const findQuoteRange = (block, text, preferredOffset) => {
+    const walker = document.createTreeWalker(block.querySelector('.block-content') || block, NodeFilter.SHOW_TEXT);
+    const nodes = []; let full = '';
+    while (walker.nextNode()) { nodes.push([walker.currentNode, full.length]); full += walker.currentNode.textContent; }
+    const start = Number.isInteger(preferredOffset) && full.slice(preferredOffset, preferredOffset + text.length) === text
+      ? preferredOffset : full.indexOf(text);
+    if (start < 0) return null;
+    const range = document.createRange();
+    for (const [node, offset] of nodes) {
+      if (start >= offset && start < offset + node.length) range.setStart(node, start - offset);
+      if (start + text.length > offset && start + text.length <= offset + node.length) {
+        range.setEnd(node, start + text.length - offset);
+        break;
+      }
+    }
+    return range;
+  };
+  document.querySelectorAll('.comment blockquote').forEach(blockquote => {
     const locate = () => {
-      const row = rows.find(row => +row.dataset.line === +block.dataset.line) ||
-        rows.find(row => row.querySelector('.line-text').textContent.includes(block.dataset.quote));
-      row?.scrollIntoView({block: 'center', behavior: 'smooth'});
-      row?.classList.add('located-line');
-      setTimeout(() => row?.classList.remove('located-line'), 1800);
+      const line = +blockquote.dataset.line;
+      const block = blocks.find(item => line >= +item.dataset.lineStart && line <= +item.dataset.lineEnd &&
+        item.textContent.includes(blockquote.dataset.quote)) ||
+        blocks.find(item => line >= +item.dataset.lineStart && line <= +item.dataset.lineEnd) ||
+        blocks.find(item => item.textContent.includes(blockquote.dataset.quote));
+      if (!block) return;
+      block.scrollIntoView({block: 'center', behavior: 'smooth'});
+      const range = findQuoteRange(block, blockquote.dataset.quote,
+        blockquote.dataset.offset === '' ? null : +blockquote.dataset.offset);
+      if (range) highlight(range);
+      else block.classList.add('located-line');
     };
-    block.addEventListener('click', locate);
-    block.addEventListener('keydown', event => {
+    blockquote.addEventListener('click', locate);
+    blockquote.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); locate(); }
     });
   });

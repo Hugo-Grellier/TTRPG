@@ -148,7 +148,7 @@
   "error.unknown_provider": "Unknown assistant CLI.",
   "error.provider_missing": "The selected CLI is not installed.",
   "error.agent_busy": "An assistant is already working. Try again when it finishes.",
-  "workspace.select_lines": "Click a line number, Shift-click for a range, or select text to comment here.",
+  "workspace.select_lines": "Select any passage to comment on exactly that text. Click a line number to select its full line.",
   "workspace.cli_draft": "CLI · editable draft",
   "workspace.draft_changes": "Draft changes to review",
   "error.line_range": "Invalid line range."

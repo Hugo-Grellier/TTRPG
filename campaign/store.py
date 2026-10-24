@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .core import DomainError, required, visibility
 from .i18n import t
+from .markdown import visible_text
 
 
 SCHEMA = """
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS document_comments (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
   target_kind TEXT NOT NULL CHECK (target_kind IN ('sources', 'proposals', 'preparations', 'facts', 'simulated_events')),
   target_id INTEGER NOT NULL, quote TEXT NOT NULL, body TEXT NOT NULL,
-  line_start INTEGER, line_end INTEGER,
+  line_start INTEGER, line_end INTEGER, char_offset INTEGER,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm')
 );
@@ -91,7 +92,7 @@ CREATE TABLE IF NOT EXISTS product_comments (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
   file_id INTEGER NOT NULL CHECK (file_id BETWEEN 1 AND 5),
   quote TEXT NOT NULL, body TEXT NOT NULL,
-  line_start INTEGER, line_end INTEGER,
+  line_start INTEGER, line_end INTEGER, char_offset INTEGER,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm')
 );
@@ -108,7 +109,7 @@ def connect(path: str | Path) -> sqlite3.Connection:
     db.execute("CREATE UNIQUE INDEX IF NOT EXISTS facts_campaign_key ON facts(id, campaign_id)")
     for table in ("document_comments", "product_comments"):
         columns = {row["name"] for row in db.execute(f"PRAGMA table_info({table})")}
-        for column in ("line_start", "line_end"):
+        for column in ("line_start", "line_end", "char_offset"):
             if column not in columns:
                 db.execute(f"ALTER TABLE {table} ADD COLUMN {column} INTEGER")
     return db
@@ -270,12 +271,12 @@ def comment_lines(db, campaign_id, target_kind, target_id):
     return [line for column in columns for line in str(row[column]).splitlines() or [""]]
 
 
-def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm", line_start=None, line_end=None):
+def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm", line_start=None, line_end=None, char_offset=None):
     visibility(access)
     lines = comment_lines(db, campaign_id, target_kind, target_id)
-    quote = quote.strip()
-    if len(quote) > 500:
-        raise DomainError("error.required", label="field.quote", limit=500)
+    quote = str(quote)
+    if len(quote) > 2000:
+        raise DomainError("error.required", label="field.quote", limit=2000)
     body = required(body, "field.comment", 2000)
     if line_start is not None or line_end is not None:
         if not isinstance(line_start, int) or not isinstance(line_end, int) or not 1 <= line_start <= line_end <= len(lines) or line_end - line_start > 20:
@@ -283,14 +284,19 @@ def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm
         selected = "\n".join(lines[line_start - 1:line_end])
     else:
         selected = "\n".join(lines)
-    if quote and " ".join(quote.split()) not in " ".join(selected.split()):
+    if char_offset is not None and (line_start is None or not isinstance(char_offset, int) or not 0 <= char_offset <= 100000):
+        raise DomainError("error.line_range")
+    normalized = " ".join(quote.split())
+    source_text = " ".join(selected.split())
+    source_text += " " + visible_text(selected)
+    if quote and normalized not in source_text:
         raise DomainError("error.quote_missing")
     with db:
         if target_kind == "product_docs":
-            return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body, line_start, line_end) VALUES (?, ?, ?, ?, ?, ?)",
-                              (campaign_id, target_id, quote, body, line_start, line_end)).lastrowid
-        return db.execute("INSERT INTO document_comments(campaign_id, target_kind, target_id, quote, body, line_start, line_end) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                          (campaign_id, target_kind, target_id, quote, body, line_start, line_end)).lastrowid
+            return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body, line_start, line_end, char_offset) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                              (campaign_id, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
+        return db.execute("INSERT INTO document_comments(campaign_id, target_kind, target_id, quote, body, line_start, line_end, char_offset) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                          (campaign_id, target_kind, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
 
 
 def comments_for(db, campaign_id, target_kind, target_id):

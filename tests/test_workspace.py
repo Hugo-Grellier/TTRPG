@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 from campaign.agent_cli import parse_claude, parse_codex, run_cli
 from campaign.core import DomainError
 from campaign.paths import data_dir
+from campaign.markdown import render_blocks
 from campaign.store import (add_comment, add_source, agent_turns, comments_for,
                             connect, create_campaign, product_doc)
 from campaign.web import make_handler
@@ -23,6 +24,13 @@ class WorkspaceTest(unittest.TestCase):
     def test_private_storage_path_is_configurable_outside_checkout(self):
         with patch.dict("os.environ", {"TTRPG_DATA_DIR": "/tmp/private-campaigns"}):
             self.assertEqual(data_dir(), Path("/tmp/private-campaigns"))
+
+    def test_markdown_is_rendered_without_executing_source_html(self):
+        blocks = list(render_blocks("# Heading\n\nA **bold** word.\n\n<script>alert(1)</script>"))
+        rendered = "".join(block[2] for block in blocks)
+        self.assertIn("<h1>Heading</h1>", rendered)
+        self.assertIn("<strong>bold</strong>", rendered)
+        self.assertNotIn("<script>", rendered)
 
     def test_cli_invocations_edit_isolated_draft_and_resume_explicit_sessions(self):
         with patch("campaign.agent_cli.draft_checkout", return_value=Path('/tmp/draft')), patch("campaign.agent_cli.shutil.which", side_effect=lambda name: name), patch(
@@ -48,6 +56,8 @@ class WorkspaceTest(unittest.TestCase):
             cid = create_campaign(db, "Gué", "fr")
             other = create_campaign(db, "Other")
             source = add_source(db, cid, "Carnet", "p. 1", "Mira garde le gué")
+            markdown_source = add_source(db, cid, "Markdown note", "p. 2", "Mira **garde** le gué")
+            self.assertIn("<strong>garde</strong>", render_workspace(db, cid, f"sources:{markdown_source}"))
             add_comment(db, cid, "sources", source, "Mira garde", "Rendre cela plus ambigu")
             self.assertIn("Rendre cela plus ambigu", render_workspace(db, cid, f"sources:{source}"))
             self.assertIn("Commentaires", render_workspace(db, cid, f"sources:{source}"))
@@ -67,10 +77,13 @@ class WorkspaceTest(unittest.TestCase):
             _, vision = product_doc(1)
             self.assertIn("Product vision", vision)
             add_comment(db, cid, "product_docs", 1, "Product vision", "Lead with conversation")
+            add_comment(db, cid, "product_docs", 1, "a new, independent tool", "Review precise selection", line_start=3, line_end=3, char_offset=34)
             product_page = render_workspace(db, cid, "product_docs:1")
             self.assertIn("Lead with conversation", product_page)
             self.assertIn('data-quote="Product vision"', product_page)
-            self.assertEqual(len(comments_for(db, cid, "product_docs", 1)), 1)
+            self.assertIn("<strong>new, independent tool</strong>", product_page)
+            self.assertEqual(len(comments_for(db, cid, "product_docs", 1)), 2)
+            self.assertEqual(comments_for(db, cid, "product_docs", 1)[1]["char_offset"], 34)
             self.assertEqual(len(comments_for(db, other, "product_docs", 1)), 0)
             with self.assertRaises(DomainError):
                 add_comment(db, cid, "product_docs", 99, "Product vision", "Invalid file")
@@ -107,7 +120,8 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertIn("text/css", response.headers["Content-Type"])
                 self.assertIn(".app-shell", response.read().decode())
             post("/campaign/1/comment", {"target_kind": "sources", "target_id": source,
-                                        "quote": "Mira keeps", "body": "Check the bell"}).close()
+                                        "quote": "Mira keeps", "body": "Check the bell",
+                                        "line_start": 1, "line_end": 1, "char_offset": 0}).close()
             with urlopen(base + "/workspace/1?doc=sources:1") as response:
                 self.assertIn("Check the bell", response.read().decode())
             with patch("campaign.web.run_cli", return_value=("A possible revision", "session-1", True)) as cli:

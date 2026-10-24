@@ -148,7 +148,7 @@
   "error.unknown_provider": "CLI assistant inconnu.",
   "error.provider_missing": "Le CLI choisi n'est pas installé.",
   "error.agent_busy": "Un assistant travaille déjà. Réessayez lorsqu'il a terminé.",
-  "workspace.select_lines": "Cliquez sur un numéro de ligne, Maj-clic pour une plage, ou sélectionnez du texte pour commenter ici.",
+  "workspace.select_lines": "Sélectionnez un passage pour commenter exactement ce texte. Cliquez sur un numéro pour prendre toute la ligne.",
   "workspace.cli_draft": "CLI · brouillon modifiable",
   "workspace.draft_changes": "Modifications du brouillon à relire",
   "error.line_range": "Plage de lignes invalide."

@@ -4,7 +4,14 @@ A local campaign workbench for game masters. [Vision](VISION.md) · [Roadmap](do
 
 ## Requirements and commands
 
-Python 3.12+ and `make`. No Python package, cloud account, or paid API is required.
+Python 3.12+, `make`, and the Markdown renderer. Install the dependency in a local virtual environment:
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+`make` uses `.venv/bin/python` when it exists. No cloud account or paid API is required.
 
 ```sh
 make doctor        # Python version and SQLite check
@@ -19,7 +26,7 @@ make resume        # environment health and resume state
 
 ## Current demonstration
 
-Open **Mira's ford — offline loop** from the campaign list. The workspace puts Codex/Claude Code conversation beside campaign material, product docs (`VISION.md`, principles, architecture, roadmap, workflow), and review comments. Click a line number, Shift-click for a range, or select text to add a comment directly below it; click a comment to return to its line. The composer offers editable playbooks for exploration, revision, preparation, and contradiction review. Sending a message passes the open campaign document and its comments, or the selected product-doc path and its comments, plus established facts to the selected installed CLI. Each CLI can edit repository files in a private per-campaign draft Git worktree under the user data directory. The workspace shows the draft diff for review; replies cannot establish canon. CLI sessions resume on later messages. The bottom bar shows CLI status; it is not an interactive terminal.
+Open **Mira's ford — offline loop** from the campaign list. The workspace puts Codex/Claude Code conversation beside Markdown-rendered campaign material, product docs (`VISION.md`, principles, architecture, roadmap, workflow), and review comments. Select any passage, even one word, to comment on exactly that text; campaign record line numbers can also select a full line. The inline form shows the chosen passage, and clicking a saved comment returns to it. The composer offers editable playbooks for exploration, revision, preparation, and contradiction review. Sending a message passes the open campaign document and its comments, or the selected product-doc path and its comments, plus established facts to the selected installed CLI. Each CLI can edit repository files in a private per-campaign draft Git worktree under the user data directory. The workspace shows the draft diff for review; replies cannot establish canon. CLI sessions resume on later messages. The bottom bar shows CLI status; it is not an interactive terminal.
 
 The fixture's fictional source leads to an initial proposal and a revision. Its prep sheet uses the revised proposal and an established fact. A simulated boat branch produces an observation; the GM's decision establishes its consequence. The corrected crossing fact flags the dependent prep sheet. The **Campaign records and forms** link opens the earlier data-entry view; search for “bell” there to see the promise, correction, and linked consequence with their decisions and source locators. Reload to check persistence.
 

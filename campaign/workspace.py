@@ -4,6 +4,7 @@ import html
 
 from .agent_cli import draft_diff
 from .i18n import locale, t
+from .markdown import render_blocks, visible_text
 from .store import (COMMENT_TARGETS, PRODUCT_DOCS, agent_turns, campaign_view,
                     comments_for, journey_view, product_doc)
 
@@ -12,12 +13,13 @@ def esc(value):
     return html.escape(str(value), quote=True)
 
 
-def line_rows(lines, marked, start=1):
+def record_blocks(value, offset, marked):
     return "".join(
-        f'<div class="doc-line {"has-comments" if number in marked else ""}" data-line="{number}">'
-        f'<button class="line-number" type="button" data-line="{number}" aria-label="Line {number}">{number}</button>'
-        f'<span class="line-text">{esc(line) or "&#8203;"}</span></div>'
-        for number, line in enumerate(lines, start)
+        f'<div class="doc-line commentable-block {"has-comments" if any(start <= line <= end for line in marked) else ""}" data-line-start="{start}" data-line-end="{end}">'
+        f'<button class="line-number" type="button" data-line="{start}" aria-label="Line {start}">{start}</button>'
+        f'<div class="block-content">{rendered}</div></div>'
+        for first, last, rendered in render_blocks(str(value))
+        for start, end in ((offset + first, offset + last),)
     )
 
 
@@ -68,13 +70,16 @@ def render_workspace(db, campaign_id, selected=""):
         comments = comments_for(db, campaign_id, kind, item_id)
         marked = {number for row in comments if row["line_start"] for number in range(row["line_start"], row["line_end"] + 1)}
         if kind == "product_docs":
-            section_html = f'<div class="markdown-source">{line_rows(sections.splitlines(), marked)}</div>'
+            section_html = '<div class="markdown-rendered">' + ''.join(
+                f'<div class="markdown-block commentable-block {"has-comments" if any(first <= line <= last for line in marked) else ""}" data-line-start="{first}" data-line-end="{last}">{rendered}</div>'
+                for first, last, rendered in render_blocks(sections)
+            ) + '</div>'
         else:
             section_html, number = "", 1
             for key, value, selectable in sections:
                 if selectable:
                     lines = str(value).splitlines() or [""]
-                    content = f'<div class="record-source">{line_rows(lines, marked, number)}</div>'
+                    content = f'<div class="record-source">{record_blocks(value, number - 1, marked)}</div>'
                     number += len(lines)
                 else:
                     content = f'<p>{esc(value)}</p>'
@@ -82,15 +87,16 @@ def render_workspace(db, campaign_id, selected=""):
         doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2>{section_html}</article>'
         def comment_row(row):
             anchor = f'L{row["line_start"]}' + (f'–{row["line_end"]}' if row["line_end"] != row["line_start"] else '') if row['line_start'] else ''
-            quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
-            stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind == 'product_docs' and row['quote'] and ' '.join(row['quote'].split()) not in ' '.join(sections.split()) else ''
+            quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" data-offset="{row["char_offset"] if row["char_offset"] is not None else ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
+            source_quote = ' '.join(row['quote'].split())
+            stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind == 'product_docs' and row['quote'] and source_quote not in ' '.join(sections.split()) and source_quote not in visible_text(sections) else ''
             return f'<div class="comment"><small>#{row["id"]} · {esc(anchor)} · {esc(row["created_at"])}</small>{quote}{stale}<p>{esc(row["body"])}</p></div>'
         comment_html = "".join(comment_row(row) for row in comments)
         review_html = f'''<p class="muted">{tr("workspace.select_lines")}</p><div class="comments-list">{comment_html or f'<p class="muted">{tr("workspace.no_comments")}</p>'}</div>'''
         form_html = f'''<form method="post" action="/campaign/{campaign_id}/comment" id="comment-form" hidden>
             <input type="hidden" name="target_kind" value="{kind}"><input type="hidden" name="target_id" value="{item_id}">
-            <input type="hidden" name="line_start" id="line-start"><input type="hidden" name="line_end" id="line-end">
-            <input type="hidden" name="quote" id="quote"><strong id="selected-lines"></strong>
+            <input type="hidden" name="line_start" id="line-start"><input type="hidden" name="line_end" id="line-end"><input type="hidden" name="char_offset" id="char-offset">
+            <input type="hidden" name="quote" id="quote"><strong id="selected-lines"></strong><blockquote id="selected-quote"></blockquote>
             <label for="comment">{tr('field.comment')}</label><textarea id="comment" name="body" maxlength="2000" rows="4" required></textarea>
             <button>{tr('action.add_comment')}</button>
           </form>'''
