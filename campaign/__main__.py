@@ -7,12 +7,13 @@ from .store import (add_observation, add_preparation, add_proposal, add_simulate
                     add_source, connect, correct_fact, create_campaign, establish_fact,
                     journey_view)
 from .web import serve
+from .paths import data_dir
 
 
 def main():
     parser = argparse.ArgumentParser(description="Local campaign workbench")
     parser.add_argument("command", choices=["serve", "fixture", "reset", "check"])
-    parser.add_argument("--db", default=os.environ.get("CAMPAIGN_DB", "data/campaign.db"))
+    parser.add_argument("--db", default=os.environ.get("CAMPAIGN_DB", data_dir() / "campaign.db"))
     parser.add_argument("--port", type=int, default=8899)
     args = parser.parse_args()
     path = Path(args.db)

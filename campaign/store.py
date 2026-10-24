@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS document_comments (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
   target_kind TEXT NOT NULL CHECK (target_kind IN ('sources', 'proposals', 'preparations', 'facts', 'simulated_events')),
   target_id INTEGER NOT NULL, quote TEXT NOT NULL, body TEXT NOT NULL,
+  line_start INTEGER, line_end INTEGER,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm')
 );
@@ -90,6 +91,7 @@ CREATE TABLE IF NOT EXISTS product_comments (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
   file_id INTEGER NOT NULL CHECK (file_id BETWEEN 1 AND 5),
   quote TEXT NOT NULL, body TEXT NOT NULL,
+  line_start INTEGER, line_end INTEGER,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm')
 );
@@ -104,6 +106,11 @@ def connect(path: str | Path) -> sqlite3.Connection:
     db.executescript(SCHEMA)
     # Existing M0 databases lack the composite key required by M1's campaign-scoped links.
     db.execute("CREATE UNIQUE INDEX IF NOT EXISTS facts_campaign_key ON facts(id, campaign_id)")
+    for table in ("document_comments", "product_comments"):
+        columns = {row["name"] for row in db.execute(f"PRAGMA table_info({table})")}
+        for column in ("line_start", "line_end"):
+            if column not in columns:
+                db.execute(f"ALTER TABLE {table} ADD COLUMN {column} INTEGER")
     return db
 
 
@@ -229,7 +236,7 @@ def journey_view(db, campaign_id):
 
 
 COMMENT_TARGETS = {
-    "sources": ("title", "locator", "note"),
+    "sources": ("note", "locator"),
     "proposals": ("text",),
     "preparations": ("situation", "alternatives"),
     "facts": ("text",),
@@ -251,30 +258,39 @@ def product_doc(file_id):
     return relative, (Path(__file__).resolve().parent.parent / relative).read_text(encoding="utf-8")
 
 
-def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm"):
-    visibility(access)
-    if target_kind not in COMMENT_TARGETS and target_kind != "product_docs":
-        raise DomainError("error.item_missing")
+def comment_lines(db, campaign_id, target_kind, target_id):
     if target_kind == "product_docs":
         _campaign(db, campaign_id)
-        _, document_text = product_doc(target_id)
-    else:
-        _owned(db, target_kind, target_id, campaign_id)
-        columns = ", ".join(COMMENT_TARGETS[target_kind])
-        row = db.execute(f"SELECT {columns} FROM {target_kind} WHERE id=?", (target_id,)).fetchone()
-        document_text = " ".join(str(value) for value in row)
+        return product_doc(target_id)[1].splitlines()
+    if target_kind not in COMMENT_TARGETS:
+        raise DomainError("error.item_missing")
+    _owned(db, target_kind, target_id, campaign_id)
+    columns = COMMENT_TARGETS[target_kind]
+    row = db.execute(f"SELECT {', '.join(columns)} FROM {target_kind} WHERE id=?", (target_id,)).fetchone()
+    return [line for column in columns for line in str(row[column]).splitlines() or [""]]
+
+
+def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm", line_start=None, line_end=None):
+    visibility(access)
+    lines = comment_lines(db, campaign_id, target_kind, target_id)
     quote = quote.strip()
     if len(quote) > 500:
         raise DomainError("error.required", label="field.quote", limit=500)
     body = required(body, "field.comment", 2000)
-    if quote and quote not in document_text:
+    if line_start is not None or line_end is not None:
+        if not isinstance(line_start, int) or not isinstance(line_end, int) or not 1 <= line_start <= line_end <= len(lines) or line_end - line_start > 20:
+            raise DomainError("error.line_range")
+        selected = "\n".join(lines[line_start - 1:line_end])
+    else:
+        selected = "\n".join(lines)
+    if quote and " ".join(quote.split()) not in " ".join(selected.split()):
         raise DomainError("error.quote_missing")
     with db:
         if target_kind == "product_docs":
-            return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body) VALUES (?, ?, ?, ?)",
-                              (campaign_id, target_id, quote, body)).lastrowid
-        return db.execute("INSERT INTO document_comments(campaign_id, target_kind, target_id, quote, body) VALUES (?, ?, ?, ?, ?)",
-                          (campaign_id, target_kind, target_id, quote, body)).lastrowid
+            return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body, line_start, line_end) VALUES (?, ?, ?, ?, ?, ?)",
+                              (campaign_id, target_id, quote, body, line_start, line_end)).lastrowid
+        return db.execute("INSERT INTO document_comments(campaign_id, target_kind, target_id, quote, body, line_start, line_end) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                          (campaign_id, target_kind, target_id, quote, body, line_start, line_end)).lastrowid
 
 
 def comments_for(db, campaign_id, target_kind, target_id):

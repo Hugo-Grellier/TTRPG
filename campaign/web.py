@@ -192,7 +192,9 @@ def make_handler(db_path):
                             correct_fact(db, campaign_id, int(val("old_fact_id")), int(val("observation_id")), val("instruction"), val("fact"))
                         elif parts[2] == "comment":
                             kind, item_id = val("target_kind"), int(val("target_id"))
-                            add_comment(db, campaign_id, kind, item_id, val("quote"), val("body"))
+                            start, end = val("line_start"), val("line_end")
+                            add_comment(db, campaign_id, kind, item_id, val("quote"), val("body"),
+                                        line_start=int(start) if start else None, line_end=int(end) if end else None)
                             self._send(303, "", f"/workspace/{campaign_id}?doc={kind}:{item_id}")
                             return
                         elif parts[2] == "chat":
@@ -208,7 +210,7 @@ def make_handler(db_path):
                                 known = "\n".join(f"- {fact['text']} ({fact['source_title']} · {fact['locator']})" for fact in facts[:20])
                                 cli_prompt = f"{CONTEXT}Campaign: {row['name']}\nLanguage: {language}\nEstablished facts:\n{known or 'None'}\n\n{selected_context}GM message:\n{prompt}"
                                 try:
-                                    response, session_id, success = run_cli(provider, cli_prompt, prior[0] if prior else None)
+                                    response, session_id, success = run_cli(provider, cli_prompt, prior[0] if prior else None, campaign_id)
                                 except DomainError as exc:
                                     response, session_id, success = exc.localized(language), None, False
                                 finish_agent_turn(db, turn_id, response, "complete" if success else "error", session_id)

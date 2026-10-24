@@ -1,37 +1,55 @@
 const documentArea = document.getElementById('document');
-const quoteField = document.getElementById('quote');
-if (documentArea && quoteField) {
-  const copySelection = () => {
+const commentForm = document.getElementById('comment-form');
+if (documentArea && commentForm) {
+  const rows = [...documentArea.querySelectorAll('.doc-line')];
+  const quote = document.getElementById('quote');
+  const startField = document.getElementById('line-start');
+  const endField = document.getElementById('line-end');
+  let firstLine = null;
+  const showComment = (start, end) => {
+    if (end - start > 20) return;
+    rows.forEach(row => row.classList.toggle('selected-line', +row.dataset.line >= start && +row.dataset.line <= end));
+    startField.value = start;
+    endField.value = end;
+    quote.value = rows.filter(row => +row.dataset.line >= start && +row.dataset.line <= end)
+      .map(row => row.querySelector('.line-text').textContent.replaceAll('\u200b', '')).join('\n').slice(0, 500);
+    document.getElementById('selected-lines').textContent = start === end ? `L${start}` : `L${start}–${end}`;
+    commentForm.hidden = false;
+    rows.find(row => +row.dataset.line === end).after(commentForm);
+    commentForm.querySelector('#comment').focus();
+  };
+  documentArea.addEventListener('click', event => {
+    const button = event.target.closest('.line-number');
+    if (!button) return;
+    const line = +button.dataset.line;
+    if (event.shiftKey && firstLine !== null) showComment(Math.min(firstLine, line), Math.max(firstLine, line));
+    else { firstLine = line; showComment(line, line); }
+  });
+  const fromSelection = () => {
     const selection = window.getSelection();
-    const text = selection?.toString().trim();
-    const container = node => (node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement)?.closest('.annotatable');
-    const anchor = container(selection?.anchorNode);
-    const focus = container(selection?.focusNode);
-    if (text && text.length <= 500 && anchor && anchor === focus) quoteField.value = text;
+    if (!selection || selection.isCollapsed || !selection.toString().trim()) return;
+    const row = node => (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)?.closest('.doc-line');
+    const anchor = row(selection.anchorNode);
+    const focus = row(selection.focusNode);
+    if (!anchor || !focus || !documentArea.contains(anchor) || !documentArea.contains(focus)) return;
+    const start = Math.min(+anchor.dataset.line, +focus.dataset.line);
+    const end = Math.max(+anchor.dataset.line, +focus.dataset.line);
+    firstLine = start;
+    showComment(start, end);
   };
-  documentArea.addEventListener('mouseup', copySelection);
-  documentArea.addEventListener('touchend', copySelection);
-  document.addEventListener('selectionchange', copySelection);
-  const locateQuote = block => {
-    const quote = block.dataset.quote;
-    for (const element of documentArea.querySelectorAll('.annotatable')) {
-      const text = element.firstChild;
-      const start = text?.textContent.indexOf(quote) ?? -1;
-      if (start < 0 || text.nodeType !== Node.TEXT_NODE) continue;
-      const range = document.createRange();
-      range.setStart(text, start);
-      range.setEnd(text, start + quote.length);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      element.scrollIntoView({block: 'center', behavior: 'smooth'});
-      return;
-    }
-  };
-  document.querySelectorAll('.comment blockquote[data-quote]').forEach(block => {
-    block.addEventListener('click', () => locateQuote(block));
+  documentArea.addEventListener('mouseup', event => { if (!event.target.closest('.line-number')) fromSelection(); });
+  documentArea.addEventListener('touchend', fromSelection);
+  document.querySelectorAll('.comment blockquote').forEach(block => {
+    const locate = () => {
+      const row = rows.find(row => +row.dataset.line === +block.dataset.line) ||
+        rows.find(row => row.querySelector('.line-text').textContent.includes(block.dataset.quote));
+      row?.scrollIntoView({block: 'center', behavior: 'smooth'});
+      row?.classList.add('located-line');
+      setTimeout(() => row?.classList.remove('located-line'), 1800);
+    };
+    block.addEventListener('click', locate);
     block.addEventListener('keydown', event => {
-      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); locateQuote(block); }
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); locate(); }
     });
   });
 }

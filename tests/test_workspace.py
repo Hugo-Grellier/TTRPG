@@ -12,6 +12,7 @@ from urllib.request import Request, urlopen
 
 from campaign.agent_cli import parse_claude, parse_codex, run_cli
 from campaign.core import DomainError
+from campaign.paths import data_dir
 from campaign.store import (add_comment, add_source, agent_turns, comments_for,
                             connect, create_campaign, product_doc)
 from campaign.web import make_handler
@@ -19,21 +20,27 @@ from campaign.workspace import render_workspace
 
 
 class WorkspaceTest(unittest.TestCase):
-    def test_cli_invocations_are_read_only_and_resume_explicit_sessions(self):
-        with patch("campaign.agent_cli.shutil.which", side_effect=lambda name: name), patch(
+    def test_private_storage_path_is_configurable_outside_checkout(self):
+        with patch.dict("os.environ", {"TTRPG_DATA_DIR": "/tmp/private-campaigns"}):
+            self.assertEqual(data_dir(), Path("/tmp/private-campaigns"))
+
+    def test_cli_invocations_edit_isolated_draft_and_resume_explicit_sessions(self):
+        with patch("campaign.agent_cli.draft_checkout", return_value=Path('/tmp/draft')), patch("campaign.agent_cli.shutil.which", side_effect=lambda name: name), patch(
             "campaign.agent_cli.subprocess.run",
             return_value=subprocess.CompletedProcess([], 0, '{"type":"thread.started","thread_id":"abc"}\n{"type":"item.completed","item":{"type":"agent_message","text":"Draft"}}', ""),
         ) as process:
             self.assertEqual(run_cli("codex", "Revise"), ("Draft", "abc", True))
-            self.assertIn("read-only", process.call_args.args[0])
+            self.assertIn("workspace-write", process.call_args.args[0])
+            self.assertEqual(process.call_args.kwargs['cwd'], Path('/tmp/draft'))
             run_cli("codex", "Continue", "abc")
             self.assertEqual(process.call_args.args[0][-3:], ["resume", "abc", "Continue"])
-        with patch("campaign.agent_cli.shutil.which", return_value="claude"), patch(
+        with patch("campaign.agent_cli.draft_checkout", return_value=Path('/tmp/draft')), patch("campaign.agent_cli.shutil.which", return_value="claude"), patch(
             "campaign.agent_cli.subprocess.run",
             return_value=subprocess.CompletedProcess([], 0, '{"result":"Draft","session_id":"xyz"}', ""),
         ) as process:
             self.assertEqual(run_cli("claude", "Revise", "xyz"), ("Draft", "xyz", True))
-            self.assertIn("--tools=Read,Grep,Glob,Skill", process.call_args.args[0])
+            self.assertIn("--tools=Read,Grep,Glob,Edit,Write,Skill", process.call_args.args[0])
+            self.assertIn("--restricted", process.call_args.args[0])
             self.assertNotIn("Bash", " ".join(process.call_args.args[0]))
 
     def test_comment_stays_private_and_does_not_change_canon(self):
@@ -46,6 +53,11 @@ class WorkspaceTest(unittest.TestCase):
             self.assertIn("Commentaires", render_workspace(db, cid, f"sources:{source}"))
             self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 0)
             self.assertEqual(len(comments_for(db, cid, "sources", source)), 1)
+            add_comment(db, cid, "sources", source, "Mira garde", "Review line 1", line_start=1, line_end=1)
+            self.assertIn('data-line="1"', render_workspace(db, cid, f"sources:{source}"))
+            self.assertIn('L1', render_workspace(db, cid, f"sources:{source}"))
+            with self.assertRaises(DomainError):
+                add_comment(db, cid, "sources", source, "Mira", "Wrong line", line_start=2, line_end=2)
             with self.assertRaises(DomainError):
                 add_comment(db, other, "sources", source, "Mira", "Leak")
             with self.assertRaises(DomainError):

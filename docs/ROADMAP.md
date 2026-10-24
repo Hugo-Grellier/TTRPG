@@ -28,9 +28,9 @@
 - **User outcome:** discuss the campaign with Codex or Claude Code beside the relevant document, comment on an exact passage, and keep a suggested revision separate from canon until the GM acts.
 - **Demonstration:** open the fictional Mira prep in a three-pane workspace, select a passage, leave a comment, ask Codex to address it, continue the same conversation, switch to Claude Code, and review a proposed document change. A terminal is optional.
 - **Success criteria:** actual CLI sessions and resume, campaign language and selected-document context, comments anchored to private documents, workflows/skills discoverable from chat, proposed edits reviewable before acceptance, no direct agent write to durable campaign memory, and usable layout at desktop and mobile widths.
-- **Dependencies/risks:** installed and authenticated CLIs, subscription limits, read-only provider execution until a reviewed write path exists, and a clear review model for document revisions.
-- **Status:** I partial (IDE-like shell, passage comments on campaign and product docs, editable playbook prompts, and read-only CLI chat); T partial (HTTP and domain checks); D partial (local Chrome render and comment interaction, actual two-turn Codex conversation and Claude Code reply through the workspace); P no. Next ready unit: make skills discoverable and document revision review concrete.
-- **Known limitations:** CLI replies are synchronous; no streaming, terminal input, document edit application, or player publication. The bottom strip shows CLI state only.
+- **Dependencies/risks:** installed and authenticated CLIs, subscription limits, and a clear review model for document revisions.
+- **Status:** I partial (IDE-like shell, line comments on campaign and product docs, editable playbook prompts, writable CLI chat in isolated draft worktrees, and visible Git diff); T partial (HTTP and domain checks); D partial (local Chrome line-comment journey, real writable Codex edit, previous two-turn Codex conversation and Claude Code reply); P no. Next ready unit: make skills discoverable and add an explicit GM action to accept reviewed draft changes.
+- **Known limitations:** CLI replies are synchronous; no streaming, terminal input, draft acceptance action, or player publication. The bottom strip shows CLI state only.
 
 ## Later
 

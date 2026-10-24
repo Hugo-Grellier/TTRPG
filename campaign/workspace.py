@@ -2,6 +2,7 @@
 
 import html
 
+from .agent_cli import draft_diff
 from .i18n import locale, t
 from .store import (COMMENT_TARGETS, PRODUCT_DOCS, agent_turns, campaign_view,
                     comments_for, journey_view, product_doc)
@@ -9,6 +10,15 @@ from .store import (COMMENT_TARGETS, PRODUCT_DOCS, agent_turns, campaign_view,
 
 def esc(value):
     return html.escape(str(value), quote=True)
+
+
+def line_rows(lines, marked, start=1):
+    return "".join(
+        f'<div class="doc-line {"has-comments" if number in marked else ""}" data-line="{number}">'
+        f'<button class="line-number" type="button" data-line="{number}" aria-label="Line {number}">{number}</button>'
+        f'<span class="line-text">{esc(line) or "&#8203;"}</span></div>'
+        for number, line in enumerate(lines, start)
+    )
 
 
 def render_workspace(db, campaign_id, selected=""):
@@ -55,23 +65,32 @@ def render_workspace(db, campaign_id, selected=""):
     )
     if choice:
         kind, item_id, label, title, sections = choice
-        if kind == "product_docs":
-            section_html = f'<pre class="markdown-source annotatable">{esc(sections)}</pre>'
-        else:
-            section_html = "".join(
-                f'<section class="doc-section"><h3>{tr(key)}</h3><p {"class=annotatable" if selectable else ""}>{esc(value)}</p></section>'
-                for key, value, selectable in sections)
-        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2>{section_html}</article>'
         comments = comments_for(db, campaign_id, kind, item_id)
+        marked = {number for row in comments if row["line_start"] for number in range(row["line_start"], row["line_end"] + 1)}
+        if kind == "product_docs":
+            section_html = f'<div class="markdown-source">{line_rows(sections.splitlines(), marked)}</div>'
+        else:
+            section_html, number = "", 1
+            for key, value, selectable in sections:
+                if selectable:
+                    lines = str(value).splitlines() or [""]
+                    content = f'<div class="record-source">{line_rows(lines, marked, number)}</div>'
+                    number += len(lines)
+                else:
+                    content = f'<p>{esc(value)}</p>'
+                section_html += f'<section class="doc-section"><h3>{tr(key)}</h3>{content}</section>'
+        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2>{section_html}</article>'
         def comment_row(row):
-            quote = f'<blockquote data-quote="{esc(row["quote"])}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
-            stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind == 'product_docs' and row['quote'] and row['quote'] not in sections else ''
-            return f'<div class="comment"><small>#{row["id"]} · {esc(row["created_at"])}</small>{quote}{stale}<p>{esc(row["body"])}</p></div>'
+            anchor = f'L{row["line_start"]}' + (f'–{row["line_end"]}' if row["line_end"] != row["line_start"] else '') if row['line_start'] else ''
+            quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
+            stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind == 'product_docs' and row['quote'] and ' '.join(row['quote'].split()) not in ' '.join(sections.split()) else ''
+            return f'<div class="comment"><small>#{row["id"]} · {esc(anchor)} · {esc(row["created_at"])}</small>{quote}{stale}<p>{esc(row["body"])}</p></div>'
         comment_html = "".join(comment_row(row) for row in comments)
-        review_html = f'''<div class="comments-list">{comment_html or f'<p class="muted">{tr("workspace.no_comments")}</p>'}</div>
-          <form method="post" action="/campaign/{campaign_id}/comment" id="comment-form">
+        review_html = f'''<p class="muted">{tr("workspace.select_lines")}</p><div class="comments-list">{comment_html or f'<p class="muted">{tr("workspace.no_comments")}</p>'}</div>'''
+        form_html = f'''<form method="post" action="/campaign/{campaign_id}/comment" id="comment-form" hidden>
             <input type="hidden" name="target_kind" value="{kind}"><input type="hidden" name="target_id" value="{item_id}">
-            <label for="quote">{tr('field.quote')}</label><textarea id="quote" name="quote" maxlength="500" rows="2" placeholder="{tr('workspace.select_text')}"></textarea>
+            <input type="hidden" name="line_start" id="line-start"><input type="hidden" name="line_end" id="line-end">
+            <input type="hidden" name="quote" id="quote"><strong id="selected-lines"></strong>
             <label for="comment">{tr('field.comment')}</label><textarea id="comment" name="body" maxlength="2000" rows="4" required></textarea>
             <button>{tr('action.add_comment')}</button>
           </form>'''
@@ -79,8 +98,11 @@ def render_workspace(db, campaign_id, selected=""):
     else:
         doc_html = f'<div class="empty-document"><h2>{tr("workspace.no_documents")}</h2><p>{tr("workspace.create_hint")}</p></div>'
         review_html = f'<p class="muted">{tr("workspace.no_document_comment")}</p>'
+        form_html = ""
         selected_key = ""
     turns = agent_turns(db, campaign_id)
+    diff = draft_diff(campaign_id)
+    draft_html = f'<details class="draft-diff" open><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
     messages = "".join(f'<div class="message"><div class="message-head">{tr("workspace.you")} <small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div><div class="message assistant {"failed" if row["status"] == "error" else ""}"><div class="message-head">{esc("Claude Code" if row["provider"] == "claude" else "Codex")} <small>{tr("workspace.status_" + row["status"])}</small></div><p>{esc(row["response"] or t("workspace.running", language))}</p></div>' for row in turns)
     if not messages:
         messages = f'<div class="empty-chat"><h2>{tr("workspace.chat_start")}</h2><p>{tr("workspace.chat_hint")}</p></div>'
@@ -95,8 +117,8 @@ def render_workspace(db, campaign_id, selected=""):
           <nav aria-label="{tr('workspace.documents')}">{sidebar or f'<p class="sidebar-empty">{tr("workspace.no_documents")}</p>'}</nav>
           <a class="advanced-link" href="/campaign/{campaign_id}">{tr('workspace.records')}</a>
         </aside>
-        <section class="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><span>{tr('workspace.cli_read_only')}</span></div>
-          <div class="messages" id="messages">{messages}</div>
+        <section class="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><span>{tr('workspace.cli_draft')}</span></div>
+          <div class="messages" id="messages">{messages}{draft_html}</div>
           <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form">
             <input type="hidden" name="doc" value="{esc(selected_key)}">
             <label for="playbook">{tr('workspace.playbook')}</label><select id="playbook"><option value="">{tr('workspace.playbook_none')}</option>{playbook_options}</select>
@@ -105,7 +127,7 @@ def render_workspace(db, campaign_id, selected=""):
             <p class="composer-note">{tr('workspace.send_notice')}</p>
           </form>
         </section>
-        <section class="document-panel"><div class="panel-head"><h1>{tr('workspace.documents')}</h1><span>{tr('workspace.review')}</span></div><div class="document-layout"><div class="document-scroll">{doc_html}</div><aside class="review"><h2>{tr('workspace.comments')}</h2>{review_html}</aside></div></section>
+        <section class="document-panel"><div class="panel-head"><h1>{tr('workspace.documents')}</h1><span>{tr('workspace.review')}</span></div><div class="document-layout"><div class="document-scroll">{doc_html}{form_html}</div><aside class="review"><h2>{tr('workspace.comments')}</h2>{review_html}</aside></div></section>
         <footer class="terminal"><span>{tr('workspace.terminal')}</span><code>{esc(terminal)}</code></footer>
       </div><script src="/assets/workspace.js" defer></script></body></html>'''
 
@@ -117,7 +139,7 @@ def document_context(db, campaign_id, selected):
         if kind == "product_docs":
             relative, _ = product_doc(item_id)
             comments = comments_for(db, campaign_id, kind, item_id)
-            review = "\n".join(f"Comment on '{comment['quote']}': {comment['body']}" for comment in comments)
+            review = "\n".join(f"Comment on lines {comment['line_start']}-{comment['line_end']} '{comment['quote']}': {comment['body']}" for comment in comments)
             return f"Selected product document: {relative}. Read it from the repository if needed.\nReview comments:\n{review or 'None'}\n\n"
         columns = COMMENT_TARGETS[kind]
     except (ValueError, KeyError):
@@ -125,5 +147,5 @@ def document_context(db, campaign_id, selected):
     comments = comments_for(db, campaign_id, kind, item_id)
     row = db.execute(f"SELECT {', '.join(columns)} FROM {kind} WHERE id=? AND campaign_id=?", (item_id, campaign_id)).fetchone()
     content = "\n".join(f"{name}: {row[name]}" for name in columns)
-    review = "\n".join(f"Comment on '{comment['quote']}': {comment['body']}" for comment in comments)
+    review = "\n".join(f"Comment on lines {comment['line_start']}-{comment['line_end']} '{comment['quote']}': {comment['body']}" for comment in comments)
     return f"Selected document ({kind} #{item_id}):\n{content}\nReview comments:\n{review or 'None'}\n\n"

@@ -117,7 +117,6 @@
   "workspace.stale_quote": "Ce passage a changé dans le document ; vérifiez l'ancrage.",
   "workspace.locate_quote": "Afficher ce passage dans le document",
   "workspace.no_document_comment": "Choisissez un document à relire.",
-  "workspace.select_text": "Sélectionnez du texte dans le document pour le citer ici.",
   "workspace.you": "Vous",
   "workspace.running": "Le CLI travaille…",
   "workspace.chat_start": "Construisez la campagne en conversation",
@@ -128,7 +127,7 @@
   "workspace.playbook_explore": "Explorer une direction",
   "workspace.playbook_explore_prompt": "À partir du document ouvert, propose deux directions vraiment différentes pour la campagne. Distingue les faits établis de l'invention et nomme le choix que le MJ doit faire.",
   "workspace.playbook_revise": "Traiter les commentaires",
-  "workspace.playbook_revise_prompt": "Traite les commentaires du document ouvert. Propose une formulation de remplacement précise pour le passage cité et explique ce qu'elle change. Garde-la comme brouillon ; ne modifie pas le canon.",
+  "workspace.playbook_revise_prompt": "Traite les commentaires du document ouvert. Si c’est un document produit, modifie le fichier dans le brouillon et résume le diff. Si c’est un document de campagne, propose une formulation précise à relire par le MJ ; ne modifie pas le canon.",
   "workspace.playbook_prepare": "Préparer une séance",
   "workspace.playbook_prepare_prompt": "À partir du document ouvert et des faits établis, prépare une situation jouable pour la prochaine séance : enjeux, intentions des PNJ, branches plausibles, références et éléments manquants.",
   "workspace.playbook_conflict": "Examiner une contradiction",
@@ -136,7 +135,6 @@
   "workspace.send": "Envoyer",
   "workspace.prompt_hint": "Discutez d'une scène, posez une question ou demandez une révision…",
   "workspace.send_notice": "L'envoi transmet ce contexte de campagne au CLI choisi. Les réponses ne modifient pas directement les faits établis.",
-  "workspace.cli_read_only": "CLI · lecture seule",
   "workspace.cli_idle": "CLI prêt · aucune conversation",
   "workspace.terminal": "État du CLI",
   "workspace.status_running": "En cours",
@@ -149,5 +147,9 @@
   "error.quote_missing": "Le passage cité ne figure pas dans ce document.",
   "error.unknown_provider": "CLI assistant inconnu.",
   "error.provider_missing": "Le CLI choisi n'est pas installé.",
-  "error.agent_busy": "Un assistant travaille déjà. Réessayez lorsqu'il a terminé."
+  "error.agent_busy": "Un assistant travaille déjà. Réessayez lorsqu'il a terminé.",
+  "workspace.select_lines": "Cliquez sur un numéro de ligne, Maj-clic pour une plage, ou sélectionnez du texte pour commenter ici.",
+  "workspace.cli_draft": "CLI · brouillon modifiable",
+  "workspace.draft_changes": "Modifications du brouillon à relire",
+  "error.line_range": "Plage de lignes invalide."
 }

@@ -1,5 +1,6 @@
 PYTHON ?= python3
-DB ?= data/campaign.db
+DATA_DIR ?= $(if $(TTRPG_DATA_DIR),$(TTRPG_DATA_DIR),$(if $(XDG_DATA_HOME),$(XDG_DATA_HOME),$(HOME)/.local/share)/ttrpg)
+DB ?= $(DATA_DIR)/campaign.db
 PORT ?= 8899
 
 .PHONY: doctor start test check fixture reset demo resume

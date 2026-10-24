@@ -117,7 +117,6 @@
   "workspace.stale_quote": "This passage changed in the document; review the anchor.",
   "workspace.locate_quote": "Show this passage in the document",
   "workspace.no_document_comment": "Choose a document to review.",
-  "workspace.select_text": "Select text in the document to quote it here.",
   "workspace.you": "You",
   "workspace.running": "The CLI is working…",
   "workspace.chat_start": "Work through the campaign in conversation",
@@ -128,7 +127,7 @@
   "workspace.playbook_explore": "Explore a direction",
   "workspace.playbook_explore_prompt": "Using the open document, propose two distinct directions for the campaign. Separate established facts from invention and name the choice the GM needs to make.",
   "workspace.playbook_revise": "Address review comments",
-  "workspace.playbook_revise_prompt": "Address the comments on the open document. Propose specific replacement wording for the cited passage and explain what it changes. Keep it a draft; do not alter canon.",
+  "workspace.playbook_revise_prompt": "Address the comments on the open document. If it is a product document, edit the file in the draft checkout and summarize the diff. If it is a campaign record, propose exact replacement wording for GM review; do not change canon.",
   "workspace.playbook_prepare": "Prepare a session",
   "workspace.playbook_prepare_prompt": "From the open document and established facts, draft a playable situation for the next session: stakes, NPC intentions, plausible player branches, references, and what is still missing.",
   "workspace.playbook_conflict": "Review a contradiction",
@@ -136,7 +135,6 @@
   "workspace.send": "Send",
   "workspace.prompt_hint": "Discuss a scene, ask a question, or request a revision…",
   "workspace.send_notice": "Sending shares this campaign context with the selected CLI. Replies cannot change canon directly.",
-  "workspace.cli_read_only": "CLI · read only",
   "workspace.cli_idle": "CLI ready · no conversation yet",
   "workspace.terminal": "CLI status",
   "workspace.status_running": "Working",
@@ -149,5 +147,9 @@
   "error.quote_missing": "The quoted passage is not in this document.",
   "error.unknown_provider": "Unknown assistant CLI.",
   "error.provider_missing": "The selected CLI is not installed.",
-  "error.agent_busy": "An assistant is already working. Try again when it finishes."
+  "error.agent_busy": "An assistant is already working. Try again when it finishes.",
+  "workspace.select_lines": "Click a line number, Shift-click for a range, or select text to comment here.",
+  "workspace.cli_draft": "CLI · editable draft",
+  "workspace.draft_changes": "Draft changes to review",
+  "error.line_range": "Invalid line range."
 }
