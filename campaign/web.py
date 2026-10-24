@@ -7,9 +7,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote as url_quote, urlparse
 
-from .agent_cli import CONTEXT, run_cli
+from .agent_cli import CONTEXT, apply_draft_file, run_cli
 from .core import DomainError
 from .i18n import locale, t
+from .prep_drafts import apply_preparation_draft, ensure_preparation_draft, restart_preparation_draft
 from .store import (add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, campaign_view, connect, correct_fact, create_campaign,
                     establish_fact, finish_agent_turn, journey_view, start_agent_turn)
@@ -207,6 +208,26 @@ def make_handler(db_path):
                                         char_offset=int(offset) if offset else None)
                             self._send(303, "", f"/workspace/{campaign_id}?doc={kind}:{item_id}")
                             return
+                        elif parts[2] == "apply-draft":
+                            file_id = int(val("file_id"))
+                            apply_draft_file(campaign_id, file_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=product_docs:{file_id}")
+                            return
+                        elif parts[2] == "start-preparation-draft":
+                            preparation_id = int(val("preparation_id"))
+                            ensure_preparation_draft(db, campaign_id, preparation_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=preparations:{preparation_id}")
+                            return
+                        elif parts[2] == "apply-preparation-draft":
+                            preparation_id = int(val("preparation_id"))
+                            apply_preparation_draft(db, campaign_id, preparation_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=preparations:{preparation_id}")
+                            return
+                        elif parts[2] == "restart-preparation-draft":
+                            preparation_id = int(val("preparation_id"))
+                            restart_preparation_draft(db, campaign_id, preparation_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=preparations:{preparation_id}")
+                            return
                         elif parts[2] == "chat":
                             if not chat_lock.acquire(blocking=False):
                                 self._send(409, page(f'<div class="error">{esc(t("error.agent_busy", language))}</div>', language=language))
@@ -214,6 +235,12 @@ def make_handler(db_path):
                             try:
                                 provider, prompt, selected = val("provider"), val("prompt"), val("doc")
                                 selected_context = document_context(db, campaign_id, selected) if selected else ""
+                                if selected.startswith("preparations:"):
+                                    preparation_id = int(selected.split(":", 1)[1])
+                                    draft_path = ensure_preparation_draft(db, campaign_id, preparation_id)
+                                    selected_context += (f"Editable private preparation draft: {draft_path}. "
+                                                         "Edit only the text between the field markers when revising this preparation. "
+                                                         "The GM reviews and accepts changes in the workspace.\n\n")
                                 prior = db.execute("SELECT session_id FROM agent_turns WHERE campaign_id=? AND provider=? AND status='complete' AND session_id IS NOT NULL ORDER BY id DESC LIMIT 1", (campaign_id, provider)).fetchone()
                                 turn_id = start_agent_turn(db, campaign_id, provider, prompt)
                                 facts = campaign_view(db, campaign_id)[3]

@@ -1,12 +1,15 @@
 """CLI conversation bridge using an isolated draft checkout per campaign."""
 
 import json
+import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from .core import DomainError
 from .paths import data_dir
+from .store import PRODUCT_DOCS
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -63,6 +66,45 @@ def draft_diff(campaign_id):
     result = subprocess.run(["git", "diff", "--no-ext-diff", "--"], cwd=path,
                             capture_output=True, text=True, check=True)
     return result.stdout[:30000]
+
+
+def draft_file_review(campaign_id, file_id):
+    if not 1 <= file_id <= len(PRODUCT_DOCS):
+        raise DomainError("error.item_missing")
+    relative = PRODUCT_DOCS[file_id - 1]
+    draft = data_dir() / "drafts" / f"campaign-{campaign_id}"
+    source = draft / relative
+    if not draft.is_dir() or not source.is_file() or not source.resolve().is_relative_to(draft.resolve()):
+        return None
+    base = subprocess.run(["git", "show", f"HEAD:{relative}"], cwd=draft,
+                          capture_output=True, check=True).stdout
+    proposed = source.read_bytes()
+    if proposed == base:
+        return None
+    current = (ROOT / relative).read_bytes()
+    status = "ready" if current == base else "applied" if current == proposed else "conflict"
+    diff = subprocess.run(["git", "diff", "--no-ext-diff", "--", relative], cwd=draft,
+                          capture_output=True, text=True, check=True).stdout
+    return {"relative": relative, "status": status, "diff": diff[:30000], "proposed": proposed, "base": base}
+
+
+def apply_draft_file(campaign_id, file_id):
+    review = draft_file_review(campaign_id, file_id)
+    if review is None:
+        raise DomainError("error.draft_missing")
+    if review["status"] != "ready":
+        raise DomainError("error.draft_conflict")
+    target = ROOT / review["relative"]
+    with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as temporary:
+        temporary.write(review["proposed"])
+        temporary_path = Path(temporary.name)
+    try:
+        temporary_path.chmod(target.stat().st_mode)
+        if target.read_bytes() != review["base"]:
+            raise DomainError("error.draft_conflict")
+        os.replace(temporary_path, target)
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
 
 def run_cli(provider, prompt, previous_session=None, campaign_id=1):

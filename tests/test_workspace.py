@@ -10,10 +10,14 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from campaign.agent_cli import parse_claude, parse_codex, run_cli
+from campaign.agent_cli import (apply_draft_file, draft_checkout, draft_file_review,
+                                parse_claude, parse_codex, run_cli)
 from campaign.core import DomainError
 from campaign.paths import data_dir
 from campaign.markdown import render_blocks
+from campaign.prep_drafts import (apply_preparation_draft, ensure_preparation_draft,
+                                  preparation_draft_review, restart_preparation_draft)
+from campaign.skills import available_skills
 from campaign.store import (add_comment, add_observation, add_preparation, add_proposal,
                             add_source, agent_turns, comments_for, connect,
                             create_campaign, establish_fact, product_doc)
@@ -22,6 +26,91 @@ from campaign.workspace import render_workspace
 
 
 class WorkspaceTest(unittest.TestCase):
+    def test_private_preparation_draft_requires_gm_acceptance(self):
+        with tempfile.TemporaryDirectory() as directory, closing(connect(Path(directory) / "db.sqlite")) as db:
+            cid = create_campaign(db, "Ford")
+            other = create_campaign(db, "Other")
+            source = add_source(db, cid, "Note", "p. 1", "Mira watches the ford")
+            observation = add_observation(db, cid, source, "Mira watches the ford")
+            fact = establish_fact(db, cid, observation, "Accept", "Mira watches the ford")
+            proposal = add_proposal(db, cid, source, "Wait for a guide")
+            prep = add_preparation(db, cid, fact, proposal, "Travelers arrive", "Wait or cross")
+            state = Path(directory) / "private"
+            checkout = state / "drafts" / f"campaign-{cid}"
+            checkout.mkdir(parents=True)
+            with patch("campaign.prep_drafts.data_dir", return_value=state), patch(
+                "campaign.prep_drafts.draft_checkout", return_value=checkout
+            ):
+                path = ensure_preparation_draft(db, cid, prep)
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "unchanged")
+                with self.assertRaises(DomainError):
+                    ensure_preparation_draft(db, other, prep)
+                path.write_text(path.read_text().replace("Travelers arrive", "Travelers reach the ford"))
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "ready")
+                self.assertEqual(db.execute("SELECT situation FROM preparations WHERE id=?", (prep,)).fetchone()[0], "Travelers arrive")
+                apply_preparation_draft(db, cid, prep)
+                self.assertEqual(db.execute("SELECT situation FROM preparations WHERE id=?", (prep,)).fetchone()[0], "Travelers reach the ford")
+                self.assertEqual(db.execute("SELECT count(*) FROM preparation_revisions").fetchone()[0], 1)
+                self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 1)
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "applied")
+                accepted = path.read_text()
+                path.write_text(path.read_text().replace("<!-- field:situation -->", ""))
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "invalid")
+                with self.assertRaises(DomainError):
+                    apply_preparation_draft(db, cid, prep)
+                path.write_text(accepted.replace("# Preparation #1", "# Edited title"))
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "invalid")
+                path.write_text(accepted)
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "applied")
+                restart_preparation_draft(db, cid, prep)
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "unchanged")
+                path.write_text(path.read_text().replace("Wait or cross", "Cross at dusk"))
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "ready")
+                db.execute("UPDATE preparations SET situation=? WHERE id=?", ("Another GM edit", prep))
+                db.commit()
+                self.assertEqual(preparation_draft_review(db, cid, prep)["status"], "conflict")
+                with self.assertRaises(DomainError):
+                    apply_preparation_draft(db, cid, prep)
+
+    def test_local_skill_catalog_excludes_hidden_folders(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skill = root / ".agents/skills/story-review"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text("---\nname: story-review\ndescription: Review a scene.\n---\n")
+            hidden = root / ".agents/skills/.trash/old"
+            hidden.mkdir(parents=True)
+            (hidden / "SKILL.md").write_text("---\nname: hidden\ndescription: Old.\n---\n")
+            with patch("campaign.skills.ROOT", root), patch("campaign.skills.Path.home", return_value=root):
+                self.assertEqual(available_skills(), [("story-review", "Review a scene.", "Shared")])
+
+    def test_reviewed_draft_applies_once_and_refuses_conflicts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "repo"
+            root.mkdir()
+            (root / "docs").mkdir()
+            target = root / "docs/WORKFLOW.md"
+            target.write_text("Original\n")
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "add", "docs/WORKFLOW.md"], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                            "commit", "-qm", "base"], check=True)
+            state = Path(directory) / "private"
+            with patch("campaign.agent_cli.ROOT", root), patch("campaign.agent_cli.data_dir", return_value=state):
+                draft = draft_checkout(1)
+                (draft / "docs/WORKFLOW.md").write_text("Proposed\n")
+                self.assertEqual(draft_file_review(1, 5)["status"], "ready")
+                apply_draft_file(1, 5)
+                self.assertEqual(target.read_text(), "Proposed\n")
+                self.assertEqual(draft_file_review(1, 5)["status"], "applied")
+                target.write_text("Manual edit\n")
+                self.assertEqual(draft_file_review(1, 5)["status"], "conflict")
+                with self.assertRaises(DomainError):
+                    apply_draft_file(1, 5)
+                self.assertEqual(target.read_text(), "Manual edit\n")
+                with self.assertRaises(DomainError):
+                    apply_draft_file(1, 99)
+
     def test_private_storage_path_is_configurable_outside_checkout(self):
         with patch.dict("os.environ", {"TTRPG_DATA_DIR": "/tmp/private-campaigns"}):
             self.assertEqual(data_dir(), Path("/tmp/private-campaigns"))
@@ -149,6 +238,9 @@ class WorkspaceTest(unittest.TestCase):
             with patch("campaign.web.run_cli", return_value=("A possible revision", "session-1", True)) as cli:
                 post("/campaign/1/chat", {"provider": "codex", "doc": "sources:1", "prompt": "Revise Mira"}).close()
             self.assertIn("Check the bell", cli.call_args.args[1])
+            with patch("campaign.web.apply_draft_file") as apply:
+                post("/campaign/1/apply-draft", {"file_id": 5}).close()
+            apply.assert_called_once_with(1, 5)
             with closing(connect(db_path)) as db:
                 turn = agent_turns(db, cid)[0]
                 self.assertEqual((turn["response"], turn["status"], turn["session_id"]),

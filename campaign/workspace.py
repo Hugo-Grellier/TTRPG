@@ -3,9 +3,11 @@
 import html
 from pathlib import Path
 
-from .agent_cli import draft_diff
+from .agent_cli import draft_diff, draft_file_review
 from .i18n import locale, t
 from .markdown import render_blocks, visible_text
+from .prep_drafts import preparation_draft_review
+from .skills import available_skills
 from .store import (COMMENT_TARGETS, PRODUCT_DOCS, agent_turns, campaign_view,
                     comments_for, journey_view, product_doc)
 
@@ -112,11 +114,37 @@ def render_workspace(db, campaign_id, selected=""):
         short_path = str(database_file).replace(str(Path.home()), "~", 1)
         if kind == "product_docs":
             storage = f'<span>{tr("workspace.product_file")}: {esc(title)}</span>'
+            review = draft_file_review(campaign_id, item_id)
+            if review:
+                action = (f'<form method="post" action="/campaign/{campaign_id}/apply-draft"><input type="hidden" name="file_id" value="{item_id}">'
+                          f'<button>{tr("workspace.apply_draft")}</button></form>') if review["status"] == "ready" else ''
+                draft_review_html = (f'<details class="file-review" open><summary>{tr("workspace.file_review")} · {esc(review["relative"])}</summary>'
+                                     f'<p>{tr("workspace.draft_" + review["status"])}</p><pre>{esc(review["diff"])}</pre>{action}</details>')
+            else:
+                draft_review_html = ""
         else:
+            if kind == "preparations":
+                prep_review = preparation_draft_review(db, campaign_id, item_id)
+                if prep_review is None:
+                    draft_review_html = (f'<form class="prep-draft-start" method="post" action="/campaign/{campaign_id}/start-preparation-draft">'
+                                         f'<input type="hidden" name="preparation_id" value="{item_id}"><button>{tr("workspace.start_prep_draft")}</button></form>')
+                else:
+                    action = (f'<form method="post" action="/campaign/{campaign_id}/apply-preparation-draft">'
+                              f'<input type="hidden" name="preparation_id" value="{item_id}"><button>{tr("workspace.apply_prep_draft")}</button></form>') if prep_review["status"] == "ready" else ''
+                    if prep_review["status"] == "applied":
+                        action = (f'<form method="post" action="/campaign/{campaign_id}/restart-preparation-draft">'
+                                  f'<input type="hidden" name="preparation_id" value="{item_id}"><button>{tr("workspace.restart_prep_draft")}</button></form>')
+                    prep_diff_html = f'<pre>{esc(prep_review["diff"])}</pre>' if prep_review["diff"] else ''
+                    draft_review_html = (f'<details class="file-review prep-review" open><summary>{tr("workspace.prep_draft_review")}</summary>'
+                                         f'<p>{tr("workspace.draft_" + prep_review["status"])}</p>'
+                                         f'<code>{esc(prep_review["path"])}</code>'
+                                         f'{prep_diff_html}{action}</details>')
+            else:
+                draft_review_html = ""
             export = (f'<span class="export-actions"><a href="/campaign/{campaign_id}/preparation/{item_id}.md" download="preparation-{item_id}.md">{tr("workspace.export_md")}</a>'
                       f'<small>{tr("workspace.export_copy")}</small></span>') if kind == "preparations" else ''
             storage = f'<span>{tr("workspace.campaign_storage")}: <code title="{esc(database_file)}">{esc(short_path)}</code></span>{export}'
-        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2><div class="document-storage">{storage}</div>{section_html}</article>'
+        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2><div class="document-storage">{storage}</div>{draft_review_html}{section_html}</article>'
         def comment_row(row):
             anchor = f'L{row["line_start"]}' + (f'–{row["line_end"]}' if row["line_end"] != row["line_start"] else '') if row['line_start'] else ''
             quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" data-offset="{row["char_offset"] if row["char_offset"] is not None else ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
@@ -140,7 +168,7 @@ def render_workspace(db, campaign_id, selected=""):
         selected_key = ""
     turns = agent_turns(db, campaign_id)
     diff = draft_diff(campaign_id)
-    draft_html = f'<details class="draft-diff" open><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
+    draft_html = f'<details class="draft-diff" {"" if product_view else "open"}><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
     messages = "".join(f'<div class="message"><div class="message-head">{tr("workspace.you")} <small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div><div class="message assistant {"failed" if row["status"] == "error" else ""}"><div class="message-head">{esc("Claude Code" if row["provider"] == "claude" else "Codex")} <small>{tr("workspace.status_" + row["status"])}</small></div><p>{esc(row["response"] or t("workspace.running", language))}</p></div>' for row in turns)
     if not messages:
         messages = f'<div class="empty-chat"><h2>{tr("workspace.chat_start")}</h2><p>{tr("workspace.chat_hint")}</p></div>'
@@ -148,6 +176,8 @@ def render_workspace(db, campaign_id, selected=""):
     provider_options = "".join(f'<option value="{name}" {"selected" if name == provider else ""}>{esc(label)}</option>' for name, label in (("codex", "Codex"), ("claude", "Claude Code")))
     playbooks = ("explore", "revise", "prepare", "conflict")
     playbook_options = "".join(f'<option value="{name}" data-prompt="{tr("workspace.playbook_" + name + "_prompt")}">{tr("workspace.playbook_" + name)}</option>' for name in playbooks)
+    skills = available_skills()
+    skill_options = "".join(f'<option value="{esc(name)}" data-description="{esc(description)}" label="{esc(origin)} · {esc(description[:70])}"></option>' for name, description, origin in skills)
     terminal = (f'{turns[-1]["provider"]} · {t("workspace.status_" + turns[-1]["status"], language)} · session {turns[-1]["session_id"] or "—"}' if turns else t("workspace.cli_idle", language))
     return f'''<!doctype html><html lang="{locale(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(campaign['name'])} · {tr('workspace.title')}</title><link rel="stylesheet" href="/assets/workspace.css"></head>
       <body><div class="app-shell">
@@ -160,6 +190,7 @@ def render_workspace(db, campaign_id, selected=""):
           <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form">
             <input type="hidden" name="doc" value="{esc(selected_key)}">
             <label for="playbook">{tr('workspace.playbook')}</label><select id="playbook"><option value="">{tr('workspace.playbook_none')}</option>{playbook_options}</select>
+            <details class="skill-picker" data-instruction="{tr('workspace.skill_instruction')}"><summary>{tr('workspace.skills')} ({len(skills)})</summary><label for="skill-search">{tr('workspace.skill_search')}</label><input id="skill-search" list="skill-options" autocomplete="off" placeholder="{tr('workspace.skill_placeholder')}"><datalist id="skill-options">{skill_options}</datalist><p id="skill-description" class="composer-note">{tr('workspace.skill_hint')}</p><button type="button" id="add-skill">{tr('workspace.add_skill')}</button></details>
             <label for="prompt">{tr('field.message')}</label><textarea id="prompt" name="prompt" rows="3" maxlength="4000" required placeholder="{tr('workspace.prompt_hint')}"></textarea>
             <div class="composer-actions"><select name="provider" aria-label="{tr('workspace.provider')}">{provider_options}</select><button>{tr('workspace.send')}</button></div>
             <p class="composer-note">{tr('workspace.send_notice')}</p>

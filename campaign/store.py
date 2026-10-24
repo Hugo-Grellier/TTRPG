@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS preparations (
   FOREIGN KEY (fact_id, campaign_id) REFERENCES facts(id, campaign_id),
   FOREIGN KEY (proposal_id, campaign_id) REFERENCES proposals(id, campaign_id)
 );
+CREATE TABLE IF NOT EXISTS preparation_revisions (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  preparation_id INTEGER NOT NULL, old_situation TEXT NOT NULL, old_alternatives TEXT NOT NULL,
+  new_situation TEXT NOT NULL, new_alternatives TEXT NOT NULL,
+  decided_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (preparation_id, campaign_id) REFERENCES preparations(id, campaign_id)
+);
 CREATE TABLE IF NOT EXISTS simulated_events (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
   preparation_id INTEGER NOT NULL, observation_id INTEGER NOT NULL,
@@ -183,6 +190,21 @@ def add_preparation(db, campaign_id, fact_id, proposal_id, situation, alternativ
     with db:
         return db.execute("INSERT INTO preparations(campaign_id, fact_id, proposal_id, situation, alternatives) VALUES (?, ?, ?, ?, ?)",
                           (campaign_id, fact_id, proposal_id, situation, alternatives)).lastrowid
+
+
+def revise_preparation(db, campaign_id, preparation_id, situation, alternatives, access="gm"):
+    visibility(access)
+    situation = required(situation, "field.situation", 2000)
+    alternatives = required(alternatives, "field.alternatives", 2000)
+    _owned(db, "preparations", preparation_id, campaign_id)
+    current = db.execute("SELECT situation, alternatives FROM preparations WHERE id=? AND campaign_id=?",
+                         (preparation_id, campaign_id)).fetchone()
+    with db:
+        db.execute("""INSERT INTO preparation_revisions(campaign_id, preparation_id, old_situation, old_alternatives,
+          new_situation, new_alternatives) VALUES (?, ?, ?, ?, ?, ?)""",
+          (campaign_id, preparation_id, current["situation"], current["alternatives"], situation, alternatives))
+        db.execute("UPDATE preparations SET situation=?, alternatives=? WHERE id=? AND campaign_id=?",
+                   (situation, alternatives, preparation_id, campaign_id))
 
 
 def add_simulated_event(db, campaign_id, preparation_id, player_action, ruling, access="gm"):

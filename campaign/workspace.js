@@ -104,6 +104,23 @@ if (playbook && chatForm) playbook.addEventListener('change', () => {
     prompt.focus();
   }
 });
+const skillSearch = document.getElementById('skill-search');
+if (skillSearch && chatForm) {
+  const description = document.getElementById('skill-description');
+  const options = [...document.querySelectorAll('#skill-options option')];
+  const selectedSkill = () => options.find(option => option.value === skillSearch.value.trim());
+  skillSearch.addEventListener('input', () => {
+    description.textContent = selectedSkill()?.dataset.description || '';
+  });
+  document.getElementById('add-skill').addEventListener('click', () => {
+    const skill = selectedSkill();
+    if (!skill) return;
+    const prompt = chatForm.querySelector('#prompt');
+    const instruction = skillSearch.closest('.skill-picker').dataset.instruction.replace('__SKILL__', skill.value);
+    if (!prompt.value.includes(instruction)) prompt.value = [prompt.value.trim(), instruction].filter(Boolean).join('\n\n');
+    prompt.focus();
+  });
+}
 if (chatForm) chatForm.addEventListener('submit', () => {
   const button = chatForm.querySelector('button');
   button.disabled = true;
