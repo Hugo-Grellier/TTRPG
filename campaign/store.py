@@ -72,6 +72,27 @@ CREATE TABLE IF NOT EXISTS corrections (
   FOREIGN KEY (old_fact_id, campaign_id) REFERENCES facts(id, campaign_id),
   FOREIGN KEY (new_fact_id, campaign_id) REFERENCES facts(id, campaign_id)
 );
+CREATE TABLE IF NOT EXISTS document_comments (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  target_kind TEXT NOT NULL CHECK (target_kind IN ('sources', 'proposals', 'preparations', 'facts', 'simulated_events')),
+  target_id INTEGER NOT NULL, quote TEXT NOT NULL, body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm')
+);
+CREATE TABLE IF NOT EXISTS agent_turns (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  provider TEXT NOT NULL CHECK (provider IN ('codex', 'claude')),
+  prompt TEXT NOT NULL, response TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL CHECK (status IN ('running', 'complete', 'error')),
+  session_id TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS product_comments (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  file_id INTEGER NOT NULL CHECK (file_id BETWEEN 1 AND 5),
+  quote TEXT NOT NULL, body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm')
+);
 """
 
 
@@ -205,6 +226,87 @@ def journey_view(db, campaign_id):
       JOIN facts old ON old.id=c.old_fact_id JOIN facts new ON new.id=c.new_fact_id
       WHERE c.campaign_id=? ORDER BY new.id DESC""", (campaign_id,)).fetchall()
     return proposals, preparations, events, corrections
+
+
+COMMENT_TARGETS = {
+    "sources": ("title", "locator", "note"),
+    "proposals": ("text",),
+    "preparations": ("situation", "alternatives"),
+    "facts": ("text",),
+    "simulated_events": ("player_action", "ruling"),
+}
+PRODUCT_DOCS = (
+    "VISION.md",
+    "docs/PRODUCT_PRINCIPLES.md",
+    "docs/ARCHITECTURE.md",
+    "docs/ROADMAP.md",
+    "docs/WORKFLOW.md",
+)
+
+
+def product_doc(file_id):
+    if not 1 <= file_id <= len(PRODUCT_DOCS):
+        raise DomainError("error.item_missing")
+    relative = PRODUCT_DOCS[file_id - 1]
+    return relative, (Path(__file__).resolve().parent.parent / relative).read_text(encoding="utf-8")
+
+
+def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm"):
+    visibility(access)
+    if target_kind not in COMMENT_TARGETS and target_kind != "product_docs":
+        raise DomainError("error.item_missing")
+    if target_kind == "product_docs":
+        _campaign(db, campaign_id)
+        _, document_text = product_doc(target_id)
+    else:
+        _owned(db, target_kind, target_id, campaign_id)
+        columns = ", ".join(COMMENT_TARGETS[target_kind])
+        row = db.execute(f"SELECT {columns} FROM {target_kind} WHERE id=?", (target_id,)).fetchone()
+        document_text = " ".join(str(value) for value in row)
+    quote = quote.strip()
+    if len(quote) > 500:
+        raise DomainError("error.required", label="field.quote", limit=500)
+    body = required(body, "field.comment", 2000)
+    if quote and quote not in document_text:
+        raise DomainError("error.quote_missing")
+    with db:
+        if target_kind == "product_docs":
+            return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body) VALUES (?, ?, ?, ?)",
+                              (campaign_id, target_id, quote, body)).lastrowid
+        return db.execute("INSERT INTO document_comments(campaign_id, target_kind, target_id, quote, body) VALUES (?, ?, ?, ?, ?)",
+                          (campaign_id, target_kind, target_id, quote, body)).lastrowid
+
+
+def comments_for(db, campaign_id, target_kind, target_id):
+    if target_kind == "product_docs":
+        _campaign(db, campaign_id)
+        product_doc(target_id)
+        return db.execute("SELECT * FROM product_comments WHERE campaign_id=? AND file_id=? ORDER BY id",
+                          (campaign_id, target_id)).fetchall()
+    _owned(db, target_kind, target_id, campaign_id)
+    return db.execute("SELECT * FROM document_comments WHERE campaign_id=? AND target_kind=? AND target_id=? ORDER BY id",
+                      (campaign_id, target_kind, target_id)).fetchall()
+
+
+def start_agent_turn(db, campaign_id, provider, prompt):
+    _campaign(db, campaign_id)
+    if provider not in ("codex", "claude"):
+        raise DomainError("error.unknown_provider")
+    prompt = required(prompt, "field.message", 4000)
+    with db:
+        return db.execute("INSERT INTO agent_turns(campaign_id, provider, prompt, status) VALUES (?, ?, ?, 'running')",
+                          (campaign_id, provider, prompt)).lastrowid
+
+
+def finish_agent_turn(db, turn_id, response, status, session_id=None):
+    with db:
+        db.execute("UPDATE agent_turns SET response=?, status=?, session_id=? WHERE id=?",
+                   (response[:20000], status, session_id, turn_id))
+
+
+def agent_turns(db, campaign_id):
+    _campaign(db, campaign_id)
+    return db.execute("SELECT * FROM agent_turns WHERE campaign_id=? ORDER BY id", (campaign_id,)).fetchall()
 
 
 def _campaign(db, campaign_id):

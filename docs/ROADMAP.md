@@ -23,6 +23,15 @@
 - **Known limitations:** manually authored preparation and simulation; one-hop consequence search; correction flags dependent prep sheets for GM review without rewriting them; no player publication route, real session, or PDF.
 - **Delivered units:** proposal revisions, fact correction and dependent-prep warning, prep linked to canon, simulated event and explicit GM consolidation, linked consequence search, browser journey and adversarial QA.
 
+### M1.5 — Conversation-first campaign workspace
+
+- **User outcome:** discuss the campaign with Codex or Claude Code beside the relevant document, comment on an exact passage, and keep a suggested revision separate from canon until the GM acts.
+- **Demonstration:** open the fictional Mira prep in a three-pane workspace, select a passage, leave a comment, ask Codex to address it, continue the same conversation, switch to Claude Code, and review a proposed document change. A terminal is optional.
+- **Success criteria:** actual CLI sessions and resume, campaign language and selected-document context, comments anchored to private documents, workflows/skills discoverable from chat, proposed edits reviewable before acceptance, no direct agent write to durable campaign memory, and usable layout at desktop and mobile widths.
+- **Dependencies/risks:** installed and authenticated CLIs, subscription limits, read-only provider execution until a reviewed write path exists, and a clear review model for document revisions.
+- **Status:** I partial (IDE-like shell, passage comments on campaign and product docs, editable playbook prompts, and read-only CLI chat); T partial (HTTP and domain checks); D partial (local Chrome render and comment interaction, actual two-turn Codex conversation and Claude Code reply through the workspace); P no. Next ready unit: make skills discoverable and document revision review concrete.
+- **Known limitations:** CLI replies are synchronous; no streaming, terminal input, document edit application, or player publication. The bottom strip shows CLI state only.
+
 ## Later
 
 ### M2 — Editorial dossier and long memory

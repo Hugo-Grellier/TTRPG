@@ -2,6 +2,7 @@ import tempfile
 import threading
 import unittest
 import sqlite3
+from contextlib import closing
 from string import Formatter
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -111,7 +112,7 @@ class CampaignRulesTest(unittest.TestCase):
 
         with post("/campaign", {"name": "HTTP", "language": "en"}) as response:
             self.assertEqual(response.status, 200)  # urllib follows 303.
-        with connect(Path(self.tmp.name) / "http.db") as db:
+        with closing(connect(Path(self.tmp.name) / "http.db")) as db:
             cid = db.execute("SELECT id FROM campaigns WHERE name='HTTP'").fetchone()[0]
         post(f"/campaign/{cid}/source", {"title": "Notebook", "locator": "page 7", "note": "Test"}).close()
         post(f"/campaign/{cid}/observation", {"source_id": "1", "text": "Mira promises", "kind": "simulated_play"}).close()
@@ -132,7 +133,7 @@ class CampaignRulesTest(unittest.TestCase):
         self.assertIn("Revised crossing", body)
         self.assertIn("Take the boat", body)
         self.assertIn("Awaiting GM consolidation", body)
-        with connect(Path(self.tmp.name) / "http.db") as db:
+        with closing(connect(Path(self.tmp.name) / "http.db")) as db:
             event_observation = journey_view(db, cid)[2][0]["observation_id"]
         post(f"/campaign/{cid}/fact", {"observation_id": str(event_observation), "instruction": "Confirm", "fact": "The boat crosses safely"}).close()
         post(f"/campaign/{cid}/correction", {"old_fact_id": "1", "observation_id": "1", "instruction": "Correct", "fact": "Mira promises the crossing only at dawn"}).close()

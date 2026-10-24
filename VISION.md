@@ -37,7 +37,7 @@ A long import shows progress, preserves completed parts with a provisional statu
 
 ### Design and maintain the campaign
 
-The campaign workspace is a dedicated place to work, usable without Foundry. Conversation is for discussion and direction; editorial views show the result. The GM can annotate a character, location, scene, or passage as in a document review, request a local correction, and return to chat for broader direction. Tone and editorial style may evolve over a long campaign; the assistant learns from the GM's instructions, examples, and corrections.
+The campaign workspace is a dedicated place to work, usable without Foundry. Its main interface is closer to an IDE than a sequence of web forms: a conversation directly connected to Codex or Claude Code, a navigable campaign dossier, and comments anchored in the document being reviewed. Workflows, playbooks, and skills should be available from that conversation. A terminal may be offered for users who want it, without making terminal knowledge necessary to run a campaign. The GM can annotate a character, location, scene, or passage, request a local correction, and return to chat for broader direction. Editorial views show the result, and consequential changes remain reviewable before they enter canon. Tone and editorial style may evolve over a long campaign; the assistant learns from the GM's instructions, examples, and corrections.
 
 The desired dossier has the readability and usefulness of an AP, with the living memory of this table. It includes at least:
 

@@ -1,15 +1,19 @@
 """Small local GM workbench. No player or remote access surface yet."""
 
 import html
+import threading
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from pathlib import Path
+from urllib.parse import parse_qs, quote as url_quote, urlparse
 
+from .agent_cli import CONTEXT, run_cli
 from .core import DomainError
 from .i18n import locale, t
-from .store import (add_observation, add_preparation, add_proposal, add_simulated_event,
+from .store import (add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, campaign_view, connect, correct_fact, create_campaign,
-                    establish_fact, journey_view)
+                    establish_fact, finish_agent_turn, journey_view, start_agent_turn)
+from .workspace import document_context, render_workspace
 
 
 def esc(value):
@@ -44,7 +48,7 @@ def render_home(db, language="en"):
     language = locale(language)
     tr = lambda key: esc(t(key, language))
     campaigns = db.execute("SELECT * FROM campaigns ORDER BY id DESC").fetchall()
-    rows = "".join(f'<div class="row"><a href="/campaign/{c["id"]}">{esc(c["name"])}</a> <small>· {esc(c["language"])}</small></div>' for c in campaigns)
+    rows = "".join(f'<div class="row"><a href="/workspace/{c["id"]}">{esc(c["name"])}</a> <small>· {esc(c["language"])}</small></div>' for c in campaigns)
     switch = f'<a href="/?lang=fr">{tr("home.switch_fr")}</a>' if language == "en" else f'<a href="/?lang=en">{tr("home.switch_en")}</a>'
     return page(f"""<p>{switch}</p><h1>{tr('home.title')}</h1><p class="lead">{tr('home.lead')}</p><div class="grid"><section><h2>{tr('home.campaigns')}</h2>{rows or f'<p class="muted">{tr("home.empty")}</p>'}</section><section><h2>{tr('home.new')}</h2><form method="post" action="/campaign"><label for="name">{tr('field.name')}</label><input id="name" name="name" maxlength="100" required><label for="language">{tr('field.language')}</label><input id="language" name="language" value="{esc(language)}" maxlength="16" required><button>{tr('action.create')}</button></form></section></div>""", language=language)
 
@@ -104,15 +108,17 @@ def render_campaign(db, campaign_id, query=""):
 
 
 def make_handler(db_path):
+    chat_lock = threading.Lock()
+
     class Handler(BaseHTTPRequestHandler):
-        def _send(self, status, body, location=None):
+        def _send(self, status, body, location=None, content_type="text/html; charset=utf-8"):
             data = body.encode("utf-8")
             self.send_response(status)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "same-origin")
-            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; form-action 'self'; base-uri 'none'")
             if location:
                 self.send_header("Location", location)
             self.end_headers()
@@ -123,9 +129,16 @@ def make_handler(db_path):
                 return
             parsed = urlparse(self.path)
             try:
+                if parsed.path in ("/assets/workspace.css", "/assets/workspace.js"):
+                    asset = Path(__file__).with_name(parsed.path.rsplit("/", 1)[-1])
+                    content_type = "text/css; charset=utf-8" if asset.suffix == ".css" else "text/javascript; charset=utf-8"
+                    self._send(200, asset.read_text(encoding="utf-8"), content_type=content_type)
+                    return
                 with closing(connect(db_path)) as db:
                     if parsed.path == "/":
                         body = render_home(db, parse_qs(parsed.query).get("lang", ["en"])[0][:16])
+                    elif parsed.path.startswith("/workspace/"):
+                        body = render_workspace(db, int(parsed.path.split("/")[2]), parse_qs(parsed.query).get("doc", [""])[0][:80])
                     elif parsed.path.startswith("/campaign/"):
                         body = render_campaign(db, int(parsed.path.split("/")[2]), parse_qs(parsed.query).get("q", [""])[0][:200])
                     else:
@@ -159,9 +172,10 @@ def make_handler(db_path):
                         campaign_id = create_campaign(db, val("name"), val("language"))
                     elif len(parts) == 3 and parts[0] == "campaign":
                         campaign_id = int(parts[1])
-                        row = db.execute("SELECT language FROM campaigns WHERE id=?", (campaign_id,)).fetchone()
-                        if row:
-                            language = row[0]
+                        row = db.execute("SELECT name, language FROM campaigns WHERE id=?", (campaign_id,)).fetchone()
+                        if row is None:
+                            raise DomainError("error.campaign_missing")
+                        language = row["language"]
                         if parts[2] == "source":
                             add_source(db, campaign_id, val("title"), val("locator"), val("note"))
                         elif parts[2] == "observation":
@@ -176,6 +190,32 @@ def make_handler(db_path):
                             add_simulated_event(db, campaign_id, int(val("preparation_id")), val("player_action"), val("ruling"))
                         elif parts[2] == "correction":
                             correct_fact(db, campaign_id, int(val("old_fact_id")), int(val("observation_id")), val("instruction"), val("fact"))
+                        elif parts[2] == "comment":
+                            kind, item_id = val("target_kind"), int(val("target_id"))
+                            add_comment(db, campaign_id, kind, item_id, val("quote"), val("body"))
+                            self._send(303, "", f"/workspace/{campaign_id}?doc={kind}:{item_id}")
+                            return
+                        elif parts[2] == "chat":
+                            if not chat_lock.acquire(blocking=False):
+                                self._send(409, page(f'<div class="error">{esc(t("error.agent_busy", language))}</div>', language=language))
+                                return
+                            try:
+                                provider, prompt, selected = val("provider"), val("prompt"), val("doc")
+                                selected_context = document_context(db, campaign_id, selected) if selected else ""
+                                prior = db.execute("SELECT session_id FROM agent_turns WHERE campaign_id=? AND provider=? AND status='complete' AND session_id IS NOT NULL ORDER BY id DESC LIMIT 1", (campaign_id, provider)).fetchone()
+                                turn_id = start_agent_turn(db, campaign_id, provider, prompt)
+                                facts = campaign_view(db, campaign_id)[3]
+                                known = "\n".join(f"- {fact['text']} ({fact['source_title']} · {fact['locator']})" for fact in facts[:20])
+                                cli_prompt = f"{CONTEXT}Campaign: {row['name']}\nLanguage: {language}\nEstablished facts:\n{known or 'None'}\n\n{selected_context}GM message:\n{prompt}"
+                                try:
+                                    response, session_id, success = run_cli(provider, cli_prompt, prior[0] if prior else None)
+                                except DomainError as exc:
+                                    response, session_id, success = exc.localized(language), None, False
+                                finish_agent_turn(db, turn_id, response, "complete" if success else "error", session_id)
+                                self._send(303, "", f"/workspace/{campaign_id}?doc={url_quote(selected, safe=':')}")
+                                return
+                            finally:
+                                chat_lock.release()
                         else:
                             raise DomainError("error.unknown_action")
                     else:
