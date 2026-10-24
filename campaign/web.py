@@ -13,7 +13,7 @@ from .i18n import locale, t
 from .store import (add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, campaign_view, connect, correct_fact, create_campaign,
                     establish_fact, finish_agent_turn, journey_view, start_agent_turn)
-from .workspace import document_context, render_workspace
+from .workspace import document_context, preparation_markdown, render_workspace
 
 
 def esc(value):
@@ -111,7 +111,7 @@ def make_handler(db_path):
     chat_lock = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
-        def _send(self, status, body, location=None, content_type="text/html; charset=utf-8"):
+        def _send(self, status, body, location=None, content_type="text/html; charset=utf-8", filename=None):
             data = body.encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", content_type)
@@ -119,6 +119,8 @@ def make_handler(db_path):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "same-origin")
             self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; form-action 'self'; base-uri 'none'")
+            if filename:
+                self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
             if location:
                 self.send_header("Location", location)
             self.end_headers()
@@ -135,6 +137,12 @@ def make_handler(db_path):
                     self._send(200, asset.read_text(encoding="utf-8"), content_type=content_type)
                     return
                 with closing(connect(db_path)) as db:
+                    parts = parsed.path.strip("/").split("/")
+                    if len(parts) == 4 and parts[0] == "campaign" and parts[2] == "preparation" and parts[3].endswith(".md"):
+                        campaign_id, prep_id = int(parts[1]), int(parts[3][:-3])
+                        self._send(200, preparation_markdown(db, campaign_id, prep_id),
+                                   content_type="text/markdown; charset=utf-8", filename=f"preparation-{prep_id}.md")
+                        return
                     if parsed.path == "/":
                         body = render_home(db, parse_qs(parsed.query).get("lang", ["en"])[0][:16])
                     elif parsed.path.startswith("/workspace/"):

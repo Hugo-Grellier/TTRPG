@@ -1,6 +1,7 @@
 """Campaign conversation and document review workspace."""
 
 import html
+from pathlib import Path
 
 from .agent_cli import draft_diff
 from .i18n import locale, t
@@ -21,6 +22,21 @@ def record_blocks(value, offset, marked):
         for first, last, rendered in render_blocks(str(value))
         for start, end in ((offset + first, offset + last),)
     )
+
+
+def preparation_markdown(db, campaign_id, preparation_id):
+    campaign = db.execute("SELECT language FROM campaigns WHERE id=?", (campaign_id,)).fetchone()
+    if campaign is None:
+        raise ValueError("Unknown campaign")
+    preparation = next((row for row in journey_view(db, campaign_id)[1] if row["id"] == preparation_id), None)
+    if preparation is None:
+        raise ValueError("Unknown preparation")
+    lang = campaign["language"]
+    return (f'# {t("prep.tag", lang)} #{preparation_id}\n\n'
+            f'## {t("field.situation", lang)}\n\n{preparation["situation"]}\n\n'
+            f'## {t("field.alternatives", lang)}\n\n{preparation["alternatives"]}\n\n'
+            f'## {t("prep.based_on", lang)} #{preparation["fact_id"]}\n\n{preparation["fact"]}\n\n'
+            f'## {t("proposal.tag", lang)} #{preparation["proposal_id"]}\n\n{preparation["proposal"]}\n')
 
 
 def render_workspace(db, campaign_id, selected=""):
@@ -52,19 +68,27 @@ def render_workspace(db, campaign_id, selected=""):
         documents.append(("simulated_events", item["id"], t("workspace.simulation", language), item["player_action"],
                           [("field.player_action", item["player_action"], True), ("field.ruling", item["ruling"], True),
                            ("event.consequence", item["consequence"] or t("event.pending", language), False)]))
-    choice = next((doc for doc in documents if f"{doc[0]}:{doc[1]}" == selected), None)
-    if choice is None and documents:
-        choice = next((doc for doc in documents if doc[0] == "preparations"), documents[0])
-    groups = [("product_docs", "workspace.product_docs"),
-              ("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
+    campaign_docs = [doc for doc in documents if doc[0] != "product_docs"]
+    campaign_default = next((doc for doc in campaign_docs if doc[0] == "preparations"), campaign_docs[0] if campaign_docs else None)
+    choice = next((doc for doc in documents if f"{doc[0]}:{doc[1]}" == selected), None) or campaign_default
+    product_view = choice is not None and choice[0] == "product_docs"
+    groups = [("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
               ("proposals", "workspace.proposal"), ("sources", "workspace.source"),
               ("simulated_events", "workspace.simulation")]
-    sidebar = "".join(
-        f'<div class="tree-group"><h2>{tr(label)}</h2>' + "".join(
-            f'<a class="doc-link {"active" if choice == doc else ""}" href="/workspace/{campaign_id}?doc={doc[0]}:{doc[1]}"><span class="doc-icon">▤</span><span>{esc(doc[3])}</span></a>'
-            for doc in documents if doc[0] == kind) + '</div>'
-        for kind, label in groups if any(doc[0] == kind for doc in documents)
-    )
+    def doc_link(doc):
+        title = Path(doc[3]).name if doc[0] == "product_docs" else doc[3]
+        return f'<a class="doc-link {"active" if choice == doc else ""}" href="/workspace/{campaign_id}?doc={doc[0]}:{doc[1]}" title="{esc(doc[3])}"><span class="doc-name">{esc(title)}</span></a>'
+    if product_view:
+        sidebar = '<p class="tree-intro">' + tr("workspace.product_explain") + '</p>' + ''.join(doc_link(doc) for doc in documents if doc[0] == "product_docs")
+    else:
+        sidebar = "".join(
+            f'<details class="tree-group" {"open" if choice and choice[0] == kind else ""}><summary>{tr(label)} <span>{sum(doc[0] == kind for doc in campaign_docs)}</span></summary>'
+            + "".join(doc_link(doc) for doc in campaign_docs if doc[0] == kind) + '</details>'
+            for kind, label in groups if any(doc[0] == kind for doc in campaign_docs)
+        )
+    campaign_tab = f'/workspace/{campaign_id}' + (f'?doc={campaign_default[0]}:{campaign_default[1]}' if campaign_default else '')
+    tabs = (f'<div class="sidebar-tabs"><a class="{"active" if not product_view else ""}" href="{campaign_tab}">{tr("workspace.campaign_area")}</a>'
+            f'<a class="{"active" if product_view else ""}" href="/workspace/{campaign_id}?doc=product_docs:1">{tr("workspace.product_area")}</a></div>')
     if choice:
         kind, item_id, label, title, sections = choice
         comments = comments_for(db, campaign_id, kind, item_id)
@@ -84,7 +108,15 @@ def render_workspace(db, campaign_id, selected=""):
                 else:
                     content = f'<p>{esc(value)}</p>'
                 section_html += f'<section class="doc-section"><h3>{tr(key)}</h3>{content}</section>'
-        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2>{section_html}</article>'
+        database_file = Path(db.execute("PRAGMA database_list").fetchone()["file"])
+        short_path = str(database_file).replace(str(Path.home()), "~", 1)
+        if kind == "product_docs":
+            storage = f'<span>{tr("workspace.product_file")}: {esc(title)}</span>'
+        else:
+            export = (f'<span class="export-actions"><a href="/campaign/{campaign_id}/preparation/{item_id}.md" download="preparation-{item_id}.md">{tr("workspace.export_md")}</a>'
+                      f'<small>{tr("workspace.export_copy")}</small></span>') if kind == "preparations" else ''
+            storage = f'<span>{tr("workspace.campaign_storage")}: <code title="{esc(database_file)}">{esc(short_path)}</code></span>{export}'
+        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2><div class="document-storage">{storage}</div>{section_html}</article>'
         def comment_row(row):
             anchor = f'L{row["line_start"]}' + (f'–{row["line_end"]}' if row["line_end"] != row["line_start"] else '') if row['line_start'] else ''
             quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" data-offset="{row["char_offset"] if row["char_offset"] is not None else ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
@@ -112,7 +144,7 @@ def render_workspace(db, campaign_id, selected=""):
     messages = "".join(f'<div class="message"><div class="message-head">{tr("workspace.you")} <small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div><div class="message assistant {"failed" if row["status"] == "error" else ""}"><div class="message-head">{esc("Claude Code" if row["provider"] == "claude" else "Codex")} <small>{tr("workspace.status_" + row["status"])}</small></div><p>{esc(row["response"] or t("workspace.running", language))}</p></div>' for row in turns)
     if not messages:
         messages = f'<div class="empty-chat"><h2>{tr("workspace.chat_start")}</h2><p>{tr("workspace.chat_hint")}</p></div>'
-    provider = turns[-1]["provider"] if turns else "codex"
+    provider = "codex"
     provider_options = "".join(f'<option value="{name}" {"selected" if name == provider else ""}>{esc(label)}</option>' for name, label in (("codex", "Codex"), ("claude", "Claude Code")))
     playbooks = ("explore", "revise", "prepare", "conflict")
     playbook_options = "".join(f'<option value="{name}" data-prompt="{tr("workspace.playbook_" + name + "_prompt")}">{tr("workspace.playbook_" + name)}</option>' for name in playbooks)
@@ -120,7 +152,7 @@ def render_workspace(db, campaign_id, selected=""):
     return f'''<!doctype html><html lang="{locale(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(campaign['name'])} · {tr('workspace.title')}</title><link rel="stylesheet" href="/assets/workspace.css"></head>
       <body><div class="app-shell">
         <aside class="sidebar"><div class="brand"><a href="/">{tr('app.title')}</a><strong>{esc(campaign['name'])}</strong><span>{tr('workspace.private')}</span></div>
-          <nav aria-label="{tr('workspace.documents')}">{sidebar or f'<p class="sidebar-empty">{tr("workspace.no_documents")}</p>'}</nav>
+          {tabs}<nav aria-label="{tr('workspace.documents')}">{sidebar or f'<p class="sidebar-empty">{tr("workspace.no_documents")}</p>'}</nav>
           <a class="advanced-link" href="/campaign/{campaign_id}">{tr('workspace.records')}</a>
         </aside>
         <section class="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><span>{tr('workspace.cli_draft')}</span></div>

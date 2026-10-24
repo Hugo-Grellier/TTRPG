@@ -134,7 +134,7 @@
   "workspace.playbook_conflict_prompt": "Compare the open document with established facts. Identify any contradiction with its sources and ask the GM only the targeted question needed to resolve it.",
   "workspace.send": "Send",
   "workspace.prompt_hint": "Discuss a scene, ask a question, or request a revision…",
-  "workspace.send_notice": "Sending shares this campaign context with the selected CLI. Replies cannot change canon directly.",
+  "workspace.send_notice": "Only Send calls the selected signed-in CLI. That call may use its plan or credits; replies cannot change canon directly.",
   "workspace.cli_idle": "CLI ready · no conversation yet",
   "workspace.terminal": "CLI status",
   "workspace.status_running": "Working",
@@ -151,5 +151,12 @@
   "workspace.select_lines": "Select any passage to comment on exactly that text. Click a line number to select its full line.",
   "workspace.cli_draft": "CLI · editable draft",
   "workspace.draft_changes": "Draft changes to review",
-  "error.line_range": "Invalid line range."
+  "error.line_range": "Invalid line range.",
+  "workspace.campaign_area": "Campaign",
+  "workspace.product_area": "Product",
+  "workspace.product_explain": "Product design documents, separate from campaign material.",
+  "workspace.campaign_storage": "Campaign data",
+  "workspace.product_file": "Project file",
+  "workspace.export_md": "Download preparation as Markdown",
+  "workspace.export_copy": "Downloaded copy; edits do not sync back."
 }

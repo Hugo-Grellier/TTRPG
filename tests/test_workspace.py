@@ -14,8 +14,9 @@ from campaign.agent_cli import parse_claude, parse_codex, run_cli
 from campaign.core import DomainError
 from campaign.paths import data_dir
 from campaign.markdown import render_blocks
-from campaign.store import (add_comment, add_source, agent_turns, comments_for,
-                            connect, create_campaign, product_doc)
+from campaign.store import (add_comment, add_observation, add_preparation, add_proposal,
+                            add_source, agent_turns, comments_for, connect,
+                            create_campaign, establish_fact, product_doc)
 from campaign.web import make_handler
 from campaign.workspace import render_workspace
 
@@ -96,6 +97,11 @@ class WorkspaceTest(unittest.TestCase):
             with closing(connect(db_path)) as db:
                 cid = create_campaign(db, "Mira's ford", "en")
                 source = add_source(db, cid, "Note", "page 1", "Mira keeps the ford")
+                observation = add_observation(db, cid, source, "Mira keeps the ford")
+                fact = establish_fact(db, cid, observation, "Accept this", "Mira keeps the ford")
+                proposal = add_proposal(db, cid, source, "Travelers must wait")
+                preparation = add_preparation(db, cid, fact, proposal, "Travelers arrive", "Wait or find a boat")
+                other = create_campaign(db, "Other")
             server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(db_path))
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
@@ -114,8 +120,24 @@ class WorkspaceTest(unittest.TestCase):
                 body = response.read().decode()
                 self.assertIn("Mira keeps the ford", body)
                 self.assertIn("Address review comments", body)
+                self.assertIn('class="sidebar-tabs"', body)
+                self.assertNotIn('title="VISION.md"', body)
             with urlopen(base + "/workspace/1?doc=product_docs:1") as response:
-                self.assertIn("Product vision", response.read().decode())
+                product_body = response.read().decode()
+                self.assertIn("Product vision", product_body)
+                self.assertIn('title="VISION.md"', product_body)
+            with urlopen(base + f"/workspace/1?doc=preparations:{preparation}") as response:
+                self.assertIn("Download preparation as Markdown", response.read().decode())
+            with urlopen(base + f"/campaign/1/preparation/{preparation}.md") as response:
+                exported = response.read().decode()
+                self.assertIn("Travelers arrive", exported)
+                self.assertIn("Wait or find a boat", exported)
+                self.assertEqual(response.headers["Content-Type"], "text/markdown; charset=utf-8")
+                self.assertIn("attachment", response.headers["Content-Disposition"])
+            with self.assertRaises(HTTPError) as missing:
+                urlopen(base + f"/campaign/{other}/preparation/{preparation}.md")
+            self.assertEqual(missing.exception.code, 400)
+            missing.exception.close()
             with urlopen(base + "/assets/workspace.css") as response:
                 self.assertIn("text/css", response.headers["Content-Type"])
                 self.assertIn(".app-shell", response.read().decode())
@@ -131,7 +153,7 @@ class WorkspaceTest(unittest.TestCase):
                 turn = agent_turns(db, cid)[0]
                 self.assertEqual((turn["response"], turn["status"], turn["session_id"]),
                                  ("A possible revision", "complete", "session-1"))
-                self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 0)
+                self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 1)
             with self.assertRaises(HTTPError) as error:
                 post("/campaign/1/comment", {"target_kind": "sources", "target_id": source,
                                             "quote": "missing", "body": "Bad"})

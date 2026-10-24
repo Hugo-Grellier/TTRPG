@@ -134,7 +134,7 @@
   "workspace.playbook_conflict_prompt": "Compare le document ouvert aux faits établis. Signale toute contradiction avec ses sources et pose au MJ seulement la question ciblée nécessaire pour la résoudre.",
   "workspace.send": "Envoyer",
   "workspace.prompt_hint": "Discutez d'une scène, posez une question ou demandez une révision…",
-  "workspace.send_notice": "L'envoi transmet ce contexte de campagne au CLI choisi. Les réponses ne modifient pas directement les faits établis.",
+  "workspace.send_notice": "Seul Envoyer appelle le CLI connecté choisi. Cet appel peut utiliser son forfait ou ses crédits ; les réponses ne changent pas directement le canon.",
   "workspace.cli_idle": "CLI prêt · aucune conversation",
   "workspace.terminal": "État du CLI",
   "workspace.status_running": "En cours",
@@ -151,5 +151,12 @@
   "workspace.select_lines": "Sélectionnez un passage pour commenter exactement ce texte. Cliquez sur un numéro pour prendre toute la ligne.",
   "workspace.cli_draft": "CLI · brouillon modifiable",
   "workspace.draft_changes": "Modifications du brouillon à relire",
-  "error.line_range": "Plage de lignes invalide."
+  "error.line_range": "Plage de lignes invalide.",
+  "workspace.campaign_area": "Campagne",
+  "workspace.product_area": "Produit",
+  "workspace.product_explain": "Documents de conception du produit, séparés de la campagne.",
+  "workspace.campaign_storage": "Données de campagne",
+  "workspace.product_file": "Fichier du projet",
+  "workspace.export_md": "Télécharger la préparation en Markdown",
+  "workspace.export_copy": "Copie téléchargée ; les modifications ne reviennent pas dans l’application."
 }
