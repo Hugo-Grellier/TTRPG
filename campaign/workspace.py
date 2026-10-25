@@ -168,10 +168,13 @@ def render_workspace(db, campaign_id, selected=""):
         selected_key = ""
     turns = agent_turns(db, campaign_id)
     diff = draft_diff(campaign_id)
-    draft_html = f'<details class="draft-diff" {"" if product_view else "open"}><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
+    draft_html = f'<details class="draft-diff"><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
     messages = "".join(f'<div class="message"><div class="message-head">{tr("workspace.you")} <small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div><div class="message assistant {"failed" if row["status"] == "error" else ""}"><div class="message-head">{esc("Claude Code" if row["provider"] == "claude" else "Codex")} <small>{tr("workspace.status_" + row["status"])}</small></div><p>{esc(row["response"] or t("workspace.running", language))}</p></div>' for row in turns)
     if not messages:
         messages = f'<div class="empty-chat"><h2>{tr("workspace.chat_start")}</h2><p>{tr("workspace.chat_hint")}</p></div>'
+    pending = bool(turns and turns[-1]["status"] == "running")
+    pending_message = (f'<p class="pending-message" role="status">{tr("workspace.running")} '
+                       f'<a href="/workspace/{campaign_id}?doc={esc(selected_key)}">{tr("workspace.refresh_status")}</a></p>') if pending else ''
     provider = "codex"
     provider_options = "".join(f'<option value="{name}" {"selected" if name == provider else ""}>{esc(label)}</option>' for name, label in (("codex", "Codex"), ("claude", "Claude Code")))
     playbooks = ("explore", "revise", "prepare", "conflict")
@@ -187,7 +190,8 @@ def render_workspace(db, campaign_id, selected=""):
         </aside>
         <section class="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><span>{tr('workspace.cli_draft')}</span></div>
           <div class="messages" id="messages">{messages}{draft_html}</div>
-          <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form">
+          <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-status">
+            {pending_message}
             <input type="hidden" name="doc" value="{esc(selected_key)}">
             <label for="playbook">{tr('workspace.playbook')}</label><select id="playbook"><option value="">{tr('workspace.playbook_none')}</option>{playbook_options}</select>
             <details class="skill-picker" data-instruction="{tr('workspace.skill_instruction')}"><summary>{tr('workspace.skills')} ({len(skills)})</summary><label for="skill-search">{tr('workspace.skill_search')}</label><input id="skill-search" list="skill-options" autocomplete="off" placeholder="{tr('workspace.skill_placeholder')}"><datalist id="skill-options">{skill_options}</datalist><p id="skill-description" class="composer-note">{tr('workspace.skill_hint')}</p><button type="button" id="add-skill">{tr('workspace.add_skill')}</button></details>

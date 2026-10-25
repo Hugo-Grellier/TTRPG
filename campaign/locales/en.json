@@ -119,6 +119,8 @@
   "workspace.no_document_comment": "Choose a document to review.",
   "workspace.you": "You",
   "workspace.running": "The CLI is working…",
+  "workspace.refresh_status": "Refresh status",
+  "workspace.turn_interrupted": "The local CLI turn was interrupted. Send a new message to retry.",
   "workspace.chat_start": "Work through the campaign in conversation",
   "workspace.chat_hint": "Choose Codex or Claude Code, select a document, and ask for a direction or revision. Suggestions remain drafts until you decide.",
   "workspace.provider": "Assistant CLI",

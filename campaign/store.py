@@ -338,8 +338,13 @@ def start_agent_turn(db, campaign_id, provider, prompt):
         raise DomainError("error.unknown_provider")
     prompt = required(prompt, "field.message", 4000)
     with db:
-        return db.execute("INSERT INTO agent_turns(campaign_id, provider, prompt, status) VALUES (?, ?, ?, 'running')",
-                          (campaign_id, provider, prompt)).lastrowid
+        turn = db.execute("""INSERT INTO agent_turns(campaign_id, provider, prompt, status)
+          SELECT ?, ?, ?, 'running' WHERE NOT EXISTS
+          (SELECT 1 FROM agent_turns WHERE status='running' AND created_at >= datetime('now', '-6 minutes'))""",
+          (campaign_id, provider, prompt))
+        if not turn.rowcount:
+            raise DomainError("error.agent_busy")
+        return turn.lastrowid
 
 
 def finish_agent_turn(db, turn_id, response, status, session_id=None):

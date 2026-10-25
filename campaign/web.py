@@ -111,6 +111,19 @@ def render_campaign(db, campaign_id, query=""):
 def make_handler(db_path):
     chat_lock = threading.Lock()
 
+    def finish_chat(turn_id, provider, cli_prompt, previous_session, campaign_id, language):
+        try:
+            try:
+                response, session_id, success = run_cli(provider, cli_prompt, previous_session, campaign_id)
+            except DomainError as exc:
+                response, session_id, success = exc.localized(language), None, False
+            except Exception as exc:
+                response, session_id, success = str(exc), None, False
+            with closing(connect(db_path)) as db:
+                finish_agent_turn(db, turn_id, response, "complete" if success else "error", session_id)
+        finally:
+            chat_lock.release()
+
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status, body, location=None, content_type="text/html; charset=utf-8", filename=None):
             data = body.encode("utf-8")
@@ -119,7 +132,7 @@ def make_handler(db_path):
             self.send_header("Content-Length", str(len(data)))
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "same-origin")
-            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; form-action 'self'; base-uri 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'")
             if filename:
                 self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
             if location:
@@ -143,6 +156,20 @@ def make_handler(db_path):
                         campaign_id, prep_id = int(parts[1]), int(parts[3][:-3])
                         self._send(200, preparation_markdown(db, campaign_id, prep_id),
                                    content_type="text/markdown; charset=utf-8", filename=f"preparation-{prep_id}.md")
+                        return
+                    if len(parts) == 3 and parts[0] == "campaign" and parts[2] == "chat-status":
+                        campaign_id = int(parts[1])
+                        campaign = campaign_view(db, campaign_id)[0]
+                        turn = db.execute("SELECT id, status, created_at FROM agent_turns WHERE campaign_id=? ORDER BY id DESC LIMIT 1",
+                                          (campaign_id,)).fetchone()
+                        if turn and turn["status"] == "running" and db.execute(
+                            "SELECT datetime(?) < datetime('now', '-6 minutes')", (turn["created_at"],)
+                        ).fetchone()[0]:
+                            finish_agent_turn(db, turn["id"], t("workspace.turn_interrupted", campaign["language"]), "error")
+                            status = "error"
+                        else:
+                            status = turn["status"] if turn else "idle"
+                        self._send(200, status, content_type="text/plain; charset=utf-8")
                         return
                     if parsed.path == "/":
                         body = render_home(db, parse_qs(parsed.query).get("lang", ["en"])[0][:16])
@@ -232,6 +259,7 @@ def make_handler(db_path):
                             if not chat_lock.acquire(blocking=False):
                                 self._send(409, page(f'<div class="error">{esc(t("error.agent_busy", language))}</div>', language=language))
                                 return
+                            started = False
                             try:
                                 provider, prompt, selected = val("provider"), val("prompt"), val("doc")
                                 selected_context = document_context(db, campaign_id, selected) if selected else ""
@@ -246,15 +274,16 @@ def make_handler(db_path):
                                 facts = campaign_view(db, campaign_id)[3]
                                 known = "\n".join(f"- {fact['text']} ({fact['source_title']} · {fact['locator']})" for fact in facts[:20])
                                 cli_prompt = f"{CONTEXT}Campaign: {row['name']}\nLanguage: {language}\nEstablished facts:\n{known or 'None'}\n\n{selected_context}GM message:\n{prompt}"
-                                try:
-                                    response, session_id, success = run_cli(provider, cli_prompt, prior[0] if prior else None, campaign_id)
-                                except DomainError as exc:
-                                    response, session_id, success = exc.localized(language), None, False
-                                finish_agent_turn(db, turn_id, response, "complete" if success else "error", session_id)
+                                threading.Thread(target=finish_chat,
+                                                 args=(turn_id, provider, cli_prompt, prior[0] if prior else None,
+                                                       campaign_id, language), daemon=True).start()
+                                started = True
                                 self._send(303, "", f"/workspace/{campaign_id}?doc={url_quote(selected, safe=':')}")
                                 return
-                            finally:
-                                chat_lock.release()
+                            except Exception:
+                                if not started:
+                                    chat_lock.release()
+                                raise
                         else:
                             raise DomainError("error.unknown_action")
                     else:

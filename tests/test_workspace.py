@@ -1,5 +1,6 @@
 import tempfile
 import threading
+import time
 import unittest
 import subprocess
 from contextlib import closing
@@ -20,7 +21,7 @@ from campaign.prep_drafts import (apply_preparation_draft, ensure_preparation_dr
 from campaign.skills import available_skills
 from campaign.store import (add_comment, add_observation, add_preparation, add_proposal,
                             add_source, agent_turns, comments_for, connect,
-                            create_campaign, establish_fact, product_doc)
+                            create_campaign, establish_fact, product_doc, start_agent_turn)
 from campaign.web import make_handler
 from campaign.workspace import render_workspace
 
@@ -235,8 +236,32 @@ class WorkspaceTest(unittest.TestCase):
                                         "line_start": 1, "line_end": 1, "char_offset": 0}).close()
             with urlopen(base + "/workspace/1?doc=sources:1") as response:
                 self.assertIn("Check the bell", response.read().decode())
-            with patch("campaign.web.run_cli", return_value=("A possible revision", "session-1", True)) as cli:
-                post("/campaign/1/chat", {"provider": "codex", "doc": "sources:1", "prompt": "Revise Mira"}).close()
+            started, release = threading.Event(), threading.Event()
+            def fake_cli(*args):
+                started.set()
+                if not release.wait(3):
+                    return "Mock timed out", None, False
+                return "A possible revision", "session-1", True
+            with patch("campaign.web.run_cli", side_effect=fake_cli) as cli:
+                with post("/campaign/1/chat", {"provider": "codex", "doc": "sources:1", "prompt": "Revise Mira"}) as response:
+                    self.assertIn("The CLI is working", response.read().decode())
+                self.assertTrue(started.wait(2))
+                with urlopen(base + "/campaign/1/chat-status") as response:
+                    self.assertEqual(response.read().decode(), "running")
+                with self.assertRaises(HTTPError) as busy:
+                    post("/campaign/1/chat", {"provider": "claude", "doc": "sources:1", "prompt": "Duplicate"})
+                self.assertEqual(busy.exception.code, 409)
+                busy.exception.close()
+                with closing(connect(db_path)) as second_connection, self.assertRaises(DomainError):
+                    start_agent_turn(second_connection, cid, "claude", "Another server")
+                release.set()
+                for _ in range(100):
+                    with urlopen(base + "/campaign/1/chat-status") as response:
+                        if response.read().decode() == "complete":
+                            break
+                    time.sleep(.02)
+                else:
+                    self.fail("Background CLI turn did not finish")
             self.assertIn("Check the bell", cli.call_args.args[1])
             with patch("campaign.web.apply_draft_file") as apply:
                 post("/campaign/1/apply-draft", {"file_id": 5}).close()
@@ -246,6 +271,10 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertEqual((turn["response"], turn["status"], turn["session_id"]),
                                  ("A possible revision", "complete", "session-1"))
                 self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 1)
+                db.execute("INSERT INTO agent_turns(campaign_id, provider, prompt, status, created_at) VALUES (?, 'codex', 'Old request', 'running', '2000-01-01')", (cid,))
+                db.commit()
+            with urlopen(base + "/campaign/1/chat-status") as response:
+                self.assertEqual(response.read().decode(), "error")
             with self.assertRaises(HTTPError) as error:
                 post("/campaign/1/comment", {"target_kind": "sources", "target_id": source,
                                             "quote": "missing", "body": "Bad"})

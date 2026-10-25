@@ -126,5 +126,35 @@ if (chatForm) chatForm.addEventListener('submit', () => {
   button.disabled = true;
   button.textContent = '…';
 });
+if (chatForm?.dataset.pending === '1') {
+  const poll = async () => {
+    try {
+      const response = await fetch(chatForm.dataset.statusUrl, {cache: 'no-store'});
+      if (response.ok && (await response.text()) !== 'running') {
+        try {
+          sessionStorage.setItem(`workspace-scroll:${location.pathname}${location.search}`, JSON.stringify({
+            page: window.scrollY,
+            document: document.querySelector('.document-scroll')?.scrollTop || 0,
+            review: document.querySelector('.review')?.scrollTop || 0,
+          }));
+        } catch (_) { /* Storage may be disabled. */ }
+        location.reload(); return;
+      }
+    } catch (_) { /* Keep the current document usable during a temporary local outage. */ }
+    setTimeout(poll, 1500);
+  };
+  setTimeout(poll, 1500);
+}
 const messages = document.getElementById('messages');
 if (messages) messages.scrollTop = messages.scrollHeight;
+try {
+  const key = `workspace-scroll:${location.pathname}${location.search}`;
+  const stored = sessionStorage.getItem(key);
+  if (stored) {
+    const positions = JSON.parse(stored);
+    document.querySelector('.document-scroll').scrollTop = positions.document;
+    document.querySelector('.review').scrollTop = positions.review;
+    window.scrollTo(0, positions.page);
+    sessionStorage.removeItem(key);
+  }
+} catch (_) { /* Storage may be disabled. */ }
