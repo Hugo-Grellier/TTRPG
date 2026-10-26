@@ -6,6 +6,7 @@ from urllib.parse import quote as url_quote
 
 from .agent_cli import draft_diff, draft_file_review
 from .core import DomainError
+from .dossier_files import backlinks, document_title, dossier_document, dossier_documents, linked_markdown
 from .i18n import locale, t
 from .library import library_document, library_documents, library_page, library_search
 from .markdown import render_blocks, render_markdown, visible_text
@@ -137,6 +138,10 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
     turns = agent_turns(db, campaign_id)
     pending = bool(turns and turns[-1]["status"] == "running")
     documents = []
+    for item in dossier_documents(db, campaign_id):
+        _, content, _ = dossier_document(db, campaign_id, item["id"])
+        documents.append(("campaign_files", item["id"], t("workspace.campaign_docs", language),
+                          document_title(item["path"], content), content))
     for item in library_documents(db, campaign_id):
         if db.execute("SELECT 1 FROM scenario_sections WHERE campaign_id=? AND document_id=? LIMIT 1", (campaign_id, item["id"])).fetchone():
             documents.append(("scenario_dossiers", item["id"], "Dossier", item["title"], []))
@@ -165,23 +170,39 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
                           [("field.player_action", item["player_action"], True), ("field.ruling", item["ruling"], True),
                            ("event.consequence", item["consequence"] or t("event.pending", language), False)]))
     campaign_docs = [doc for doc in documents if doc[0] != "product_docs"]
-    campaign_default = next((doc for doc in campaign_docs if doc[0] == "scenario_dossiers"), next((doc for doc in campaign_docs if doc[0] == "preparations"), campaign_docs[0] if campaign_docs else None))
+    campaign_default = next((doc for doc in campaign_docs if doc[0] == "campaign_files"), next((doc for doc in campaign_docs if doc[0] == "scenario_dossiers"), next((doc for doc in campaign_docs if doc[0] == "preparations"), campaign_docs[0] if campaign_docs else None)))
     choice = next((doc for doc in documents if f"{doc[0]}:{doc[1]}" == selected), None) or campaign_default
     product_view = choice is not None and choice[0] == "product_docs"
-    groups = [("scenario_dossiers", "workspace.dossier"), ("library_documents", "workspace.library"), ("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
+    groups = [("campaign_files", "workspace.campaign_docs"), ("scenario_dossiers", "workspace.dossier"), ("library_documents", "workspace.library"), ("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
               ("proposals", "workspace.proposal"), ("sources", "workspace.source"),
               ("simulated_events", "workspace.simulation")]
     def doc_link(doc):
         title = Path(doc[3]).name if doc[0] == "product_docs" else doc[3]
         return f'<a class="doc-link {"active" if choice == doc else ""}" href="/workspace/{campaign_id}?doc={doc[0]}:{doc[1]}" title="{esc(doc[3])}"><span class="doc-name">{esc(title)}</span></a>'
+    def folder_label(folder):
+        key = "workspace.folder_" + folder
+        label = t(key, language)
+        return esc(folder.replace("-", " ").title() if label == key else label)
     if product_view:
         sidebar = '<p class="tree-intro">' + tr("workspace.product_explain") + '</p>' + ''.join(doc_link(doc) for doc in documents if doc[0] == "product_docs")
     else:
-        sidebar = "".join(
-            f'<details class="tree-group" {"open" if choice and choice[0] == kind else ""}><summary>{tr(label)} <span>{sum(doc[0] == kind for doc in campaign_docs)}</span></summary>'
-            + "".join(doc_link(doc) for doc in campaign_docs if doc[0] == kind) + '</details>'
-            for kind, label in groups if any(doc[0] == kind for doc in campaign_docs)
-        )
+        sidebar = ""
+        for kind, label in groups:
+            matching = [doc for doc in campaign_docs if doc[0] == kind]
+            if not matching:
+                continue
+            if kind == "campaign_files":
+                paths = {row["id"]: row["path"] for row in dossier_documents(db, campaign_id)}
+                folders = sorted({Path(paths[doc[1]]).parent.as_posix() for doc in matching if "/" in paths[doc[1]]})
+                links = "".join(doc_link(doc) for doc in matching if "/" not in paths[doc[1]])
+                links += "".join(
+                    f'<details class="tree-subgroup" {"open" if choice and choice[0] == kind and Path(paths[choice[1]]).parent.as_posix() == folder else ""}>'
+                    f'<summary>{folder_label(folder)} <span>{sum(Path(paths[doc[1]]).parent.as_posix() == folder for doc in matching)}</span></summary>'
+                    + "".join(doc_link(doc) for doc in matching if Path(paths[doc[1]]).parent.as_posix() == folder)
+                    + '</details>' for folder in folders)
+            else:
+                links = "".join(doc_link(doc) for doc in matching)
+            sidebar += f'<details class="tree-group" {"open" if choice and choice[0] == kind else ""}><summary>{tr(label)} <span>{len(matching)}</span></summary>{links}</details>'
         sidebar += (f'<details class="library-import"><summary>{tr("workspace.import_pdf")}</summary>'
                     f'<form method="post" action="/campaign/{campaign_id}/import-pdf">'
                     f'<label for="pdf-path">{tr("workspace.pdf_path")}</label>'
@@ -207,11 +228,17 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
                 for number, line in enumerate(pdf_page["text"].splitlines() or [""], 1)
             )
             section_html = f'<div class="pdf-page-text">{section_html}</div>'
-        elif kind == "product_docs":
+        elif kind in ("product_docs", "campaign_files"):
+            rendered_source = linked_markdown(db, campaign_id, item_id, sections) if kind == "campaign_files" else sections
             section_html = '<div class="markdown-rendered">' + ''.join(
                 f'<div class="markdown-block commentable-block {"has-comments" if any(first <= line <= last for line in marked) else ""}" data-line-start="{first}" data-line-end="{last}">{rendered}</div>'
-                for first, last, rendered in render_blocks(sections)
+                for first, last, rendered in render_blocks(rendered_source)
             ) + '</div>'
+            if kind == "campaign_files":
+                related = backlinks(db, campaign_id, item_id)
+                section_html += (f'<section class="dossier-backlinks"><h3>{tr("workspace.linked_from")}</h3>'
+                                 + (''.join(f'<a href="/workspace/{campaign_id}?doc=campaign_files:{other}">{esc(name)}</a>' for other, name in related)
+                                    or f'<p>{tr("workspace.no_backlinks")}</p>') + '</section>')
         else:
             section_html, number = "", 1
             for key, value, selectable in sections:
@@ -285,15 +312,19 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
             export = (f'<span class="export-actions"><a href="/campaign/{campaign_id}/preparation/{item_id}.md" download="preparation-{item_id}.md">{tr("workspace.export_md")}</a>'
                       f'<small>{tr("workspace.export_copy")}</small></span>') if kind == "preparations" else ''
             storage = f'<span>{tr("workspace.campaign_storage")}: <code title="{esc(database_file)}">{esc(short_path)}</code></span>{export}'
+        if kind == "campaign_files":
+            _, _, file_path = dossier_document(db, campaign_id, item_id)
+            storage = f'<span>{tr("workspace.private_file")}: <code>{esc(file_path)}</code></span>'
         if kind == "scenario_dossiers":
             section_html = scenario_dossier_html(db, campaign_id, item_id)
             storage = f'<span>Dossier de travail · source privée · {tr("workspace.campaign_storage")}: {esc(short_path)}</span>'
-        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2><div class="document-storage">{storage}</div>{draft_review_html}{section_html}</article>'
+        heading = '' if kind == 'campaign_files' else f'<h2>{esc(title)}</h2>'
+        doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document {"campaign-file" if kind == "campaign_files" else ""}" id="document">{heading}<div class="document-storage">{storage}</div>{draft_review_html}{section_html}</article>'
         def comment_row(row):
             anchor = f'L{row["line_start"]}' + (f'–{row["line_end"]}' if row["line_end"] != row["line_start"] else '') if row['line_start'] else ''
             quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" data-offset="{row["char_offset"] if row["char_offset"] is not None else ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
             source_quote = ' '.join(row['quote'].split())
-            stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind == 'product_docs' and row['quote'] and source_quote not in ' '.join(sections.split()) and source_quote not in visible_text(sections) else ''
+            stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind in ('product_docs', 'campaign_files') and row['quote'] and source_quote not in ' '.join(sections.split()) and source_quote not in visible_text(sections) else ''
             ask = (f'<button type="button" class="comment-to-chat" data-comment-id="{row["id"]}" '
                    f'data-quote="{esc(row["quote"])}" data-comment="{esc(row["body"])}" {"disabled" if pending else ""}>'
                    f'{tr("workspace.comment_to_chat")}</button>')
@@ -338,8 +369,8 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
     playbook_options = "".join(f'<option value="{name}" data-prompt="{tr("workspace.playbook_" + name + "_prompt")}">{tr("workspace.playbook_" + name)}</option>' for name in playbooks)
     skills = available_skills()
     skill_options = "".join(f'<option value="{esc(name)}" data-description="{esc(description)}" label="{esc(origin)} · {esc(description[:70])}"></option>' for name, description, origin in skills)
-    share_private = bool(pdf_page or (choice and choice[0] == "scenario_dossiers"))
-    share_label = "workspace.include_dossier" if choice and choice[0] == "scenario_dossiers" else "workspace.include_pdf_page"
+    share_private = bool(pdf_page or (choice and choice[0] in ("scenario_dossiers", "campaign_files")))
+    share_label = "workspace.include_dossier" if choice and choice[0] in ("scenario_dossiers", "campaign_files") else "workspace.include_pdf_page"
     pdf_share = (f'<label class="pdf-share"><input type="checkbox" name="include_page" value="yes">'
                  f'{tr(share_label)}</label>') if share_private else ""
     terminal = (f'{turns[-1]["provider"]} · {t("workspace.status_" + turns[-1]["status"], language)} · session {turns[-1]["session_id"] or "—"}' if turns else t("workspace.cli_idle", language))
@@ -388,6 +419,14 @@ def document_context(db, campaign_id, selected, page=1, include_text=True):
             content += "\n" + "\n".join(f"{row['kind']} {row['title']} PDF p.{row['pdf_page']} line {row['line_number']}: {row['body']}" for row in authored)
             content += "\n" + "\n".join(f"{row['kind']} PDF p.{row['pdf_page']} line {row['line_number']}: {row['note']} | source: {row['evidence']}" for row in cards)
             return intro + "\n" + content[:16000] + ("\n[Dossier truncated]" if len(content) > 16000 else "") + "\n\n"
+        if kind == "campaign_files":
+            row, content, _ = dossier_document(db, campaign_id, item_id)
+            intro = f"Selected private campaign preparation document: {row['path']}. Proposed preparation, not canon. "
+            if not include_text:
+                return intro + "Its contents were not shared.\n\n"
+            comments = comments_for(db, campaign_id, kind, item_id)
+            review = "\n".join(f"Comment on lines {comment['line_start']}-{comment['line_end']} '{comment['quote']}': {comment['body']}" for comment in comments)
+            return intro + "\n" + content[:16000] + "\nReview comments:\n" + (review or "None") + "\n\n"
         if kind == "library_documents":
             document = library_document(db, campaign_id, item_id)
             source_page = library_page(db, campaign_id, item_id, page)

@@ -17,6 +17,8 @@
 
 Inspect the cited page or journey with a representative fixture. Infer the user outcome, compare it with product invariants, make reversible improvements directly, verify adjacent journeys, and show the new experience. Update the roadmap only if the priority or outcome changes; record a durable decision only when it prevents future misunderstanding. A creative preference that changes the vision or an irreversible publication returns to the owner.
 
+For AP import, the deliverable is the private Markdown campaign dossier: a start page, stakes, linked subject sheets, relationship view, provisional timeline, and runnable scene preparation with PDF citations. PDF extraction and source cards support that deliverable; they do not count as a completed import. For an original campaign, create the same sheets incrementally as decisions emerge. Run `check-dossier`, inspect the linked sheets in the workspace, and keep scenario chronology separate from played campaign history and canon. Do this work in the active Codex or Claude Code chat without a paid model API unless the owner explicitly changes that constraint.
+
 ## Language conventions
 
 Repository code, comments, tests, documentation, and default interface copy use English. The product supports campaign language through explicit translation catalogs: English is the default and French is available when chosen for the campaign. Content authored for a campaign follows its language; source titles and locators remain faithful to the original. Add new interface copy to the catalogs and verify both languages rather than embedding translations in templates.

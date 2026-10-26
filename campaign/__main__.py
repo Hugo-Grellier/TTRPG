@@ -12,11 +12,12 @@ from .store import (add_observation, add_preparation, add_proposal, add_simulate
 from .web import serve
 from .paths import data_dir
 from .scenario import apply_agent_review, index_document, review_packet
+from .dossier_files import dossier_documents, init_dossier, validate_dossier
 
 
 def main():
     parser = argparse.ArgumentParser(description="Local campaign workbench")
-    parser.add_argument("command", choices=["serve", "fixture", "reset", "check", "import-pdf", "index-scenario", "scenario-packet", "review-scenario"])
+    parser.add_argument("command", choices=["serve", "fixture", "reset", "check", "import-pdf", "index-scenario", "scenario-packet", "review-scenario", "init-dossier", "check-dossier"])
     parser.add_argument("--db", default=os.environ.get("CAMPAIGN_DB", data_dir() / "campaign.db"))
     parser.add_argument("--port", type=int, default=8899)
     parser.add_argument("--campaign-id", type=int)
@@ -45,6 +46,19 @@ def main():
                 print(f"Open: http://127.0.0.1:{args.port}/workspace/{args.campaign_id}?doc=library_documents:{document_id}")
         except DomainError as exc:
             parser.error(exc.localized())
+    elif args.command in ("init-dossier", "check-dossier"):
+        if not args.campaign_id:
+            parser.error(f"{args.command} requires --campaign-id")
+        with closing(connect(path)) as db:
+            if args.command == "init-dossier":
+                print(f"Private Markdown dossier: {init_dossier(db, args.campaign_id)}")
+            else:
+                problems = validate_dossier(db, args.campaign_id)
+                for problem in problems:
+                    print(problem)
+                print(f"{len(dossier_documents(db, args.campaign_id))} sheets · {len(problems)} broken links/locators")
+                if problems:
+                    raise SystemExit(1)
     elif args.command in ("index-scenario", "scenario-packet", "review-scenario"):
         if not args.campaign_id or not args.document_id:
             parser.error(f"{args.command} requires --campaign-id and --document-id")

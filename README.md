@@ -33,6 +33,12 @@ The workspace puts Codex/Claude Code conversation beside Markdown-rendered mater
 
 The fixture's fictional source leads to an initial proposal and a revision. Its prep sheet uses the revised proposal and an established fact. A simulated boat branch produces an observation; the GM's decision establishes its consequence. The corrected crossing fact flags the dependent prep sheet. The **Campaign records and forms** link opens the earlier data-entry view; search for “bell” there to see the promise, correction, and linked consequence with their decisions and source locators. Reload to check persistence.
 
+## Private campaign dossier
+
+The main campaign view now opens private Markdown preparation sheets. The real-scenario pilot has 26 linked documents: a GM start page, stakes, relationships, a provisional timeline, and separate people, place, and faction sheets. Follow a link from the overview to a sheet, inspect its incoming links, open a PDF citation, or comment on an exact passage. The files are under `~/.local/share/ttrpg/pilots/age-of-ashes-20261026/dossier-1/`, outside Git. Edit a file in any Markdown editor and reload the workspace; the changed text appears immediately. These sheets are proposals, separate from campaign facts. The old source dossier and PDF remain available in the sidebar.
+
+For an original campaign, run `python3 -m campaign --db /private/path/campaign.db --campaign-id ID init-dossier`. This creates four private starting sheets without overwriting existing files. Add `people/`, `places/`, or other Markdown files and link them with ordinary relative `.md` links. The workspace discovers them on reload. `python3 -m campaign --db /private/path/campaign.db --campaign-id ID check-dossier` checks sheet links and any `source:pdf/DOCUMENT/PAGE#LLINE` citations.
+
 ## Real scenario pilot
 
 The **Library** group can import a local PDF by its absolute file path. The file stays where it is; extracted pages, PDF page numbers, and extraction quality live in private SQLite outside Git. Open a page, search across the PDF, and select an exact passage to comment. The chat knows the selected PDF title and page number; **Include this private PDF page** must be checked before the full page and its comments are sent to the chosen CLI. Imported text remains source material and never establishes campaign facts. Reimporting the same file into the same campaign reuses its existing record.

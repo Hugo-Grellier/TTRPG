@@ -41,6 +41,17 @@ CREATE TABLE IF NOT EXISTS library_comments (
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm'),
   FOREIGN KEY (page_id, campaign_id) REFERENCES library_pages(id, campaign_id)
 );
+CREATE TABLE IF NOT EXISTS campaign_files (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  path TEXT NOT NULL, UNIQUE(campaign_id,path), UNIQUE(id,campaign_id)
+);
+CREATE TABLE IF NOT EXISTS campaign_file_comments (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL, file_id INTEGER NOT NULL,
+  quote TEXT NOT NULL, body TEXT NOT NULL, line_start INTEGER, line_end INTEGER, char_offset INTEGER,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility='gm'),
+  FOREIGN KEY (file_id,campaign_id) REFERENCES campaign_files(id,campaign_id)
+);
 CREATE TABLE IF NOT EXISTS scenario_sections (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL, document_id INTEGER NOT NULL,
   title TEXT NOT NULL, start_page INTEGER NOT NULL, end_page INTEGER NOT NULL,
@@ -343,6 +354,9 @@ def product_doc(file_id):
 
 
 def comment_lines(db, campaign_id, target_kind, target_id):
+    if target_kind == "campaign_files":
+        from .dossier_files import dossier_document
+        return dossier_document(db, campaign_id, target_id)[1].splitlines() or [""]
     if target_kind == "product_docs":
         _campaign(db, campaign_id)
         return product_doc(target_id)[1].splitlines()
@@ -379,6 +393,9 @@ def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm
     if quote and normalized not in source_text:
         raise DomainError("error.quote_missing")
     with db:
+        if target_kind == "campaign_files":
+            return db.execute("INSERT INTO campaign_file_comments(campaign_id,file_id,quote,body,line_start,line_end,char_offset) VALUES(?,?,?,?,?,?,?)",
+                              (campaign_id, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
         if target_kind == "product_docs":
             return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body, line_start, line_end, char_offset) VALUES (?, ?, ?, ?, ?, ?, ?)",
                               (campaign_id, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
@@ -390,6 +407,11 @@ def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm
 
 
 def comments_for(db, campaign_id, target_kind, target_id):
+    if target_kind == "campaign_files":
+        from .dossier_files import dossier_document
+        dossier_document(db, campaign_id, target_id)
+        return db.execute("SELECT * FROM campaign_file_comments WHERE campaign_id=? AND file_id=? ORDER BY id",
+                          (campaign_id, target_id)).fetchall()
     if target_kind == "product_docs":
         _campaign(db, campaign_id)
         product_doc(target_id)

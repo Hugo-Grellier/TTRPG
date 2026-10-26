@@ -276,7 +276,7 @@ def make_handler(db_path):
                             try:
                                 provider, prompt, selected = val("provider"), val("prompt"), val("doc")
                                 selected_page = int(val("page") or 1)
-                                include_text = not selected.startswith(("library_documents:", "scenario_dossiers:")) or val("include_page") == "yes"
+                                include_text = not selected.startswith(("library_documents:", "scenario_dossiers:", "campaign_files:")) or val("include_page") == "yes"
                                 selected_context = document_context(db, campaign_id, selected, selected_page, include_text) if selected else ""
                                 if selected.startswith("preparations:"):
                                     preparation_id = int(selected.split(":", 1)[1])
