@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .agent_cli import draft_diff, draft_file_review
 from .i18n import locale, t
-from .markdown import render_blocks, visible_text
+from .markdown import render_blocks, render_markdown, visible_text
 from .prep_drafts import preparation_draft_review
 from .skills import available_skills
 from .store import (COMMENT_TARGETS, PRODUCT_DOCS, agent_turns, campaign_view,
@@ -46,6 +46,8 @@ def render_workspace(db, campaign_id, selected=""):
     proposals, preparations, events, corrections = journey_view(db, campaign_id)
     language = campaign["language"]
     tr = lambda key: esc(t(key, language))
+    turns = agent_turns(db, campaign_id)
+    pending = bool(turns and turns[-1]["status"] == "running")
     documents = []
     for file_id, relative in enumerate(PRODUCT_DOCS, 1):
         _, content = product_doc(file_id)
@@ -150,7 +152,10 @@ def render_workspace(db, campaign_id, selected=""):
             quote = f'<blockquote data-quote="{esc(row["quote"])}" data-line="{row["line_start"] or ""}" data-offset="{row["char_offset"] if row["char_offset"] is not None else ""}" tabindex="0" title="{tr("workspace.locate_quote")}">{esc(row["quote"])}</blockquote>' if row['quote'] else ''
             source_quote = ' '.join(row['quote'].split())
             stale = f'<p class="muted">{tr("workspace.stale_quote")}</p>' if kind == 'product_docs' and row['quote'] and source_quote not in ' '.join(sections.split()) and source_quote not in visible_text(sections) else ''
-            return f'<div class="comment"><small>#{row["id"]} · {esc(anchor)} · {esc(row["created_at"])}</small>{quote}{stale}<p>{esc(row["body"])}</p></div>'
+            ask = (f'<button type="button" class="comment-to-chat" data-comment-id="{row["id"]}" '
+                   f'data-quote="{esc(row["quote"])}" data-comment="{esc(row["body"])}" {"disabled" if pending else ""}>'
+                   f'{tr("workspace.comment_to_chat")}</button>')
+            return f'<div class="comment"><small>#{row["id"]} · {esc(anchor)} · {esc(row["created_at"])}</small>{quote}{stale}<p>{esc(row["body"])}</p>{ask}</div>'
         comment_html = "".join(comment_row(row) for row in comments)
         review_html = f'''<p class="muted">{tr("workspace.select_lines")}</p><div class="comments-list">{comment_html or f'<p class="muted">{tr("workspace.no_comments")}</p>'}</div>'''
         form_html = f'''<form method="post" action="/campaign/{campaign_id}/comment" id="comment-form" hidden>
@@ -166,13 +171,20 @@ def render_workspace(db, campaign_id, selected=""):
         review_html = f'<p class="muted">{tr("workspace.no_document_comment")}</p>'
         form_html = ""
         selected_key = ""
-    turns = agent_turns(db, campaign_id)
     diff = draft_diff(campaign_id)
     draft_html = f'<details class="draft-diff"><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
-    messages = "".join(f'<div class="message"><div class="message-head">{tr("workspace.you")} <small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div><div class="message assistant {"failed" if row["status"] == "error" else ""}"><div class="message-head">{esc("Claude Code" if row["provider"] == "claude" else "Codex")} <small>{tr("workspace.status_" + row["status"])}</small></div><p>{esc(row["response"] or t("workspace.running", language))}</p></div>' for row in turns)
+    def turn_html(row):
+        reply = (f'<div class="markdown-response">{render_markdown(row["response"])}</div>'
+                 if row["response"] else f'<p>{tr("workspace.running")}</p>')
+        provider_name = "Claude Code" if row["provider"] == "claude" else "Codex"
+        return (f'<div class="message"><div class="message-head">{tr("workspace.you")} '
+                f'<small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div>'
+                f'<div class="message assistant {"failed" if row["status"] == "error" else ""}">'
+                f'<div class="message-head">{esc(provider_name)} <small>{tr("workspace.status_" + row["status"])}</small></div>'
+                f'{reply}</div>')
+    messages = "".join(turn_html(row) for row in turns)
     if not messages:
         messages = f'<div class="empty-chat"><h2>{tr("workspace.chat_start")}</h2><p>{tr("workspace.chat_hint")}</p></div>'
-    pending = bool(turns and turns[-1]["status"] == "running")
     pending_message = (f'<p class="pending-message" role="status">{tr("workspace.running")} '
                        f'<a href="/workspace/{campaign_id}?doc={esc(selected_key)}">{tr("workspace.refresh_status")}</a></p>') if pending else ''
     provider = "codex"
@@ -190,7 +202,7 @@ def render_workspace(db, campaign_id, selected=""):
         </aside>
         <section class="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><span>{tr('workspace.cli_draft')}</span></div>
           <div class="messages" id="messages">{messages}{draft_html}</div>
-          <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-status">
+          <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-status" data-comment-instruction="{tr('workspace.comment_prompt')}" data-too-long="{tr('workspace.prompt_too_long')}">
             {pending_message}
             <input type="hidden" name="doc" value="{esc(selected_key)}">
             <label for="playbook">{tr('workspace.playbook')}</label><select id="playbook"><option value="">{tr('workspace.playbook_none')}</option>{playbook_options}</select>

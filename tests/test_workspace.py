@@ -15,7 +15,7 @@ from campaign.agent_cli import (apply_draft_file, draft_checkout, draft_file_rev
                                 parse_claude, parse_codex, run_cli)
 from campaign.core import DomainError
 from campaign.paths import data_dir
-from campaign.markdown import render_blocks
+from campaign.markdown import render_blocks, render_markdown
 from campaign.prep_drafts import (apply_preparation_draft, ensure_preparation_draft,
                                   preparation_draft_review, restart_preparation_draft)
 from campaign.skills import available_skills
@@ -122,6 +122,8 @@ class WorkspaceTest(unittest.TestCase):
         self.assertIn("<h1>Heading</h1>", rendered)
         self.assertIn("<strong>bold</strong>", rendered)
         self.assertNotIn("<script>", rendered)
+        self.assertIn("<li><strong>Mira</strong></li>", render_markdown("- **Mira**"))
+        self.assertNotIn("<script>", render_markdown("<script>alert(1)</script>"))
 
     def test_cli_invocations_edit_isolated_draft_and_resume_explicit_sessions(self):
         with patch("campaign.agent_cli.draft_checkout", return_value=Path('/tmp/draft')), patch("campaign.agent_cli.shutil.which", side_effect=lambda name: name), patch(
@@ -150,7 +152,10 @@ class WorkspaceTest(unittest.TestCase):
             markdown_source = add_source(db, cid, "Markdown note", "p. 2", "Mira **garde** le gué")
             self.assertIn("<strong>garde</strong>", render_workspace(db, cid, f"sources:{markdown_source}"))
             add_comment(db, cid, "sources", source, "Mira garde", "Rendre cela plus ambigu")
-            self.assertIn("Rendre cela plus ambigu", render_workspace(db, cid, f"sources:{source}"))
+            source_page = render_workspace(db, cid, f"sources:{source}")
+            self.assertIn("Rendre cela plus ambigu", source_page)
+            self.assertIn('class="comment-to-chat" data-comment-id="1"', source_page)
+            self.assertIn('data-comment="Rendre cela plus ambigu"', source_page)
             self.assertIn("Commentaires", render_workspace(db, cid, f"sources:{source}"))
             self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 0)
             self.assertEqual(len(comments_for(db, cid, "sources", source)), 1)
@@ -237,11 +242,12 @@ class WorkspaceTest(unittest.TestCase):
             with urlopen(base + "/workspace/1?doc=sources:1") as response:
                 self.assertIn("Check the bell", response.read().decode())
             started, release = threading.Event(), threading.Event()
+            reply = "## Suggestion\n\n- **Mira** waits.\n\n<script>alert(1)</script>"
             def fake_cli(*args):
                 started.set()
                 if not release.wait(3):
                     return "Mock timed out", None, False
-                return "A possible revision", "session-1", True
+                return reply, "session-1", True
             with patch("campaign.web.run_cli", side_effect=fake_cli) as cli:
                 with post("/campaign/1/chat", {"provider": "codex", "doc": "sources:1", "prompt": "Revise Mira"}) as response:
                     self.assertIn("The CLI is working", response.read().decode())
@@ -263,13 +269,18 @@ class WorkspaceTest(unittest.TestCase):
                 else:
                     self.fail("Background CLI turn did not finish")
             self.assertIn("Check the bell", cli.call_args.args[1])
+            with urlopen(base + "/workspace/1?doc=sources:1") as response:
+                rendered_reply = response.read().decode()
+                self.assertIn("<h2>Suggestion</h2>", rendered_reply)
+                self.assertIn("<strong>Mira</strong>", rendered_reply)
+                self.assertNotIn("<script>alert(1)</script>", rendered_reply)
             with patch("campaign.web.apply_draft_file") as apply:
                 post("/campaign/1/apply-draft", {"file_id": 5}).close()
             apply.assert_called_once_with(1, 5)
             with closing(connect(db_path)) as db:
                 turn = agent_turns(db, cid)[0]
                 self.assertEqual((turn["response"], turn["status"], turn["session_id"]),
-                                 ("A possible revision", "complete", "session-1"))
+                                 (reply, "complete", "session-1"))
                 self.assertEqual(db.execute("SELECT count(*) FROM facts").fetchone()[0], 1)
                 db.execute("INSERT INTO agent_turns(campaign_id, provider, prompt, status, created_at) VALUES (?, 'codex', 'Old request', 'running', '2000-01-01')", (cid,))
                 db.commit()

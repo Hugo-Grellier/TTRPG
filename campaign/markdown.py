@@ -8,6 +8,10 @@ from markdown_it import MarkdownIt
 _parser = MarkdownIt("commonmark", {"html": False}).enable("table")
 
 
+def render_markdown(source):
+    return _parser.render(source)
+
+
 def render_blocks(source):
     tokens = _parser.parse(source)
     starts = [i for i, token in enumerate(tokens) if token.level == 0 and token.map and token.nesting >= 0]

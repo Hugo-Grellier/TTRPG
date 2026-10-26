@@ -96,6 +96,24 @@ if (documentArea && commentForm) {
   });
 }
 const chatForm = document.getElementById('chat-form');
+document.querySelector('.review')?.addEventListener('click', event => {
+  const button = event.target.closest('.comment-to-chat');
+  if (!button || !chatForm || chatForm.dataset.pending === '1') return;
+  const prompt = chatForm.querySelector('#prompt');
+  const instruction = chatForm.dataset.commentInstruction
+    .replace('__ID__', button.dataset.commentId)
+    .replace('__QUOTE__', button.dataset.quote);
+  const next = [prompt.value.trim(), `${instruction}\n${button.dataset.comment}`].filter(Boolean).join('\n\n');
+  if (next.length > prompt.maxLength) {
+    prompt.setCustomValidity(chatForm.dataset.tooLong);
+    prompt.reportValidity();
+    prompt.setCustomValidity('');
+    return;
+  }
+  prompt.value = next;
+  prompt.scrollIntoView({block: 'center', behavior: 'smooth'});
+  prompt.focus({preventScroll: true});
+});
 const playbook = document.getElementById('playbook');
 if (playbook && chatForm) playbook.addEventListener('change', () => {
   const prompt = chatForm.querySelector('#prompt');
