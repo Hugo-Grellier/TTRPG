@@ -150,6 +150,8 @@
   "workspace.no_document_comment": "Choisissez un document à relire.",
   "workspace.you": "Vous",
   "workspace.running": "Le CLI travaille…",
+  "workspace.elapsed": "Temps écoulé :",
+  "workspace.write_next": "Vous pouvez rédiger votre prochain message pendant ce tour. L’envoi sera disponible après la réponse.",
   "workspace.refresh_status": "Actualiser l’état",
   "workspace.comment_to_chat": "En parler dans le chat",
   "workspace.comment_prompt": "Traite le commentaire #__ID__ sur « __QUOTE__ » :",

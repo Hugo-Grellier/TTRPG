@@ -150,6 +150,8 @@
   "workspace.no_document_comment": "Choose a document to review.",
   "workspace.you": "You",
   "workspace.running": "The CLI is working…",
+  "workspace.elapsed": "Elapsed:",
+  "workspace.write_next": "You can draft your next message while this turn finishes. Sending unlocks when the reply arrives.",
   "workspace.refresh_status": "Refresh status",
   "workspace.comment_to_chat": "Discuss in chat",
   "workspace.comment_prompt": "Address comment #__ID__ on \"__QUOTE__\":",

@@ -254,6 +254,13 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertTrue(started.wait(2))
                 with urlopen(base + "/campaign/1/chat-status") as response:
                     self.assertEqual(response.read().decode(), "running")
+                with urlopen(base + "/workspace/1?doc=sources:1") as response:
+                    waiting = response.read().decode()
+                    self.assertIn('class="pending-elapsed"', waiting)
+                    self.assertIn('data-pending="1"', waiting)
+                    self.assertIn('You can draft your next message', waiting)
+                    self.assertIn('<button disabled>Send</button>', waiting)
+                    self.assertIn('name="prompt"', waiting)
                 with self.assertRaises(HTTPError) as busy:
                     post("/campaign/1/chat", {"provider": "claude", "doc": "sources:1", "prompt": "Duplicate"})
                 self.assertEqual(busy.exception.code, 409)
@@ -274,6 +281,7 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertIn("<h2>Suggestion</h2>", rendered_reply)
                 self.assertIn("<strong>Mira</strong>", rendered_reply)
                 self.assertNotIn("<script>alert(1)</script>", rendered_reply)
+                self.assertIn('<button>Send</button>', rendered_reply)
             with patch("campaign.web.apply_draft_file") as apply:
                 post("/campaign/1/apply-draft", {"file_id": 5}).close()
             apply.assert_called_once_with(1, 5)

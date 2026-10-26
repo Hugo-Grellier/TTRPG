@@ -530,8 +530,10 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
     messages = "".join(turn_html(row) for row in turns)
     if not messages:
         messages = f'<div class="empty-chat"><h2>{tr("workspace.chat_start")}</h2><p>{tr("workspace.chat_hint")}</p></div>'
-    pending_message = (f'<p class="pending-message" role="status">{tr("workspace.running")} '
-                       f'<a href="/workspace/{campaign_id}?doc={esc(selected_key)}">{tr("workspace.refresh_status")}</a></p>') if pending else ''
+    pending_message = (f'<div class="pending-message" role="status" data-started="{esc(turns[-1]["created_at"])}Z">'
+                       f'<strong>{tr("workspace.running")}</strong><span>{tr("workspace.elapsed")} '
+                       f'<time class="pending-elapsed" aria-live="off">0:00</time></span>'
+                       f'<p>{tr("workspace.write_next")}</p></div>') if pending else ''
     provider = "codex"
     provider_options = "".join(f'<option value="{name}" {"selected" if name == provider else ""}>{esc(label)}</option>' for name, label in (("codex", "Codex"), ("claude", "Claude Code")))
     playbooks = ("explore", "revise", "prepare", "conflict")
@@ -569,7 +571,7 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
             <details class="skill-picker" data-instruction="{tr('workspace.skill_instruction')}"><summary>{tr('workspace.skills')} ({len(skills)})</summary><label for="skill-search">{tr('workspace.skill_search')}</label><input id="skill-search" list="skill-options" autocomplete="off" placeholder="{tr('workspace.skill_placeholder')}"><datalist id="skill-options">{skill_options}</datalist><p id="skill-description" class="composer-note">{tr('workspace.skill_hint')}</p><button type="button" id="add-skill">{tr('workspace.add_skill')}</button></details>
             <label for="prompt">{tr('field.message')}</label><textarea id="prompt" name="prompt" rows="3" maxlength="4000" required placeholder="{tr('workspace.prompt_hint')}"></textarea>
             {pdf_share}
-            <div class="composer-actions"><select name="provider" aria-label="{tr('workspace.provider')}">{provider_options}</select><button>{tr('workspace.send')}</button></div>
+            <div class="composer-actions"><select name="provider" aria-label="{tr('workspace.provider')}">{provider_options}</select><button{" disabled" if pending else ""}>{tr('workspace.send')}</button></div>
             <p class="composer-note">{tr('workspace.send_notice')}</p>
           </form>
         </section>

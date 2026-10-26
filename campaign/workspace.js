@@ -141,6 +141,28 @@ if (sheetReviewToggle) sheetReviewToggle.addEventListener('click', () => {
     document.querySelector('.review').scrollIntoView({block: 'start', behavior: 'smooth'});
 });
 const chatForm = document.getElementById('chat-form');
+const chatDraftKey = `workspace-next-message:${location.pathname}${location.search}`;
+const saveChatDraft = () => {
+  if (!chatForm) return;
+  try {
+    sessionStorage.setItem(chatDraftKey, JSON.stringify({
+      prompt: chatForm.querySelector('#prompt').value,
+      provider: chatForm.querySelector('[name="provider"]').value,
+    }));
+  } catch (_) { /* Storage may be disabled. */ }
+};
+if (chatForm) {
+  try {
+    const saved = sessionStorage.getItem(chatDraftKey);
+    if (saved) {
+      const draft = JSON.parse(saved);
+      chatForm.querySelector('#prompt').value = draft.prompt || '';
+      chatForm.querySelector('[name="provider"]').value = draft.provider || 'codex';
+    }
+  } catch (_) { /* Storage may be disabled. */ }
+  chatForm.addEventListener('input', saveChatDraft);
+  chatForm.addEventListener('change', saveChatDraft);
+}
 document.querySelector('.review')?.addEventListener('click', event => {
   const button = event.target.closest('.comment-to-chat');
   if (!button || !chatForm || chatForm.dataset.pending === '1') return;
@@ -156,6 +178,7 @@ document.querySelector('.review')?.addEventListener('click', event => {
     return;
   }
   prompt.value = next;
+  saveChatDraft();
   prompt.scrollIntoView({block: 'center', behavior: 'smooth'});
   prompt.focus({preventScroll: true});
 });
@@ -164,6 +187,7 @@ if (playbook && chatForm) playbook.addEventListener('change', () => {
   const prompt = chatForm.querySelector('#prompt');
   if (playbook.selectedOptions[0].dataset.prompt) {
     prompt.value = playbook.selectedOptions[0].dataset.prompt;
+    saveChatDraft();
     prompt.focus();
   }
 });
@@ -181,15 +205,30 @@ if (skillSearch && chatForm) {
     const prompt = chatForm.querySelector('#prompt');
     const instruction = skillSearch.closest('.skill-picker').dataset.instruction.replace('__SKILL__', skill.value);
     if (!prompt.value.includes(instruction)) prompt.value = [prompt.value.trim(), instruction].filter(Boolean).join('\n\n');
+    saveChatDraft();
     prompt.focus();
   });
 }
-if (chatForm) chatForm.addEventListener('submit', () => {
-  const button = chatForm.querySelector('button');
+if (chatForm) chatForm.addEventListener('submit', event => {
+  if (chatForm.dataset.pending === '1') { event.preventDefault(); return; }
+  try { sessionStorage.removeItem(chatDraftKey); } catch (_) { /* Storage may be disabled. */ }
+  const button = chatForm.querySelector('.composer-actions button');
   button.disabled = true;
   button.textContent = '…';
 });
 if (chatForm?.dataset.pending === '1') {
+  const status = chatForm.querySelector('.pending-message');
+  const elapsed = status?.querySelector('.pending-elapsed');
+  if (elapsed) {
+    const started = Date.parse(status.dataset.started.replace(' ', 'T'));
+    const updateElapsed = () => {
+      if (!Number.isFinite(started)) return;
+      const seconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
+      elapsed.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    };
+    updateElapsed();
+    setInterval(updateElapsed, 1000);
+  }
   const poll = async () => {
     try {
       const response = await fetch(chatForm.dataset.statusUrl, {cache: 'no-store'});
