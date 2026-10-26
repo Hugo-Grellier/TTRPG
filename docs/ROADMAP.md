@@ -49,8 +49,8 @@
 - **Demonstration:** early prototype on complex fictional/public PDFs with interruption/resume; later, all of Kingmaker in a private environment, verifying each chapter before claiming completion.
 - **Success criteria:** checkable citations, idempotent jobs, progress and coverage, AP/campaign/proposal separation, no duplicate work on resume.
 - **Dependencies/risks:** M2 for turning an AP into a dossier; PDF extraction, rights, editions, and processing cost. Start an extraction prototype alongside M1/M2.
-- **Status:** early pilot I partial (private local PDF import, per-page browsing/search, extraction quality, comments, hash idempotence); T partial (synthetic PDF import and incomplete-extraction tests); D partial (one 100-page French scenario already on the owner's machine, inspected in Chrome locally on October 26, 2026); P no. Complete AP import I/T/D/P: no.
-- **Known limitations:** one scenario does not validate an entire AP or Kingmaker. Physical PDF pages may differ from printed page numbers; images/maps, chapter coverage, edition metadata, OCR for scanned pages, and interruption/resume have not been implemented. The original PDF and extracted text remain private outside Git.
+- **Status:** scenario transformation pilot I partial (private PDF import, 100-page section coverage, resumable source candidates, local Ollama review, source-linked scenes/encounters/choices, provisional chapter overviews and named-element categories); T partial (synthetic PDF and resumable review tests); D partial (one 100-page French scenario already on the owner's machine, inspected in local Chrome on desktop and mobile, October 26, 2026); P no. Complete AP import I/T/D/P: no.
+- **Known limitations:** one scenario volume does not validate an entire AP or Kingmaker. Physical PDF pages may differ from printed page numbers. Images/maps and scanned pages need separate extraction; model summaries and entity categories need GM verification against their cited passages. This dossier is a reviewable source-derived draft, not playable campaign canon. The original PDF and extracted text remain private outside Git.
 
 ### M4 — Playable preparation and asset quality
 

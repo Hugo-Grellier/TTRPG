@@ -103,6 +103,8 @@
   "workspace.documents": "Documents",
   "workspace.product_docs": "Product docs",
   "workspace.library": "Library",
+  "workspace.dossier": "Scenario dossiers",
+  "workspace.include_dossier": "Include private dossier elements in this message",
   "workspace.see_document": "See document",
   "workspace.see_chat": "Back to chat",
   "workspace.import_pdf": "Import local PDF",

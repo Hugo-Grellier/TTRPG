@@ -10,6 +10,7 @@ from .i18n import locale, t
 from .library import library_document, library_documents, library_page, library_search
 from .markdown import render_blocks, render_markdown, visible_text
 from .prep_drafts import preparation_draft_review
+from .scenario import dossier_stats
 from .skills import available_skills
 from .store import (COMMENT_TARGETS, PRODUCT_DOCS, agent_turns, campaign_view,
                     comments_for, journey_view, product_doc)
@@ -44,6 +45,72 @@ def preparation_markdown(db, campaign_id, preparation_id):
             f'## {t("proposal.tag", lang)} #{preparation["proposal_id"]}\n\n{preparation["proposal"]}\n')
 
 
+def scenario_dossier_html(db, campaign_id, document_id):
+    stats = dossier_stats(db, campaign_id, document_id)
+    document = library_document(db, campaign_id, document_id)
+    sections = db.execute("SELECT * FROM scenario_sections WHERE campaign_id=? AND document_id=? ORDER BY start_page",
+                          (campaign_id, document_id)).fetchall()
+    chapters = [row for row in sections if row["title"].startswith("CHAPITRE ")]
+    summarized = sum(row["summary_status"] == "proposed" for row in chapters)
+    source = f"/workspace/{campaign_id}?doc=library_documents:{document_id}"
+    output = (f'<div class="dossier-status"><strong>{stats["pages"]}/{document["page_count"]} pages indexées</strong>'
+              f'<span>{stats["selected"]} éléments retenus · {stats["pending"]} à analyser · {summarized}/{len(chapters)} chapitres synthétisés</span>'
+              '<p>Éléments et catégories suggérés à partir du PDF privé. Rien ici n’est canonique. '
+              'Les catégories et synthèses doivent être relues ; chaque lien ouvre la page et la ligne du texte source.</p></div>'
+              f'<nav class="dossier-source"><a href="{source}&amp;page=1">Ouvrir le PDF source</a></nav>')
+    labels = {"scene": "Scènes", "event": "Événements", "encounter": "Rencontres", "person": "Personnages", "place": "Lieux", "faction": "Factions", "item": "Objets", "creature": "Créatures", "heading": "Autres rubriques", "clue": "Indices et découvertes", "choice": "Choix et embranchements"}
+    for section in sections:
+        counts = {row["status"]: row["n"] for row in db.execute(
+            "SELECT status, COUNT(*) AS n FROM scenario_candidates WHERE section_id=? GROUP BY status", (section["id"],))}
+        entries = db.execute("SELECT * FROM scenario_candidates WHERE section_id=? AND status='selected' ORDER BY pdf_page,line_number",
+                             (section["id"],)).fetchall()
+        scene_cards = ''
+        for position, scene in enumerate(entries):
+            if scene["kind"] != "scene":
+                continue
+            related = []
+            for following in entries[position + 1:]:
+                if following["kind"] == "scene":
+                    break
+                related.append(following)
+            related_html = ''.join(
+                f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
+                f'<small>{esc(labels.get(row["category"] or row["kind"], row["kind"]))} · p. {row["pdf_page"]}</small>'
+                f'<span>{esc(row["name"])}</span></a></li>' for row in related)
+            scene_cards += (f'<details class="dossier-scene"><summary>{esc(scene["name"])}'
+                            f'<small>PDF p. {scene["pdf_page"]} · {len(related)} éléments liés</small></summary>'
+                            f'<p>{esc(scene["evidence"])}</p>'
+                            f'<a class="dossier-scene-source" href="{source}&amp;page={scene["pdf_page"]}#L{scene["line_number"]}">Voir le passage source</a>'
+                            f'<ul>{related_html}</ul></details>')
+        groups = ''
+        for kind, label in labels.items():
+            items = [row for row in entries if (row["kind"] == "heading" and row["category"] == kind)
+                     or (row["kind"] == kind and (kind != "heading" or not row["category"]))]
+            if not items:
+                continue
+            cards = ''.join(f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
+                            f'<strong>{esc(row["name"])}</strong>'
+                            f'<span>{esc(row["evidence"])}</span>'
+                            f'<small>PDF p. {row["pdf_page"]} · ligne {row["line_number"]}</small></a></li>'
+                            for row in items)
+            groups += f'<section class="dossier-kind"><h4>{label} <span>{len(items)}</span></h4><ul>{cards}</ul></section>'
+        overview = (f'<div class="dossier-overview"><small>Synthèse locale proposée · à vérifier dans les sources</small>'
+                    f'<p>{esc(section["summary"])}</p></div>') if section["summary_status"] == "proposed" else ''
+        if scene_cards:
+            groups = f'<section class="dossier-kind"><h4>Parcours par scène</h4>{scene_cards}</section>' + groups
+        output += (f'<details class="dossier-section" {"open" if section["title"].startswith("CHAPITRE 1") else ""}>'
+                   f'<summary><strong>{esc(section["title"])}</strong><span>p. {section["start_page"]}–{section["end_page"]} · '
+                   f'{counts.get("selected", 0)} retenus · {counts.get("pending", 0)} en attente</span></summary>'
+                   f'{overview}'
+                   f'{groups or "<p>Aucun élément retenu à ce stade.</p>"}</details>')
+    gaps = db.execute("SELECT pdf_page,quality FROM library_pages WHERE campaign_id=? AND document_id=? AND quality!='text' ORDER BY pdf_page",
+                      (campaign_id, document_id)).fetchall()
+    if gaps:
+        links = ' · '.join(f'<a href="{source}&amp;page={row["pdf_page"]}">p. {row["pdf_page"]} ({esc(row["quality"])})</a>' for row in gaps)
+        output += f'<p class="dossier-gaps">Extraction à vérifier : {links}</p>'
+    return output
+
+
 def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
     campaign, sources, observations, facts = campaign_view(db, campaign_id)
     proposals, preparations, events, corrections = journey_view(db, campaign_id)
@@ -53,6 +120,8 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
     pending = bool(turns and turns[-1]["status"] == "running")
     documents = []
     for item in library_documents(db, campaign_id):
+        if db.execute("SELECT 1 FROM scenario_sections WHERE campaign_id=? AND document_id=? LIMIT 1", (campaign_id, item["id"])).fetchone():
+            documents.append(("scenario_dossiers", item["id"], "Dossier", item["title"], []))
         documents.append(("library_documents", item["id"], t("workspace.library", language), item["title"], None))
     for file_id, relative in enumerate(PRODUCT_DOCS, 1):
         _, content = product_doc(file_id)
@@ -78,10 +147,10 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
                           [("field.player_action", item["player_action"], True), ("field.ruling", item["ruling"], True),
                            ("event.consequence", item["consequence"] or t("event.pending", language), False)]))
     campaign_docs = [doc for doc in documents if doc[0] != "product_docs"]
-    campaign_default = next((doc for doc in campaign_docs if doc[0] == "preparations"), campaign_docs[0] if campaign_docs else None)
+    campaign_default = next((doc for doc in campaign_docs if doc[0] == "scenario_dossiers"), next((doc for doc in campaign_docs if doc[0] == "preparations"), campaign_docs[0] if campaign_docs else None))
     choice = next((doc for doc in documents if f"{doc[0]}:{doc[1]}" == selected), None) or campaign_default
     product_view = choice is not None and choice[0] == "product_docs"
-    groups = [("library_documents", "workspace.library"), ("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
+    groups = [("scenario_dossiers", "workspace.dossier"), ("library_documents", "workspace.library"), ("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
               ("proposals", "workspace.proposal"), ("sources", "workspace.source"),
               ("simulated_events", "workspace.simulation")]
     def doc_link(doc):
@@ -110,11 +179,11 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
         pdf_page = library_page(db, campaign_id, item_id, page) if kind == "library_documents" else None
         comment_kind = "library_pages" if pdf_page else kind
         comment_target_id = pdf_page["id"] if pdf_page else item_id
-        comments = comments_for(db, campaign_id, comment_kind, comment_target_id)
+        comments = [] if kind == "scenario_dossiers" else comments_for(db, campaign_id, comment_kind, comment_target_id)
         marked = {number for row in comments if row["line_start"] for number in range(row["line_start"], row["line_end"] + 1)}
         if pdf_page:
             section_html = "".join(
-                f'<div class="doc-line commentable-block {"has-comments" if number in marked else ""}" data-line-start="{number}" data-line-end="{number}">'
+                f'<div id="L{number}" class="doc-line commentable-block {"has-comments" if number in marked else ""}" data-line-start="{number}" data-line-end="{number}">'
                 f'<button class="line-number" type="button" data-line="{number}" aria-label="{tr("workspace.extracted_line")} {number}">{number}</button>'
                 f'<div class="block-content">{esc(line)}</div></div>'
                 for number, line in enumerate(pdf_page["text"].splitlines() or [""], 1)
@@ -198,6 +267,9 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
             export = (f'<span class="export-actions"><a href="/campaign/{campaign_id}/preparation/{item_id}.md" download="preparation-{item_id}.md">{tr("workspace.export_md")}</a>'
                       f'<small>{tr("workspace.export_copy")}</small></span>') if kind == "preparations" else ''
             storage = f'<span>{tr("workspace.campaign_storage")}: <code title="{esc(database_file)}">{esc(short_path)}</code></span>{export}'
+        if kind == "scenario_dossiers":
+            section_html = scenario_dossier_html(db, campaign_id, item_id)
+            storage = f'<span>Dossier de travail · source privée · {tr("workspace.campaign_storage")}: {esc(short_path)}</span>'
         doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document" id="document"><h2>{esc(title)}</h2><div class="document-storage">{storage}</div>{draft_review_html}{section_html}</article>'
         def comment_row(row):
             anchor = f'L{row["line_start"]}' + (f'–{row["line_end"]}' if row["line_end"] != row["line_start"] else '') if row['line_start'] else ''
@@ -217,6 +289,9 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
             <label for="comment">{tr('field.comment')}</label><textarea id="comment" name="body" maxlength="2000" rows="4" required></textarea>
             <button>{tr('action.add_comment')}</button>
           </form>'''
+        if kind == "scenario_dossiers":
+            form_html = ""
+            review_html = '<p class="muted">Ouvrez une source liée pour commenter un passage exact.</p>'
         selected_key = f"{kind}:{item_id}"
     else:
         doc_html = f'<div class="empty-document"><h2>{tr("workspace.no_documents")}</h2><p>{tr("workspace.create_hint")}</p></div>'
@@ -245,8 +320,10 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
     playbook_options = "".join(f'<option value="{name}" data-prompt="{tr("workspace.playbook_" + name + "_prompt")}">{tr("workspace.playbook_" + name)}</option>' for name in playbooks)
     skills = available_skills()
     skill_options = "".join(f'<option value="{esc(name)}" data-description="{esc(description)}" label="{esc(origin)} · {esc(description[:70])}"></option>' for name, description, origin in skills)
+    share_private = bool(pdf_page or (choice and choice[0] == "scenario_dossiers"))
+    share_label = "workspace.include_dossier" if choice and choice[0] == "scenario_dossiers" else "workspace.include_pdf_page"
     pdf_share = (f'<label class="pdf-share"><input type="checkbox" name="include_page" value="yes">'
-                 f'{tr("workspace.include_pdf_page")}</label>') if pdf_page else ""
+                 f'{tr(share_label)}</label>') if share_private else ""
     terminal = (f'{turns[-1]["provider"]} · {t("workspace.status_" + turns[-1]["status"], language)} · session {turns[-1]["session_id"] or "—"}' if turns else t("workspace.cli_idle", language))
     return f'''<!doctype html><html lang="{locale(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(campaign['name'])} · {tr('workspace.title')}</title><link rel="stylesheet" href="/assets/workspace.css"></head>
       <body><div class="app-shell">
@@ -276,6 +353,19 @@ def document_context(db, campaign_id, selected, page=1, include_text=True):
     try:
         kind, raw_id = selected.split(":", 1)
         item_id = int(raw_id)
+        if kind == "scenario_dossiers":
+            document = library_document(db, campaign_id, item_id)
+            intro = f"Selected private scenario dossier: {document['title']}. Its contents are source-derived proposals, not canon. "
+            if not include_text:
+                return intro + "The dossier text was not shared.\n\n"
+            sections = db.execute("SELECT title,summary FROM scenario_sections WHERE campaign_id=? AND document_id=? ORDER BY start_page",
+                                  (campaign_id, item_id)).fetchall()
+            cards = db.execute("""SELECT kind,name,pdf_page,line_number,evidence FROM scenario_candidates
+                WHERE campaign_id=? AND document_id=? AND status='selected' ORDER BY pdf_page,line_number""",
+                (campaign_id, item_id)).fetchall()
+            content = "\n".join(f"{row['title']}: {row['summary']}" for row in sections if row['summary'])
+            content += "\n" + "\n".join(f"{row['kind']} PDF p.{row['pdf_page']} line {row['line_number']}: {row['evidence']}" for row in cards)
+            return intro + "\n" + content[:16000] + ("\n[Dossier truncated]" if len(content) > 16000 else "") + "\n\n"
         if kind == "library_documents":
             document = library_document(db, campaign_id, item_id)
             source_page = library_page(db, campaign_id, item_id, page)
