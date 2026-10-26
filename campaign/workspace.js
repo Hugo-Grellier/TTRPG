@@ -95,6 +95,51 @@ if (documentArea && commentForm) {
     });
   });
 }
+const bibleForm = document.getElementById('bible-comment-form');
+if (bibleForm && document.querySelector('.comment-mode')) {
+  const targets = [...document.querySelectorAll('.bible [data-bible-key]')];
+  const choose = element => {
+    if (!element) return;
+    targets.forEach(item => item.classList.toggle('bible-selected', item === element));
+    bibleForm.querySelector('#bible-target-key').value = element.dataset.bibleKey;
+    bibleForm.querySelector('#bible-target-label').textContent = bibleForm.dataset.selectedLabel;
+    bibleForm.querySelector('#bible-target-quote').textContent = element.dataset.bibleQuote;
+    bibleForm.hidden = false;
+    bibleForm.querySelector('textarea').focus({preventScroll: true});
+    if (matchMedia('(max-width: 700px)').matches) element.scrollIntoView({block: 'center', behavior: 'smooth'});
+  };
+  targets.forEach(element => {
+    if (element.tagName.toLowerCase() !== 'a') element.tabIndex = 0;
+  });
+  document.querySelector('.bible').addEventListener('click', event => {
+    const element = event.target.closest('[data-bible-key]');
+    if (!element) { if (event.target.closest('a')) event.preventDefault(); return; }
+    event.preventDefault();
+    choose(element);
+  });
+  document.querySelector('.bible').addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const element = event.target.closest('[data-bible-key]');
+    if (!element) return;
+    event.preventDefault();
+    choose(element);
+  });
+  document.querySelectorAll('[data-bible-locate]').forEach(button => button.addEventListener('click', () => {
+    const element = targets.find(item => item.dataset.bibleKey === button.dataset.bibleLocate);
+    if (!element) return;
+    element.scrollIntoView({block: 'center', behavior: 'smooth'});
+    choose(element);
+  }));
+  const focused = targets.find(item => item.dataset.bibleKey === bibleForm.dataset.focus);
+  if (focused) choose(focused);
+}
+const sheetReviewToggle = document.getElementById('sheet-review-toggle');
+if (sheetReviewToggle) sheetReviewToggle.addEventListener('click', () => {
+  const open = document.querySelector('.app-shell').classList.toggle('review-open');
+  sheetReviewToggle.setAttribute('aria-expanded', String(open));
+  if (open && matchMedia('(max-width: 700px)').matches)
+    document.querySelector('.review').scrollIntoView({block: 'start', behavior: 'smooth'});
+});
 const chatForm = document.getElementById('chat-form');
 document.querySelector('.review')?.addEventListener('click', event => {
   const button = event.target.closest('.comment-to-chat');

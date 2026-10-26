@@ -13,7 +13,7 @@ from .dossier_files import visual_file
 from .i18n import locale, t
 from .library import import_pdf
 from .prep_drafts import apply_preparation_draft, ensure_preparation_draft, restart_preparation_draft
-from .store import (add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
+from .store import (add_bible_comment, add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, campaign_view, connect, correct_fact, create_campaign,
                     establish_fact, finish_agent_turn, journey_view, start_agent_turn)
 from .workspace import document_context, preparation_markdown, render_workspace
@@ -182,7 +182,8 @@ def make_handler(db_path):
                     elif parsed.path.startswith("/workspace/"):
                         query = parse_qs(parsed.query)
                         body = render_workspace(db, int(parsed.path.split("/")[2]), query.get("doc", [""])[0][:80],
-                                                int(query.get("page", ["1"])[0]), query.get("q", [""])[0][:100])
+                                                int(query.get("page", ["1"])[0]), query.get("q", [""])[0][:100],
+                                                query.get("comment", [""])[0] == "1", query.get("focus", [""])[0][:200])
                     elif parsed.path.startswith("/campaign/"):
                         body = render_campaign(db, int(parsed.path.split("/")[2]), parse_qs(parsed.query).get("q", [""])[0][:200])
                     else:
@@ -248,6 +249,11 @@ def make_handler(db_path):
                             else:
                                 location = f"/workspace/{campaign_id}?doc={kind}:{item_id}"
                             self._send(303, "", location)
+                            return
+                        elif parts[2] == "bible-comment":
+                            target = val("target_key")
+                            add_bible_comment(db, campaign_id, target, val("body"))
+                            self._send(303, "", f"/workspace/{campaign_id}?comment=1&focus={url_quote(target, safe='')}")
                             return
                         elif parts[2] == "import-pdf":
                             document_id = import_pdf(db, campaign_id, val("path"), val("title"))

@@ -1,12 +1,19 @@
 import tempfile
 import json
+import threading
 import unittest
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import HTTPError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from campaign.dossier_files import (backlinks, dossier_document, dossier_documents,
                                     init_dossier, linked_markdown, validate_dossier, visual_file)
-from campaign.store import add_comment, add_observation, add_source, comments_for, connect, create_campaign, establish_fact
+from campaign.store import (add_bible_comment, add_comment, add_observation, add_source, bible_comments,
+                            comments_for, connect, create_campaign, establish_fact)
 from campaign.workspace import document_context, render_workspace
+from campaign.web import make_handler
 
 
 class CampaignDossierFilesTest(unittest.TestCase):
@@ -54,6 +61,9 @@ class CampaignDossierFilesTest(unittest.TestCase):
             self.assertEqual(validate_dossier(db, campaign), [])
             self.assertEqual(len(dossier_documents(db, campaign)), 5)
             self.assertIn('People <span>1</span>', render_workspace(db, campaign))
+            (root / 'bible.json').write_text(json.dumps({'title': 'Start', 'lead': 'An open ford'}))
+            self.assertIn('Current state', render_workspace(db, campaign))
+            self.assertIn('No played session has been recorded', render_workspace(db, campaign))
             outside = Path(temp) / 'outside.md'
             outside.write_text('# Private elsewhere\n')
             (root / 'people/outside.md').symlink_to(outside)
@@ -74,11 +84,23 @@ class CampaignDossierFilesTest(unittest.TestCase):
                                                           'state': [{'label': 'Table', 'text': 'Aucune séance jouée'}]}))
             self.assertIn('Aucune séance jouée', render_workspace(db, campaign))
             self.assertIn(f'/campaign/{campaign}/visual/map.png', render_workspace(db, campaign))
+            commented = add_bible_comment(db, campaign, 'state:Table', 'Préciser le début de séance')
+            self.assertEqual(bible_comments(db, campaign)[0]['id'], commented)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM facts').fetchone()[0], 0)
+            self.assertIn('Préciser le début de séance', render_workspace(db, campaign, comment_mode=True))
+            self.assertIn('data-bible-key="state:Table" data-bible-quote=', render_workspace(db, campaign, comment_mode=True))
+            (root / 'bible.json').write_text(json.dumps({'title': 'Départ', 'lead': 'État proposé',
+                                                          'state': [{'label': 'Table', 'text': 'La salle est occupée'}]}))
+            self.assertIn('Cet élément a changé', render_workspace(db, campaign, comment_mode=True))
+            with self.assertRaises(Exception):
+                add_bible_comment(db, campaign, 'state:Inventé', 'Impossible')
             source = add_source(db, campaign, 'Journal', 'séance 1', 'test')
             observation = add_observation(db, campaign, source, 'Le pont est tombé')
-            establish_fact(db, campaign, observation, 'Décision MJ', 'Le pont est détruit')
+            fact_id = establish_fact(db, campaign, observation, 'Décision MJ', 'Le pont est détruit')
             self.assertIn('Le pont est détruit', render_workspace(db, campaign))
             self.assertIn('ÉTAT DE TABLE ET SCÉNARIO PROPOSÉ', render_workspace(db, campaign))
+            self.assertIn(f'data-bible-key="fact:{fact_id}"', render_workspace(db, campaign, comment_mode=True))
+            add_bible_comment(db, campaign, f'fact:{fact_id}', 'À discuter')
             self.assertEqual(visual_file(db, campaign, 'map.png').read_bytes(), b'private map')
             for name in ('../campaign.db', 'map.svg', 'missing.png'):
                 with self.assertRaises(Exception):
@@ -86,7 +108,36 @@ class CampaignDossierFilesTest(unittest.TestCase):
             other = create_campaign(db, 'Other', 'fr')
             with self.assertRaises(Exception):
                 visual_file(db, other, 'map.png')
+            with self.assertRaises(Exception):
+                add_bible_comment(db, other, 'state:Table', 'Copie interdite')
             db.close()
+
+    def test_bible_comment_http_journey(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db_path = Path(temp) / 'campaign.db'
+            db = connect(db_path)
+            campaign = create_campaign(db, 'Review pilot', 'fr')
+            root = init_dossier(db, campaign)
+            (root / 'bible.json').write_text(json.dumps({'title': 'Départ', 'lead': 'Essai',
+                                                          'state': [{'label': 'Table', 'text': 'La salle est vide'}]}))
+            db.close()
+            server = ThreadingHTTPServer(('127.0.0.1', 0), make_handler(db_path))
+            worker = threading.Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            try:
+                base = f'http://127.0.0.1:{server.server_port}'
+                payload = urlencode({'target_key': 'state:Table', 'body': 'Ajouter les joueurs'}).encode()
+                with urlopen(Request(f'{base}/campaign/{campaign}/bible-comment', data=payload)) as response:
+                    self.assertIn('comment=1', response.url)
+                    self.assertIn('Ajouter les joueurs', response.read().decode())
+                with self.assertRaises(HTTPError) as error:
+                    urlopen(Request(f'{base}/campaign/{campaign}/bible-comment',
+                                    data=urlencode({'target_key': 'state:Autre', 'body': 'Erreur'}).encode()))
+                self.assertEqual(error.exception.code, 400)
+            finally:
+                server.shutdown()
+                server.server_close()
+                worker.join()
 
 
 if __name__ == '__main__':

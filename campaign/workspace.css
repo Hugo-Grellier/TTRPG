@@ -103,3 +103,81 @@
 .bible-relations{margin:30px clamp(22px,3vw,44px);padding:21px 23px 12px;border:1px solid #d7ddd3;border-radius:10px;background:#e8ede6}
 .bible-relations svg{display:block;width:100%;height:auto;max-height:250px;margin:auto}.relation-lines line{stroke:#8ca8a0;stroke-width:2.5;stroke-dasharray:5 4}.relation-nodes a{cursor:pointer}.relation-nodes circle{fill:#fffdf7;stroke:#8da99d;stroke-width:2}.relation-nodes a:hover circle{fill:#f9e9ca;stroke:#c49661}.relation-nodes text{font-size:12px;font-weight:700;fill:#285051;pointer-events:none}.bible-relations p{margin:0 0 4px;color:#596d69;line-height:1.5;font-size:.78rem}
 @media(max-width:700px){.bible-relations{margin:24px 20px;padding:16px 10px}.relation-nodes text{font-size:13px}}
+/* Point-to-comment review on the visual bible. */
+.comment-mode-toggle{display:inline-flex;align-items:center;gap:7px;border-radius:6px;background:#e7f1ec;color:#225e57;padding:8px 11px;font-size:.79rem;font-weight:800}
+.comment-mode-toggle:hover{background:#d3e9df}.comment-mode-toggle span{background:#fff;border-radius:12px;padding:1px 6px;font-size:.69rem;color:#48716a}
+.bible-mode .document-layout{position:relative}
+.bible-mode.comment-mode .document-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px}
+.bible-mode.comment-mode .review{display:block;position:static;width:auto;z-index:5;overflow:auto;padding:22px;background:#fffdf8}
+.bible-mode.comment-mode .bible-columns{grid-template-columns:1fr}
+.bible-mode.comment-mode .bible-scene-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bible-mode.comment-mode .bible-hero{grid-template-columns:1fr}
+.bible-mode.comment-mode .bible-hero-art{display:none}
+.bible-mode.comment-mode .bible-people{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bible-mode.comment-mode .review h2{font:400 1.55rem Georgia,serif;color:#233e40;margin-bottom:8px}
+.bible-mode.comment-mode .review>.muted{font-size:.82rem;margin:0 0 18px}
+.comment-mode .bible [data-bible-key]{cursor:crosshair;outline:2px solid transparent;outline-offset:3px;transition:outline-color .12s,box-shadow .12s}
+.comment-mode .bible [data-bible-key]:hover{outline-color:#dcaa5e;box-shadow:0 0 0 5px #ebd9af5c}
+.comment-mode .bible [data-bible-key].bible-selected{outline:3px solid #c77f3f;box-shadow:0 0 0 6px #edc89599}
+.comment-mode .bible [data-comment-count]:not([data-comment-count="0"]):after{content:attr(data-comment-count);position:absolute;right:8px;top:8px;background:#1f6967;color:#fff;font:bold 11px/1 system-ui,sans-serif;padding:5px 7px;border-radius:99px;z-index:3}
+.comment-mode .bible-state li,.comment-mode .bible-scene-list a,.comment-mode .bible-card,.comment-mode .bible-hero>div:first-child{position:relative}
+.comment-mode .relation-nodes a[data-comment-count]:not([data-comment-count="0"]):after{content:none}
+#bible-comment-form{border:1px solid #d7e0d9;background:#f5faf6;border-radius:8px;padding:14px;margin:0 0 20px}
+#bible-comment-form[hidden]{display:none}#bible-comment-form strong{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:#53746a}
+#bible-target-quote{font:500 1rem/1.4 Georgia,serif;color:#284440;margin:8px 0 13px}
+#bible-comment-form label{display:block;font-size:.76rem;font-weight:700;color:#526f67;margin-bottom:6px}
+#bible-comment-form textarea{min-height:98px;background:#fff}
+#bible-comment-form button{width:100%;margin-top:10px}
+.bible-comment{border-left-color:#b5854d;margin-bottom:3px}.bible-comment-locate{display:grid;gap:5px;text-align:left;width:100%;padding:0;background:transparent;color:#2a4746}.bible-comment-locate:hover{background:transparent;color:#176c69}
+.bible-comment-locate strong{font-size:.8rem;line-height:1.35;font-weight:650}.bible-comment .bible-stale{font-size:.73rem;color:#a15a39;background:#fff0e5;padding:6px;border-radius:4px}
+@media(max-width:700px){.bible-mode.comment-mode .sidebar{display:none}.bible-mode.comment-mode .document-layout{display:flex;flex-direction:column}.bible-mode.comment-mode .review{position:fixed;left:0;right:0;top:auto;bottom:0;width:100%;max-height:43vh;border-radius:14px 14px 0 0;box-shadow:0 -10px 30px #18333545}.bible-mode.comment-mode .review h2{font-size:1.25rem}.bible-mode.comment-mode .document-scroll{padding-bottom:43vh}}
+/* Common visual language for people, places, factions, scenes and guide sheets. */
+.sheet-kicker{display:flex;justify-content:space-between;gap:12px;padding:0 0 17px;margin:0 0 20px;border-bottom:1px solid #d9d2c3;color:#9a6f41;font-size:.65rem;font-weight:850;letter-spacing:.15em}
+.sheet-kicker span:last-child{color:#73837e;letter-spacing:.06em}
+.document.campaign-file .document-storage{margin:28px 0 0;padding-top:16px;border-top:1px solid #e5e2d8;font-size:.71rem;color:#7b8883}
+.sheet-storage summary{cursor:pointer;color:#4d716d;font-weight:650}.sheet-storage code{display:block;margin-top:8px;overflow-wrap:anywhere}
+.document.campaign-file .markdown-rendered>.markdown-block:first-child h1{font:400 clamp(2rem,3vw,3.1rem)/1.08 Georgia,serif;color:#243e3e;margin:0 0 12px}
+.document.campaign-file .markdown-rendered>.markdown-block:first-child{margin-bottom:18px}
+.document.campaign-file .markdown-rendered>.markdown-block:nth-child(2) blockquote{font:italic 1.03rem/1.55 Georgia,serif}
+.document.campaign-file .scene-panel{margin:17px 0;padding:17px 20px 9px;border-radius:7px;box-shadow:0 2px 11px #1733350c}
+.document.campaign-file .scene-panel h2{font-size:1.35rem}
+.document.campaign-file .scene-panel .markdown-block{line-height:1.64}
+.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img){display:grid;grid-template-columns:minmax(0,1fr) minmax(155px,35%);gap:0 20px}
+.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img)>.markdown-block:first-child{grid-column:1/3}
+.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img)>.markdown-block:nth-child(2){grid-column:2;grid-row:2/4;align-self:end;margin:0}
+.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img)>.markdown-block:nth-child(2) img{max-height:270px;border:0;background:#e8e9df;margin:0;width:100%;object-fit:contain}
+.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img)>.markdown-block:nth-child(3){grid-column:1;grid-row:2;align-self:center}
+.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img)>.scene-panel{grid-column:1/3}
+.document.sheet-lieux .scene-panel{border-left-color:#719a8b}.document.sheet-factions .scene-panel{border-left-color:#9a7a88}
+.document.sheet-overview .markdown-rendered> .markdown-block>ul{list-style:none;padding:0;display:grid;gap:8px}
+.document.sheet-overview .markdown-rendered> .markdown-block>ul>li{background:#fff;border:1px solid #e3ded2;border-left:3px solid #8cad9c;border-radius:5px;padding:10px 13px;margin:0}
+.document.sheet-overview .markdown-rendered> .markdown-block>ol{counter-reset:step;list-style:none;padding:0;display:grid;gap:10px}
+.document.sheet-overview .markdown-rendered> .markdown-block>ol>li{counter-increment:step;position:relative;background:#fff;border:1px solid #e3ded2;border-radius:5px;padding:11px 13px 11px 43px;margin:0}
+.document.sheet-overview .markdown-rendered> .markdown-block>ol>li:before{content:counter(step,decimal-leading-zero);position:absolute;left:12px;top:10px;color:#b4864c;font:italic 1.1rem Georgia,serif}
+.document.sheet-overview .scene-panel> .markdown-block>ul{list-style:none;padding:0;display:grid;gap:8px}
+.document.sheet-overview .scene-panel> .markdown-block>ul>li{background:#fff;border:1px solid #e3ded2;border-left:3px solid #8cad9c;border-radius:5px;padding:10px 13px;margin:0}
+.document.sheet-overview .scene-panel> .markdown-block>ol{counter-reset:step;list-style:none;padding:0;display:grid;gap:10px}
+.document.sheet-overview .scene-panel> .markdown-block>ol>li{counter-increment:step;position:relative;background:#fff;border:1px solid #e3ded2;border-radius:5px;padding:11px 13px 11px 43px;margin:0}
+.document.sheet-overview .scene-panel> .markdown-block>ol>li:before{content:counter(step,decimal-leading-zero);position:absolute;left:12px;top:10px;color:#b4864c;font:italic 1.1rem Georgia,serif}
+.document.campaign-file .dossier-backlinks{display:flex;flex-wrap:wrap;gap:7px}.document.campaign-file .dossier-backlinks h3,.document.campaign-file .dossier-backlinks p{width:100%}
+.document.campaign-file .dossier-backlinks a{display:inline-block;margin:0;padding:6px 9px;border-radius:4px;background:#eaf3ed;color:#285d52;text-decoration:none;font-size:.74rem;font-weight:700}
+.document.campaign-file .dossier-backlinks a:hover{background:#d4e9dd}
+@media(max-width:700px){.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img){display:block}.document.sheet-personnages .markdown-rendered:has(> .markdown-block:nth-child(2) img)>.markdown-block:nth-child(2) img{max-height:250px;width:auto;max-width:100%;margin:0 auto 15px}.sheet-kicker{font-size:.58rem}.document.campaign-file .scene-panel{padding:14px}}
+.bible-mode.comment-mode .bible-hero>div:first-child{padding:29px 30px}.bible-mode.comment-mode .bible-hero h1{font-size:clamp(2rem,3vw,2.7rem)}.bible-mode.comment-mode .bible-hero{min-height:0}
+@media(max-width:700px){.bible-mode.comment-mode .bible-hero>div:first-child{padding:28px 24px}}
+@media(max-width:700px){.bible-mode.comment-mode .document-panel>.panel-head{position:sticky;top:0;z-index:7;background:#fff}}
+.document.sheet-timeline .markdown-rendered{counter-reset:timeline}
+.document.sheet-timeline .scene-panel{counter-increment:timeline;position:relative;margin-left:31px}
+.document.sheet-timeline .scene-panel:before{content:counter(timeline,decimal-leading-zero);position:absolute;z-index:2;left:-42px;top:14px;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#416e68;color:#fff;font:bold .59rem system-ui,sans-serif;box-shadow:0 0 0 4px #fffdf8}
+.document.sheet-timeline .scene-panel:after{content:"";position:absolute;left:-30px;top:26px;bottom:-27px;width:2px;background:#9ab4a8;z-index:1}
+.document.sheet-timeline .scene-panel:last-child:after{display:none}
+@media(max-width:700px){.document.sheet-timeline .scene-panel{margin-left:27px}}
+.sheet-review-toggle{display:inline-flex;align-items:center;gap:7px;background:#e7f1ec;color:#225e57;padding:8px 11px;font-size:.79rem;font-weight:800}
+.sheet-review-toggle:hover{background:#d3e9df}.sheet-review-toggle span{background:#fff;border-radius:12px;padding:1px 6px;font-size:.69rem;color:#48716a}
+.sheet-mode .document-layout{grid-template-columns:minmax(0,1fr)}
+.sheet-mode .review{display:none}
+.sheet-mode.review-open .document-layout{grid-template-columns:minmax(0,1fr) 250px}
+.sheet-mode.review-open .review{display:block}
+.sheet-mode .document.campaign-file{max-width:850px}
+.sheet-mode .document-scroll{padding:22px clamp(18px,3vw,34px)}
+@media(max-width:700px){.sheet-mode .document-layout{display:flex;flex-direction:column}.sheet-mode .document-scroll{height:70vh;min-height:420px;padding:12px}.sheet-mode.review-open .review{display:block;min-height:180px;max-height:260px}.sheet-mode .document.campaign-file{padding:24px 18px}}

@@ -52,6 +52,12 @@ CREATE TABLE IF NOT EXISTS campaign_file_comments (
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility='gm'),
   FOREIGN KEY (file_id,campaign_id) REFERENCES campaign_files(id,campaign_id)
 );
+CREATE TABLE IF NOT EXISTS campaign_bible_comments (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  target_key TEXT NOT NULL, quote TEXT NOT NULL, body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility='gm')
+);
 CREATE TABLE IF NOT EXISTS scenario_sections (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL, document_id INTEGER NOT NULL,
   title TEXT NOT NULL, start_page INTEGER NOT NULL, end_page INTEGER NOT NULL,
@@ -424,6 +430,24 @@ def comments_for(db, campaign_id, target_kind, target_id):
     _owned(db, target_kind, target_id, campaign_id)
     return db.execute("SELECT * FROM document_comments WHERE campaign_id=? AND target_kind=? AND target_id=? ORDER BY id",
                       (campaign_id, target_kind, target_id)).fetchall()
+
+
+def add_bible_comment(db, campaign_id, target_key, body):
+    from .dossier_files import bible_element_texts
+    quote = bible_element_texts(db, campaign_id).get(target_key)
+    if not quote:
+        raise DomainError("error.item_missing")
+    body = required(body, "field.comment", 2000)
+    with db:
+        return db.execute(
+            "INSERT INTO campaign_bible_comments(campaign_id,target_key,quote,body) VALUES(?,?,?,?)",
+            (campaign_id, target_key, quote, body)).lastrowid
+
+
+def bible_comments(db, campaign_id):
+    _campaign(db, campaign_id)
+    return db.execute("SELECT * FROM campaign_bible_comments WHERE campaign_id=? ORDER BY id",
+                      (campaign_id,)).fetchall()
 
 
 def start_agent_turn(db, campaign_id, provider, prompt):

@@ -84,6 +84,32 @@ def visual_file(db, campaign_id, filename):
     return path
 
 
+def bible_element_texts(db, campaign_id):
+    """Stable review targets for the private visual home."""
+    path = dossier_root(db, campaign_id) / "bible.json"
+    if not path.is_file():
+        return {}
+    try:
+        bible = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(bible, dict):
+        return {}
+    elements = {"hero": f'{bible.get("title", "")} — {bible.get("lead", "")}' }
+    for item in bible.get("state", []):
+        elements[f'state:{item["label"]}'] = f'{item["label"]} — {item["text"]}'
+    for group in ("stakes", "scenes", "people"):
+        for item in bible.get(group, []):
+            elements[f'{group}:{item["file"]}'] = f'{item["title"]} — {item.get("summary", "")}'
+    for item in bible.get("relations", {}).get("nodes", []):
+        elements[f'relation:{item["file"]}'] = item["label"]
+    if bible.get("map_file"):
+        elements[f'map:{bible["map_file"]}'] = bible.get("map_alt", "Carte")
+    for row in db.execute("SELECT id,text FROM facts WHERE campaign_id=?", (campaign_id,)):
+        elements[f'fact:{row["id"]}'] = row["text"]
+    return elements
+
+
 def backlinks(db, campaign_id, file_id):
     target, _, _ = dossier_document(db, campaign_id, file_id)
     found = []
