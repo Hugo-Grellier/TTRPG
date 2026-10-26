@@ -1,6 +1,7 @@
 """Private Markdown campaign documents, editable in any text editor."""
 
 import re
+import json
 from pathlib import Path
 
 from .core import DomainError
@@ -9,6 +10,7 @@ from .core import DomainError
 LINK = re.compile(r"\]\(([^)#]+\.md)(#[^)]+)?\)")
 SOURCE = re.compile(r"\]\(source:pdf/(\d+)/(\d+)#L(\d+)\)")
 SOURCE_REF = re.compile(r"source:pdf/(\d+)/(\d+)#L(\d+)")
+VISUAL = re.compile(r"\]\(visual:([a-zA-Z0-9][a-zA-Z0-9_-]*\.png)\)")
 
 
 def dossier_root(db, campaign_id):
@@ -68,7 +70,18 @@ def linked_markdown(db, campaign_id, file_id, content):
         other = paths.get("/".join(parts))
         return f"](/workspace/{campaign_id}?doc=campaign_files:{other}{match[2] or ''})" if other else match[0]
     content = LINK.sub(link, content)
-    return SOURCE.sub(lambda m: f"](/workspace/{campaign_id}?doc=library_documents:{m[1]}&page={m[2]}#L{m[3]})", content)
+    content = SOURCE.sub(lambda m: f"](/workspace/{campaign_id}?doc=library_documents:{m[1]}&page={m[2]}#L{m[3]})", content)
+    return VISUAL.sub(lambda m: f"](/campaign/{campaign_id}/visual/{m[1]})", content)
+
+
+def visual_file(db, campaign_id, filename):
+    if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]*\.png", filename):
+        raise DomainError("error.item_missing")
+    root = (dossier_root(db, campaign_id) / "assets").resolve()
+    path = (root / filename).resolve()
+    if not path.is_relative_to(root) or not path.is_file():
+        raise DomainError("error.item_missing")
+    return path
 
 
 def backlinks(db, campaign_id, file_id):
@@ -122,7 +135,7 @@ def init_dossier(db, campaign_id):
 
 
 def validate_dossier(db, campaign_id):
-    """Report broken private sheet links and invalid PDF locators."""
+    """Report broken private sheet links, visuals, and invalid PDF locators."""
     root = dossier_root(db, campaign_id)
     problems = []
     for row in dossier_documents(db, campaign_id):
@@ -137,4 +150,30 @@ def validate_dossier(db, campaign_id):
                               (campaign_id, document_id, page_number)).fetchone()
             if page is None or not 1 <= line_number <= len(page["text"].splitlines()):
                 problems.append(f'{row["path"]}: invalid PDF locator {match[0]}')
+        for match in VISUAL.finditer(content):
+            try:
+                visual_file(db, campaign_id, match[1])
+            except DomainError:
+                problems.append(f'{row["path"]}: missing visual {match[1]}')
+    manifest = root / "bible.json"
+    if manifest.is_file():
+        try:
+            bible = json.loads(manifest.read_text(encoding="utf-8"))
+            if not isinstance(bible, dict) or not all(key in bible for key in ("title", "lead")):
+                raise ValueError("missing title or lead")
+        except (OSError, ValueError) as exc:
+            problems.append(f'bible.json: invalid presentation manifest ({exc})')
+        else:
+            items = [bible] + bible.get("stakes", []) + bible.get("scenes", []) + bible.get("people", []) + bible.get("relations", {}).get("nodes", [])
+            paths = {row["path"] for row in dossier_documents(db, campaign_id)}
+            for item in items:
+                for key in ("file", "map_file"):
+                    if item.get(key) and item[key] not in paths:
+                        problems.append(f'bible.json: missing sheet {item[key]}')
+                for key in ("image", "map"):
+                    if item.get(key):
+                        try:
+                            visual_file(db, campaign_id, item[key])
+                        except DomainError:
+                            problems.append(f'bible.json: missing visual {item[key]}')
     return problems

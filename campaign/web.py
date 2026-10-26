@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, quote as url_quote, urlparse
 
 from .agent_cli import CONTEXT, apply_draft_file, run_cli
 from .core import DomainError
+from .dossier_files import visual_file
 from .i18n import locale, t
 from .library import import_pdf
 from .prep_drafts import apply_preparation_draft, ensure_preparation_draft, restart_preparation_draft
@@ -127,13 +128,13 @@ def make_handler(db_path):
 
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status, body, location=None, content_type="text/html; charset=utf-8", filename=None):
-            data = body.encode("utf-8")
+            data = body if isinstance(body, bytes) else body.encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "same-origin")
-            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'")
             if filename:
                 self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
             if location:
@@ -153,6 +154,10 @@ def make_handler(db_path):
                     return
                 with closing(connect(db_path)) as db:
                     parts = parsed.path.strip("/").split("/")
+                    if len(parts) == 4 and parts[0] == "campaign" and parts[2] == "visual":
+                        visual = visual_file(db, int(parts[1]), parts[3])
+                        self._send(200, visual.read_bytes(), content_type="image/png")
+                        return
                     if len(parts) == 4 and parts[0] == "campaign" and parts[2] == "preparation" and parts[3].endswith(".md"):
                         campaign_id, prep_id = int(parts[1]), int(parts[3][:-3])
                         self._send(200, preparation_markdown(db, campaign_id, prep_id),

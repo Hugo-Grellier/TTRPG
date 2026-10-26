@@ -1,10 +1,11 @@
 import tempfile
+import json
 import unittest
 from pathlib import Path
 
 from campaign.dossier_files import (backlinks, dossier_document, dossier_documents,
-                                    init_dossier, linked_markdown, validate_dossier)
-from campaign.store import add_comment, comments_for, connect, create_campaign
+                                    init_dossier, linked_markdown, validate_dossier, visual_file)
+from campaign.store import add_comment, add_observation, add_source, comments_for, connect, create_campaign, establish_fact
 from campaign.workspace import document_context, render_workspace
 
 
@@ -59,6 +60,32 @@ class CampaignDossierFilesTest(unittest.TestCase):
             self.assertEqual(len(dossier_documents(db, campaign)), 5)
             (root / '01-Enjeux.md').write_text('# Stakes\n\n[Missing](people/nobody.md)\n')
             self.assertEqual(len(validate_dossier(db, campaign)), 1)
+            db.close()
+
+    def test_private_bible_and_visual_stay_inside_the_campaign(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db = connect(Path(temp) / 'campaign.db')
+            campaign = create_campaign(db, 'Visual pilot', 'fr')
+            root = init_dossier(db, campaign)
+            (root / 'assets').mkdir()
+            (root / 'assets/map.png').write_bytes(b'private map')
+            (root / 'bible.json').write_text(json.dumps({'title': 'Départ', 'lead': 'État proposé',
+                                                          'map': 'map.png', 'map_file': '00-Commencer.md',
+                                                          'state': [{'label': 'Table', 'text': 'Aucune séance jouée'}]}))
+            self.assertIn('Aucune séance jouée', render_workspace(db, campaign))
+            self.assertIn(f'/campaign/{campaign}/visual/map.png', render_workspace(db, campaign))
+            source = add_source(db, campaign, 'Journal', 'séance 1', 'test')
+            observation = add_observation(db, campaign, source, 'Le pont est tombé')
+            establish_fact(db, campaign, observation, 'Décision MJ', 'Le pont est détruit')
+            self.assertIn('Le pont est détruit', render_workspace(db, campaign))
+            self.assertIn('ÉTAT DE TABLE ET SCÉNARIO PROPOSÉ', render_workspace(db, campaign))
+            self.assertEqual(visual_file(db, campaign, 'map.png').read_bytes(), b'private map')
+            for name in ('../campaign.db', 'map.svg', 'missing.png'):
+                with self.assertRaises(Exception):
+                    visual_file(db, campaign, name)
+            other = create_campaign(db, 'Other', 'fr')
+            with self.assertRaises(Exception):
+                visual_file(db, other, 'map.png')
             db.close()
 
 
