@@ -3,6 +3,8 @@ import os
 from contextlib import closing
 from pathlib import Path
 
+from .core import DomainError
+from .library import import_pdf, library_document
 from .store import (add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, connect, correct_fact, create_campaign, establish_fact,
                     journey_view)
@@ -12,9 +14,12 @@ from .paths import data_dir
 
 def main():
     parser = argparse.ArgumentParser(description="Local campaign workbench")
-    parser.add_argument("command", choices=["serve", "fixture", "reset", "check"])
+    parser.add_argument("command", choices=["serve", "fixture", "reset", "check", "import-pdf"])
     parser.add_argument("--db", default=os.environ.get("CAMPAIGN_DB", data_dir() / "campaign.db"))
     parser.add_argument("--port", type=int, default=8899)
+    parser.add_argument("--campaign-id", type=int)
+    parser.add_argument("--file")
+    parser.add_argument("--title", default="")
     args = parser.parse_args()
     path = Path(args.db)
     if args.command == "reset":
@@ -24,6 +29,17 @@ def main():
     elif args.command == "check":
         with closing(connect(path)) as db:
             print("SQLite database ready; foreign_keys enabled:", db.execute("PRAGMA foreign_keys").fetchone()[0])
+    elif args.command == "import-pdf":
+        if not args.campaign_id or not args.file:
+            parser.error("import-pdf requires --campaign-id and --file")
+        try:
+            with closing(connect(path)) as db:
+                document_id = import_pdf(db, args.campaign_id, args.file, args.title)
+                document = library_document(db, args.campaign_id, document_id)
+                print(f"Private source #{document_id}: {document['title']} · {document['page_count']} PDF pages")
+                print(f"Open: http://127.0.0.1:{args.port}/workspace/{args.campaign_id}?doc=library_documents:{document_id}")
+        except DomainError as exc:
+            parser.error(exc.localized())
     elif args.command == "fixture":
         with closing(connect(path)) as db:
             existing = db.execute("""SELECT 1 FROM facts f JOIN decisions d ON d.id=f.decision_id

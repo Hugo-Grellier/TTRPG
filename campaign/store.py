@@ -19,6 +19,28 @@ CREATE TABLE IF NOT EXISTS sources (
   visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm'),
   UNIQUE (id, campaign_id)
 );
+CREATE TABLE IF NOT EXISTS library_documents (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
+  title TEXT NOT NULL, source_path TEXT NOT NULL, sha256 TEXT NOT NULL,
+  page_count INTEGER NOT NULL, extraction_method TEXT NOT NULL,
+  imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm'),
+  UNIQUE (campaign_id, sha256), UNIQUE (id, campaign_id)
+);
+CREATE TABLE IF NOT EXISTS library_pages (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL, document_id INTEGER NOT NULL,
+  pdf_page INTEGER NOT NULL, text TEXT NOT NULL, quality TEXT NOT NULL CHECK (quality IN ('text', 'thin', 'empty')),
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm'),
+  UNIQUE (document_id, pdf_page), UNIQUE (id, campaign_id),
+  FOREIGN KEY (document_id, campaign_id) REFERENCES library_documents(id, campaign_id)
+);
+CREATE TABLE IF NOT EXISTS library_comments (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL, page_id INTEGER NOT NULL,
+  quote TEXT NOT NULL, body TEXT NOT NULL, line_start INTEGER, line_end INTEGER, char_offset INTEGER,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  visibility TEXT NOT NULL DEFAULT 'gm' CHECK (visibility = 'gm'),
+  FOREIGN KEY (page_id, campaign_id) REFERENCES library_pages(id, campaign_id)
+);
 CREATE TABLE IF NOT EXISTS observations (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
   source_id INTEGER NOT NULL,
@@ -285,6 +307,10 @@ def comment_lines(db, campaign_id, target_kind, target_id):
     if target_kind == "product_docs":
         _campaign(db, campaign_id)
         return product_doc(target_id)[1].splitlines()
+    if target_kind == "library_pages":
+        _owned(db, "library_pages", target_id, campaign_id)
+        row = db.execute("SELECT text FROM library_pages WHERE id=?", (target_id,)).fetchone()
+        return row["text"].splitlines() or [""]
     if target_kind not in COMMENT_TARGETS:
         raise DomainError("error.item_missing")
     _owned(db, target_kind, target_id, campaign_id)
@@ -317,6 +343,9 @@ def add_comment(db, campaign_id, target_kind, target_id, quote, body, access="gm
         if target_kind == "product_docs":
             return db.execute("INSERT INTO product_comments(campaign_id, file_id, quote, body, line_start, line_end, char_offset) VALUES (?, ?, ?, ?, ?, ?, ?)",
                               (campaign_id, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
+        if target_kind == "library_pages":
+            return db.execute("INSERT INTO library_comments(campaign_id, page_id, quote, body, line_start, line_end, char_offset) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                              (campaign_id, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
         return db.execute("INSERT INTO document_comments(campaign_id, target_kind, target_id, quote, body, line_start, line_end, char_offset) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                           (campaign_id, target_kind, target_id, quote, body, line_start, line_end, char_offset)).lastrowid
 
@@ -326,6 +355,10 @@ def comments_for(db, campaign_id, target_kind, target_id):
         _campaign(db, campaign_id)
         product_doc(target_id)
         return db.execute("SELECT * FROM product_comments WHERE campaign_id=? AND file_id=? ORDER BY id",
+                          (campaign_id, target_id)).fetchall()
+    if target_kind == "library_pages":
+        _owned(db, "library_pages", target_id, campaign_id)
+        return db.execute("SELECT * FROM library_comments WHERE campaign_id=? AND page_id=? ORDER BY id",
                           (campaign_id, target_id)).fetchall()
     _owned(db, target_kind, target_id, campaign_id)
     return db.execute("SELECT * FROM document_comments WHERE campaign_id=? AND target_kind=? AND target_id=? ORDER BY id",

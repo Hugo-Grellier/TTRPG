@@ -12,6 +12,7 @@ python3 -m venv .venv
 ```
 
 `make` uses `.venv/bin/python` when it exists. No cloud account or paid API is required.
+Importing PDFs also needs the local `pdfinfo` and `pdftotext` commands.
 
 ```sh
 make doctor        # Python version and SQLite check
@@ -31,6 +32,12 @@ Open **Mira's ford — offline loop** from the campaign list. The left navigatio
 The workspace puts Codex/Claude Code conversation beside Markdown-rendered material and review comments. Select any passage, even one word, to comment on exactly that text; campaign record line numbers can also select a full line. The inline form shows the chosen passage, and clicking a saved comment returns to it. **Discuss in chat** on a saved comment prepares a focused prompt without calling a CLI. The composer offers editable playbooks and a searchable catalog of locally installed skills. Clicking **Send** passes the open campaign document and its comments, or the selected product-doc path and its comments, plus established facts to the selected installed CLI. The page returns immediately with a working state; you can browse documents while the local CLI runs, and its Markdown-formatted reply appears when it finishes. Each CLI can edit repository files in a private per-campaign draft Git worktree under the user data directory. On a selected preparation, it can edit that preparation's private Markdown draft. The workspace shows a diff and an explicit acceptance button for each changed product document or preparation. Replies cannot establish canon. CLI sessions resume on later messages. The bottom bar shows CLI status; it is not an interactive terminal.
 
 The fixture's fictional source leads to an initial proposal and a revision. Its prep sheet uses the revised proposal and an established fact. A simulated boat branch produces an observation; the GM's decision establishes its consequence. The corrected crossing fact flags the dependent prep sheet. The **Campaign records and forms** link opens the earlier data-entry view; search for “bell” there to see the promise, correction, and linked consequence with their decisions and source locators. Reload to check persistence.
+
+## Real scenario pilot
+
+The **Library** group can import a local PDF by its absolute file path. The file stays where it is; extracted pages, PDF page numbers, and extraction quality live in private SQLite outside Git. Open a page, search across the PDF, and select an exact passage to comment. The chat knows the selected PDF title and page number; **Include this private PDF page** must be checked before the full page and its comments are sent to the chosen CLI. Imported text remains source material and never establishes campaign facts. Reimporting the same file into the same campaign reuses its existing record.
+
+A private local pilot uses one 100-page French Pathfinder scenario already present on this machine: [open the scenario pilot](http://127.0.0.1:8908/workspace/1?doc=library_documents:1&page=8). Its database is under `~/.local/share/ttrpg/pilots/age-of-ashes-20261026/`; neither the PDF nor extracted passages are in this repository. The pilot found substantive text on 96 pages, limited text on two, and little or none on two. Page numbers refer to the PDF file, not necessarily the printed page labels. Images, maps, chapter structure, and citation accuracy against the printed page have not been verified. The CLI importer is also available with `python3 -m campaign import-pdf --campaign-id ID --file /absolute/path/to/scenario.pdf` (add `--db PATH` for another private database).
 
 To repeat the journey yourself, create a campaign and use the page's jump links: add a source, propose and revise, record an observation and establish a fact, prepare a situation, simulate an action, consolidate the resulting observation with a decision, and search. A proposal, prep sheet, or simulated event never becomes canon on its own.
 

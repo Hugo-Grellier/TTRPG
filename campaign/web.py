@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, quote as url_quote, urlparse
 from .agent_cli import CONTEXT, apply_draft_file, run_cli
 from .core import DomainError
 from .i18n import locale, t
+from .library import import_pdf
 from .prep_drafts import apply_preparation_draft, ensure_preparation_draft, restart_preparation_draft
 from .store import (add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, campaign_view, connect, correct_fact, create_campaign,
@@ -174,7 +175,9 @@ def make_handler(db_path):
                     if parsed.path == "/":
                         body = render_home(db, parse_qs(parsed.query).get("lang", ["en"])[0][:16])
                     elif parsed.path.startswith("/workspace/"):
-                        body = render_workspace(db, int(parsed.path.split("/")[2]), parse_qs(parsed.query).get("doc", [""])[0][:80])
+                        query = parse_qs(parsed.query)
+                        body = render_workspace(db, int(parsed.path.split("/")[2]), query.get("doc", [""])[0][:80],
+                                                int(query.get("page", ["1"])[0]), query.get("q", [""])[0][:100])
                     elif parsed.path.startswith("/campaign/"):
                         body = render_campaign(db, int(parsed.path.split("/")[2]), parse_qs(parsed.query).get("q", [""])[0][:200])
                     else:
@@ -233,7 +236,17 @@ def make_handler(db_path):
                             add_comment(db, campaign_id, kind, item_id, val("quote"), val("body"),
                                         line_start=int(start) if start else None, line_end=int(end) if end else None,
                                         char_offset=int(offset) if offset else None)
-                            self._send(303, "", f"/workspace/{campaign_id}?doc={kind}:{item_id}")
+                            if kind == "library_pages":
+                                page_row = db.execute("SELECT document_id, pdf_page FROM library_pages WHERE id=? AND campaign_id=?",
+                                                      (item_id, campaign_id)).fetchone()
+                                location = f'/workspace/{campaign_id}?doc=library_documents:{page_row["document_id"]}&page={page_row["pdf_page"]}'
+                            else:
+                                location = f"/workspace/{campaign_id}?doc={kind}:{item_id}"
+                            self._send(303, "", location)
+                            return
+                        elif parts[2] == "import-pdf":
+                            document_id = import_pdf(db, campaign_id, val("path"), val("title"))
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=library_documents:{document_id}")
                             return
                         elif parts[2] == "apply-draft":
                             file_id = int(val("file_id"))
@@ -262,7 +275,9 @@ def make_handler(db_path):
                             started = False
                             try:
                                 provider, prompt, selected = val("provider"), val("prompt"), val("doc")
-                                selected_context = document_context(db, campaign_id, selected) if selected else ""
+                                selected_page = int(val("page") or 1)
+                                include_text = not selected.startswith("library_documents:") or val("include_page") == "yes"
+                                selected_context = document_context(db, campaign_id, selected, selected_page, include_text) if selected else ""
                                 if selected.startswith("preparations:"):
                                     preparation_id = int(selected.split(":", 1)[1])
                                     draft_path = ensure_preparation_draft(db, campaign_id, preparation_id)
@@ -278,7 +293,8 @@ def make_handler(db_path):
                                                  args=(turn_id, provider, cli_prompt, prior[0] if prior else None,
                                                        campaign_id, language), daemon=True).start()
                                 started = True
-                                self._send(303, "", f"/workspace/{campaign_id}?doc={url_quote(selected, safe=':')}")
+                                page_suffix = f"&page={selected_page}" if selected.startswith("library_documents:") else ""
+                                self._send(303, "", f"/workspace/{campaign_id}?doc={url_quote(selected, safe=':')}{page_suffix}")
                                 return
                             except Exception:
                                 if not started:

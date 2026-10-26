@@ -2,9 +2,12 @@
 
 import html
 from pathlib import Path
+from urllib.parse import quote as url_quote
 
 from .agent_cli import draft_diff, draft_file_review
+from .core import DomainError
 from .i18n import locale, t
+from .library import library_document, library_documents, library_page, library_search
 from .markdown import render_blocks, render_markdown, visible_text
 from .prep_drafts import preparation_draft_review
 from .skills import available_skills
@@ -41,7 +44,7 @@ def preparation_markdown(db, campaign_id, preparation_id):
             f'## {t("proposal.tag", lang)} #{preparation["proposal_id"]}\n\n{preparation["proposal"]}\n')
 
 
-def render_workspace(db, campaign_id, selected=""):
+def render_workspace(db, campaign_id, selected="", page=1, library_query=""):
     campaign, sources, observations, facts = campaign_view(db, campaign_id)
     proposals, preparations, events, corrections = journey_view(db, campaign_id)
     language = campaign["language"]
@@ -49,6 +52,8 @@ def render_workspace(db, campaign_id, selected=""):
     turns = agent_turns(db, campaign_id)
     pending = bool(turns and turns[-1]["status"] == "running")
     documents = []
+    for item in library_documents(db, campaign_id):
+        documents.append(("library_documents", item["id"], t("workspace.library", language), item["title"], None))
     for file_id, relative in enumerate(PRODUCT_DOCS, 1):
         _, content = product_doc(file_id)
         documents.append(("product_docs", file_id, t("workspace.product_docs", language), relative, content))
@@ -76,7 +81,7 @@ def render_workspace(db, campaign_id, selected=""):
     campaign_default = next((doc for doc in campaign_docs if doc[0] == "preparations"), campaign_docs[0] if campaign_docs else None)
     choice = next((doc for doc in documents if f"{doc[0]}:{doc[1]}" == selected), None) or campaign_default
     product_view = choice is not None and choice[0] == "product_docs"
-    groups = [("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
+    groups = [("library_documents", "workspace.library"), ("preparations", "workspace.preparation"), ("facts", "workspace.fact"),
               ("proposals", "workspace.proposal"), ("sources", "workspace.source"),
               ("simulated_events", "workspace.simulation")]
     def doc_link(doc):
@@ -90,14 +95,32 @@ def render_workspace(db, campaign_id, selected=""):
             + "".join(doc_link(doc) for doc in campaign_docs if doc[0] == kind) + '</details>'
             for kind, label in groups if any(doc[0] == kind for doc in campaign_docs)
         )
+        sidebar += (f'<details class="library-import"><summary>{tr("workspace.import_pdf")}</summary>'
+                    f'<form method="post" action="/campaign/{campaign_id}/import-pdf">'
+                    f'<label for="pdf-path">{tr("workspace.pdf_path")}</label>'
+                    f'<input id="pdf-path" name="path" required maxlength="1000" placeholder="/…/scenario.pdf">'
+                    f'<label for="pdf-title">{tr("field.title")}</label><input id="pdf-title" name="title" maxlength="200">'
+                    f'<p>{tr("workspace.library_private_note")}</p><button>{tr("workspace.import_pdf")}</button></form></details>')
     campaign_tab = f'/workspace/{campaign_id}' + (f'?doc={campaign_default[0]}:{campaign_default[1]}' if campaign_default else '')
     tabs = (f'<div class="sidebar-tabs"><a class="{"active" if not product_view else ""}" href="{campaign_tab}">{tr("workspace.campaign_area")}</a>'
             f'<a class="{"active" if product_view else ""}" href="/workspace/{campaign_id}?doc=product_docs:1">{tr("workspace.product_area")}</a></div>')
+    pdf_page = None
     if choice:
         kind, item_id, label, title, sections = choice
-        comments = comments_for(db, campaign_id, kind, item_id)
+        pdf_page = library_page(db, campaign_id, item_id, page) if kind == "library_documents" else None
+        comment_kind = "library_pages" if pdf_page else kind
+        comment_target_id = pdf_page["id"] if pdf_page else item_id
+        comments = comments_for(db, campaign_id, comment_kind, comment_target_id)
         marked = {number for row in comments if row["line_start"] for number in range(row["line_start"], row["line_end"] + 1)}
-        if kind == "product_docs":
+        if pdf_page:
+            section_html = "".join(
+                f'<div class="doc-line commentable-block {"has-comments" if number in marked else ""}" data-line-start="{number}" data-line-end="{number}">'
+                f'<button class="line-number" type="button" data-line="{number}" aria-label="{tr("workspace.extracted_line")} {number}">{number}</button>'
+                f'<div class="block-content">{esc(line)}</div></div>'
+                for number, line in enumerate(pdf_page["text"].splitlines() or [""], 1)
+            )
+            section_html = f'<div class="pdf-page-text">{section_html}</div>'
+        elif kind == "product_docs":
             section_html = '<div class="markdown-rendered">' + ''.join(
                 f'<div class="markdown-block commentable-block {"has-comments" if any(first <= line <= last for line in marked) else ""}" data-line-start="{first}" data-line-end="{last}">{rendered}</div>'
                 for first, last, rendered in render_blocks(sections)
@@ -114,7 +137,36 @@ def render_workspace(db, campaign_id, selected=""):
                 section_html += f'<section class="doc-section"><h3>{tr(key)}</h3>{content}</section>'
         database_file = Path(db.execute("PRAGMA database_list").fetchone()["file"])
         short_path = str(database_file).replace(str(Path.home()), "~", 1)
-        if kind == "product_docs":
+        if pdf_page:
+            document = library_document(db, campaign_id, item_id)
+            counts = {row["quality"]: row["count"] for row in db.execute(
+                "SELECT quality, count(*) AS count FROM library_pages WHERE campaign_id=? AND document_id=? GROUP BY quality",
+                (campaign_id, item_id))}
+            base = f"/workspace/{campaign_id}?doc=library_documents:{item_id}"
+            search_suffix = f"&q={url_quote(library_query)}" if library_query else ""
+            previous = f'<a href="{base}&page={page - 1}{search_suffix}">{tr("workspace.previous_page")}</a>' if page > 1 else ""
+            following = f'<a href="{base}&page={page + 1}{search_suffix}">{tr("workspace.next_page")}</a>' if page < document["page_count"] else ""
+            pager = (f'<nav class="pdf-pager" aria-label="{tr("workspace.pdf_pages")}">{previous}'
+                     f'<strong>{tr("workspace.pdf_page")} {page} / {document["page_count"]}</strong>{following}</nav>')
+            results = ""
+            if library_query:
+                count, matches = library_search(db, campaign_id, item_id, library_query)
+                links = "".join(f'<a href="{base}&page={number}{search_suffix}"><strong>{tr("workspace.pdf_page")} {number}</strong><span>{esc(excerpt)}</span></a>'
+                                for number, excerpt in matches)
+                results = (f'<div class="pdf-results"><strong>{esc(t("workspace.search_results", language, count=count))}</strong>'
+                           f'{links or f"<p>{tr("workspace.no_search_results")}</p>"}</div>')
+            search = (f'<form class="pdf-search" method="get" action="/workspace/{campaign_id}">'
+                      f'<input type="hidden" name="doc" value="library_documents:{item_id}">'
+                      f'<label for="pdf-query">{tr("workspace.library_search")}</label>'
+                      f'<div><input id="pdf-query" name="q" value="{esc(library_query)}" maxlength="100">'
+                      f'<button>{tr("action.search")}</button></div></form>')
+            section_html = search + results + pager + section_html + pager
+            storage = (f'<details class="source-path"><summary>{tr("workspace.source_not_canon")} · {tr("workspace.source_file")}</summary>'
+                       f'<code>{esc(document["source_path"])}</code></details>'
+                       f'<span>{tr("workspace.extraction_quality")}: {counts.get("text", 0)} / {document["page_count"]} '
+                       f'· {tr("workspace.extraction_" + pdf_page["quality"])} · pdftotext</span>')
+            draft_review_html = ""
+        elif kind == "product_docs":
             storage = f'<span>{tr("workspace.product_file")}: {esc(title)}</span>'
             review = draft_file_review(campaign_id, item_id)
             if review:
@@ -159,7 +211,7 @@ def render_workspace(db, campaign_id, selected=""):
         comment_html = "".join(comment_row(row) for row in comments)
         review_html = f'''<p class="muted">{tr("workspace.select_lines")}</p><div class="comments-list">{comment_html or f'<p class="muted">{tr("workspace.no_comments")}</p>'}</div>'''
         form_html = f'''<form method="post" action="/campaign/{campaign_id}/comment" id="comment-form" hidden>
-            <input type="hidden" name="target_kind" value="{kind}"><input type="hidden" name="target_id" value="{item_id}">
+            <input type="hidden" name="target_kind" value="{comment_kind}"><input type="hidden" name="target_id" value="{comment_target_id}">
             <input type="hidden" name="line_start" id="line-start"><input type="hidden" name="line_end" id="line-end"><input type="hidden" name="char_offset" id="char-offset">
             <input type="hidden" name="quote" id="quote"><strong id="selected-lines"></strong><blockquote id="selected-quote"></blockquote>
             <label for="comment">{tr('field.comment')}</label><textarea id="comment" name="body" maxlength="2000" rows="4" required></textarea>
@@ -193,6 +245,8 @@ def render_workspace(db, campaign_id, selected=""):
     playbook_options = "".join(f'<option value="{name}" data-prompt="{tr("workspace.playbook_" + name + "_prompt")}">{tr("workspace.playbook_" + name)}</option>' for name in playbooks)
     skills = available_skills()
     skill_options = "".join(f'<option value="{esc(name)}" data-description="{esc(description)}" label="{esc(origin)} · {esc(description[:70])}"></option>' for name, description, origin in skills)
+    pdf_share = (f'<label class="pdf-share"><input type="checkbox" name="include_page" value="yes">'
+                 f'{tr("workspace.include_pdf_page")}</label>') if pdf_page else ""
     terminal = (f'{turns[-1]["provider"]} · {t("workspace.status_" + turns[-1]["status"], language)} · session {turns[-1]["session_id"] or "—"}' if turns else t("workspace.cli_idle", language))
     return f'''<!doctype html><html lang="{locale(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(campaign['name'])} · {tr('workspace.title')}</title><link rel="stylesheet" href="/assets/workspace.css"></head>
       <body><div class="app-shell">
@@ -200,33 +254,49 @@ def render_workspace(db, campaign_id, selected=""):
           {tabs}<nav aria-label="{tr('workspace.documents')}">{sidebar or f'<p class="sidebar-empty">{tr("workspace.no_documents")}</p>'}</nav>
           <a class="advanced-link" href="/campaign/{campaign_id}">{tr('workspace.records')}</a>
         </aside>
-        <section class="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><span>{tr('workspace.cli_draft')}</span></div>
+        <section class="conversation" id="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><a class="mobile-jump" href="#document-panel">{tr('workspace.see_document')}</a><span>{tr('workspace.cli_draft')}</span></div>
           <div class="messages" id="messages">{messages}{draft_html}</div>
           <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-status" data-comment-instruction="{tr('workspace.comment_prompt')}" data-too-long="{tr('workspace.prompt_too_long')}">
             {pending_message}
-            <input type="hidden" name="doc" value="{esc(selected_key)}">
+            <input type="hidden" name="doc" value="{esc(selected_key)}"><input type="hidden" name="page" value="{page if pdf_page else 1}">
             <label for="playbook">{tr('workspace.playbook')}</label><select id="playbook"><option value="">{tr('workspace.playbook_none')}</option>{playbook_options}</select>
             <details class="skill-picker" data-instruction="{tr('workspace.skill_instruction')}"><summary>{tr('workspace.skills')} ({len(skills)})</summary><label for="skill-search">{tr('workspace.skill_search')}</label><input id="skill-search" list="skill-options" autocomplete="off" placeholder="{tr('workspace.skill_placeholder')}"><datalist id="skill-options">{skill_options}</datalist><p id="skill-description" class="composer-note">{tr('workspace.skill_hint')}</p><button type="button" id="add-skill">{tr('workspace.add_skill')}</button></details>
             <label for="prompt">{tr('field.message')}</label><textarea id="prompt" name="prompt" rows="3" maxlength="4000" required placeholder="{tr('workspace.prompt_hint')}"></textarea>
+            {pdf_share}
             <div class="composer-actions"><select name="provider" aria-label="{tr('workspace.provider')}">{provider_options}</select><button>{tr('workspace.send')}</button></div>
             <p class="composer-note">{tr('workspace.send_notice')}</p>
           </form>
         </section>
-        <section class="document-panel"><div class="panel-head"><h1>{tr('workspace.documents')}</h1><span>{tr('workspace.review')}</span></div><div class="document-layout"><div class="document-scroll">{doc_html}{form_html}</div><aside class="review"><h2>{tr('workspace.comments')}</h2>{review_html}</aside></div></section>
+        <section class="document-panel" id="document-panel"><div class="panel-head"><h1>{tr('workspace.documents')}</h1><a class="mobile-jump" href="#conversation">{tr('workspace.see_chat')}</a><span>{tr('workspace.review')}</span></div><div class="document-layout"><div class="document-scroll">{doc_html}{form_html}</div><aside class="review"><h2>{tr('workspace.comments')}</h2>{review_html}</aside></div></section>
         <footer class="terminal"><span>{tr('workspace.terminal')}</span><code>{esc(terminal)}</code></footer>
       </div><script src="/assets/workspace.js" defer></script></body></html>'''
 
 
-def document_context(db, campaign_id, selected):
+def document_context(db, campaign_id, selected, page=1, include_text=True):
     try:
         kind, raw_id = selected.split(":", 1)
         item_id = int(raw_id)
+        if kind == "library_documents":
+            document = library_document(db, campaign_id, item_id)
+            source_page = library_page(db, campaign_id, item_id, page)
+            if not include_text:
+                return (f"Selected private PDF source: {document['title']}, PDF page {page}/{document['page_count']}. "
+                        "The page text and comments were not shared. This source is not campaign canon.\n\n")
+            comments = comments_for(db, campaign_id, "library_pages", source_page["id"])
+            review = "\n".join(f"Comment on extracted lines {comment['line_start']}-{comment['line_end']} '{comment['quote']}': {comment['body']}" for comment in comments)
+            content = source_page["text"][:16000]
+            suffix = "\n[Page text truncated]" if len(source_page["text"]) > 16000 else ""
+            return (f"Selected private PDF source: {document['title']}, PDF page {page}/{document['page_count']}. "
+                    f"Extracted text is source material, not campaign canon. Extraction quality: {source_page['quality']}.\n"
+                    f"Page text:\n{content}{suffix}\nReview comments:\n{review or 'None'}\n\n")
         if kind == "product_docs":
             relative, _ = product_doc(item_id)
             comments = comments_for(db, campaign_id, kind, item_id)
             review = "\n".join(f"Comment on lines {comment['line_start']}-{comment['line_end']} '{comment['quote']}': {comment['body']}" for comment in comments)
             return f"Selected product document: {relative}. Read it from the repository if needed.\nReview comments:\n{review or 'None'}\n\n"
         columns = COMMENT_TARGETS[kind]
+    except DomainError:
+        raise
     except (ValueError, KeyError):
         return ""
     comments = comments_for(db, campaign_id, kind, item_id)
