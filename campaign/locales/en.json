@@ -110,6 +110,7 @@
   "workspace.folder_personnages": "People",
   "workspace.folder_lieux": "Places",
   "workspace.folder_factions": "Factions",
+  "workspace.folder_scenes": "Scenes",
   "workspace.dossier": "Scenario dossiers",
   "workspace.include_dossier": "Include private dossier elements in this message",
   "workspace.see_document": "See document",
