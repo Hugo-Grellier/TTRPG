@@ -181,3 +181,5 @@
 .sheet-mode .document.campaign-file{max-width:850px}
 .sheet-mode .document-scroll{padding:22px clamp(18px,3vw,34px)}
 @media(max-width:700px){.sheet-mode .document-layout{display:flex;flex-direction:column}.sheet-mode .document-scroll{height:70vh;min-height:420px;padding:12px}.sheet-mode.review-open .review{display:block;min-height:180px;max-height:260px}.sheet-mode .document.campaign-file{padding:24px 18px}}
+.sheet-draft-start{margin:0 0 22px}.sheet-draft-start button{font-size:.8rem;padding:8px 12px}.sheet-draft-review{margin:0 0 24px;background:#f4faf7;border-color:#c9ddd4}.sheet-draft-review code{display:block;overflow-wrap:anywhere;padding:8px;background:#fff;border:1px solid #dbe7df;border-radius:4px;font-size:.75rem}.sheet-draft-review ul{padding-left:20px;font-size:.82rem;color:#9a553a;line-height:1.5}
+.draft-access-note{display:block;margin:5px 0 0 20px;color:#806b54;line-height:1.35}

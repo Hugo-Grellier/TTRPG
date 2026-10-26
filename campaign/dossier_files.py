@@ -165,22 +165,8 @@ def validate_dossier(db, campaign_id):
     root = dossier_root(db, campaign_id)
     problems = []
     for row in dossier_documents(db, campaign_id):
-        _, content, path = dossier_document(db, campaign_id, row["id"])
-        for match in LINK.finditer(content):
-            target = (path.parent / match[1]).resolve()
-            if not target.is_relative_to(root.resolve()) or not target.is_file():
-                problems.append(f'{row["path"]}: missing sheet {match[1]}')
-        for match in SOURCE_REF.finditer(content):
-            document_id, page_number, line_number = map(int, match.groups())
-            page = db.execute("SELECT text FROM library_pages WHERE campaign_id=? AND document_id=? AND pdf_page=?",
-                              (campaign_id, document_id, page_number)).fetchone()
-            if page is None or not 1 <= line_number <= len(page["text"].splitlines()):
-                problems.append(f'{row["path"]}: invalid PDF locator {match[0]}')
-        for match in VISUAL.finditer(content):
-            try:
-                visual_file(db, campaign_id, match[1])
-            except DomainError:
-                problems.append(f'{row["path"]}: missing visual {match[1]}')
+        _, content, _ = dossier_document(db, campaign_id, row["id"])
+        problems.extend(document_problems(db, campaign_id, row["path"], content))
     manifest = root / "bible.json"
     if manifest.is_file():
         try:
@@ -202,4 +188,27 @@ def validate_dossier(db, campaign_id):
                             visual_file(db, campaign_id, item[key])
                         except DomainError:
                             problems.append(f'bible.json: missing visual {item[key]}')
+    return problems
+
+
+def document_problems(db, campaign_id, relative, content):
+    """Validate one saved or proposed sheet against this campaign's private dossier."""
+    root = dossier_root(db, campaign_id).resolve()
+    parent = (root / relative).parent
+    problems = []
+    for match in LINK.finditer(content):
+        target = (parent / match[1]).resolve()
+        if not target.is_relative_to(root) or not target.is_file():
+            problems.append(f'{relative}: missing sheet {match[1]}')
+    for match in SOURCE_REF.finditer(content):
+        document_id, page_number, line_number = map(int, match.groups())
+        page = db.execute("SELECT text FROM library_pages WHERE campaign_id=? AND document_id=? AND pdf_page=?",
+                          (campaign_id, document_id, page_number)).fetchone()
+        if page is None or not 1 <= line_number <= len(page["text"].splitlines()):
+            problems.append(f'{relative}: invalid PDF locator {match[0]}')
+    for match in VISUAL.finditer(content):
+        try:
+            visual_file(db, campaign_id, match[1])
+        except DomainError:
+            problems.append(f'{relative}: missing visual {match[1]}')
     return problems

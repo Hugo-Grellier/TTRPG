@@ -262,5 +262,14 @@
   "sheet.overview": "DOSSIER",
   "sheet.other": "FICHE",
   "sheet.proposal": "PROPOSITION MJ · NON CANONIQUE",
-  "sheet.storage": "Fichier Markdown privé · ouvrir dans un autre éditeur"
+  "sheet.storage": "Fichier Markdown privé · ouvrir dans un autre éditeur",
+  "workspace.start_sheet_draft": "Créer un brouillon modifiable",
+  "workspace.apply_sheet_draft": "Accepter cette révision de fiche",
+  "workspace.restart_sheet_draft": "Commencer une autre révision",
+  "workspace.sheet_draft_review": "Brouillon de fiche de campagne",
+  "workspace.sheet_draft_hint": "Modifiez ce brouillon privé dans un éditeur ou avec le CLI connecté. Seule l’acceptation change la fiche de campagne.",
+  "workspace.sheet_draft_invalid": "Le brouillon contient des références cassées ou n’a pas de titre Markdown.",
+  "workspace.include_sheet": "Inclure cette fiche privée dans le prochain message au CLI et créer ou réutiliser son brouillon modifiable",
+  "workspace.sheet_draft_access": "Un brouillon existant reste accessible dans le worktree CLI de cette campagne après ce tour.",
+  "error.campaign_draft_invalid": "La fiche de campagne proposée contient des références cassées ou un Markdown invalide."
 }

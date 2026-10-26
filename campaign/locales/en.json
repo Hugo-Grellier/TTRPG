@@ -262,5 +262,14 @@
   "sheet.overview": "DOSSIER",
   "sheet.other": "SHEET",
   "sheet.proposal": "GM PROPOSAL · NOT CANON",
-  "sheet.storage": "Private Markdown file · open in another editor"
+  "sheet.storage": "Private Markdown file · open in another editor",
+  "workspace.start_sheet_draft": "Create editable sheet draft",
+  "workspace.apply_sheet_draft": "Accept this sheet revision",
+  "workspace.restart_sheet_draft": "Start another sheet revision",
+  "workspace.sheet_draft_review": "Campaign sheet draft",
+  "workspace.sheet_draft_hint": "Edit this private draft in an editor or through the connected CLI. Only acceptance changes the campaign sheet.",
+  "workspace.sheet_draft_invalid": "The draft has broken references or no Markdown title.",
+  "workspace.include_sheet": "Include this private sheet in the next CLI prompt and create or reuse its editable draft",
+  "workspace.sheet_draft_access": "An existing draft remains accessible in this campaign's CLI worktree after this turn.",
+  "error.campaign_draft_invalid": "The proposed campaign sheet has broken references or invalid Markdown."
 }

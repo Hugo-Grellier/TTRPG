@@ -8,6 +8,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote as url_quote, urlparse
 
 from .agent_cli import CONTEXT, apply_draft_file, run_cli
+from .campaign_file_drafts import (apply_campaign_file_draft, ensure_campaign_file_draft,
+                                   restart_campaign_file_draft)
 from .core import DomainError
 from .dossier_files import visual_file
 from .i18n import locale, t
@@ -264,6 +266,21 @@ def make_handler(db_path):
                             apply_draft_file(campaign_id, file_id)
                             self._send(303, "", f"/workspace/{campaign_id}?doc=product_docs:{file_id}")
                             return
+                        elif parts[2] == "start-campaign-file-draft":
+                            file_id = int(val("file_id"))
+                            ensure_campaign_file_draft(db, campaign_id, file_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=campaign_files:{file_id}")
+                            return
+                        elif parts[2] == "apply-campaign-file-draft":
+                            file_id = int(val("file_id"))
+                            apply_campaign_file_draft(db, campaign_id, file_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=campaign_files:{file_id}")
+                            return
+                        elif parts[2] == "restart-campaign-file-draft":
+                            file_id = int(val("file_id"))
+                            restart_campaign_file_draft(db, campaign_id, file_id)
+                            self._send(303, "", f"/workspace/{campaign_id}?doc=campaign_files:{file_id}")
+                            return
                         elif parts[2] == "start-preparation-draft":
                             preparation_id = int(val("preparation_id"))
                             ensure_preparation_draft(db, campaign_id, preparation_id)
@@ -295,6 +312,12 @@ def make_handler(db_path):
                                     selected_context += (f"Editable private preparation draft: {draft_path}. "
                                                          "Edit only the text between the field markers when revising this preparation. "
                                                          "The GM reviews and accepts changes in the workspace.\n\n")
+                                if selected.startswith("campaign_files:") and include_text:
+                                    file_id = int(selected.split(":", 1)[1])
+                                    draft_path = ensure_campaign_file_draft(db, campaign_id, file_id)
+                                    selected_context += (f"Editable private campaign sheet draft: {draft_path}. "
+                                                         "Edit this draft when revising the selected sheet; do not edit the original campaign file. "
+                                                         "The GM reviews the diff and accepts changes in the workspace.\n\n")
                                 prior = db.execute("SELECT session_id FROM agent_turns WHERE campaign_id=? AND provider=? AND status='complete' AND session_id IS NOT NULL ORDER BY id DESC LIMIT 1", (campaign_id, provider)).fetchone()
                                 turn_id = start_agent_turn(db, campaign_id, provider, prompt)
                                 facts = campaign_view(db, campaign_id)[3]

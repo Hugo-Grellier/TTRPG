@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import quote as url_quote
 
 from .agent_cli import draft_diff, draft_file_review
+from .campaign_file_drafts import campaign_file_draft_review
 from .core import DomainError
 from .dossier_files import backlinks, bible_element_texts, document_title, dossier_document, dossier_documents, dossier_root, linked_markdown, visual_file
 from .i18n import locale, t
@@ -435,6 +436,23 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
             storage = f'<span>{tr("workspace.campaign_storage")}: <code title="{esc(database_file)}">{esc(short_path)}</code></span>{export}'
         if kind == "campaign_files":
             file_row, _, file_path = dossier_document(db, campaign_id, item_id)
+            sheet_review = campaign_file_draft_review(db, campaign_id, item_id)
+            if sheet_review is None:
+                draft_review_html = (f'<form class="sheet-draft-start" method="post" action="/campaign/{campaign_id}/start-campaign-file-draft">'
+                                     f'<input type="hidden" name="file_id" value="{item_id}"><button>{tr("workspace.start_sheet_draft")}</button></form>')
+            else:
+                action = (f'<form method="post" action="/campaign/{campaign_id}/apply-campaign-file-draft">'
+                          f'<input type="hidden" name="file_id" value="{item_id}"><button>{tr("workspace.apply_sheet_draft")}</button></form>') if sheet_review["status"] == "ready" else ""
+                if sheet_review["status"] == "applied":
+                    action = (f'<form method="post" action="/campaign/{campaign_id}/restart-campaign-file-draft">'
+                              f'<input type="hidden" name="file_id" value="{item_id}"><button>{tr("workspace.restart_sheet_draft")}</button></form>')
+                problems = "".join(f'<li>{esc(problem)}</li>' for problem in sheet_review["problems"])
+                status_label = "workspace.sheet_draft_invalid" if sheet_review["status"] == "invalid" else "workspace.draft_" + sheet_review["status"]
+                draft_review_html = (f'<details class="file-review sheet-draft-review" {"open" if sheet_review["status"] != "unchanged" else ""}>'
+                                     f'<summary>{tr("workspace.sheet_draft_review")} · {tr(status_label)}</summary>'
+                                     f'<p>{tr("workspace.sheet_draft_hint")}</p><code>{esc(sheet_review["path"])}</code>'
+                                     f'{f"<ul>{problems}</ul>" if problems else ""}'
+                                     f'{f"<pre>{esc(sheet_review["diff"])}</pre>" if sheet_review["diff"] else ""}{action}</details>')
             sheet_type = file_row["path"].split("/", 1)[0] if "/" in file_row["path"] else "overview"
             labels = {"personnages": "sheet.person", "people": "sheet.person", "lieux": "sheet.place",
                       "places": "sheet.place", "factions": "sheet.faction", "scenes": "sheet.scene", "overview": "sheet.overview"}
@@ -450,7 +468,7 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
         sheet_class = (f'campaign-file sheet-{css_type} '
                        f'{"sheet-timeline" if file_row["path"] == "04-Chronologie.md" else ""}'
                        if kind == "campaign_files" else "")
-        body = (f'{kicker}{section_html}{draft_review_html}<div class="document-storage">{storage}</div>'
+        body = (f'{kicker}{draft_review_html}{section_html}<div class="document-storage">{storage}</div>'
                 if kind == "campaign_files" else f'{heading}<div class="document-storage">{storage}</div>{draft_review_html}{section_html}')
         doc_html = f'<div class="document-top"><span>{esc(label)} #{item_id}</span><span>{tr("workspace.private")}</span></div><article class="document {sheet_class}" id="document">{body}</article>'
         def comment_row(row):
@@ -521,9 +539,12 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
     skills = available_skills()
     skill_options = "".join(f'<option value="{esc(name)}" data-description="{esc(description)}" label="{esc(origin)} · {esc(description[:70])}"></option>' for name, description, origin in skills)
     share_private = bool(pdf_page or (choice and choice[0] in ("scenario_dossiers", "campaign_files")))
-    share_label = "workspace.include_dossier" if choice and choice[0] in ("scenario_dossiers", "campaign_files") else "workspace.include_pdf_page"
+    share_label = ("workspace.include_sheet" if choice and choice[0] == "campaign_files" else
+                   "workspace.include_dossier" if choice and choice[0] == "scenario_dossiers" else "workspace.include_pdf_page")
     pdf_share = (f'<label class="pdf-share"><input type="checkbox" name="include_page" value="yes">'
-                 f'{tr(share_label)}</label>') if share_private else ""
+                 f'{tr(share_label)}</label>'
+                 + (f'<small class="draft-access-note">{tr("workspace.sheet_draft_access")}</small>'
+                    if choice and choice[0] == "campaign_files" and sheet_review is not None else "")) if share_private else ""
     terminal = (f'{turns[-1]["provider"]} · {t("workspace.status_" + turns[-1]["status"], language)} · session {turns[-1]["session_id"] or "—"}' if turns else t("workspace.cli_idle", language))
     if bible and not selected:
         document_control = (f'<a class="comment-mode-toggle" href="/workspace/{campaign_id}{"" if comment_mode else "?comment=1"}">'
