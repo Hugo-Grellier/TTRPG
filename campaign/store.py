@@ -62,9 +62,19 @@ CREATE TABLE IF NOT EXISTS scenario_candidates (
   kind TEXT NOT NULL, name TEXT NOT NULL, evidence TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'selected', 'rejected', 'error')),
   attempts INTEGER NOT NULL DEFAULT 0, model TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
   UNIQUE (document_id, pdf_page, line_number, kind),
   FOREIGN KEY (section_id) REFERENCES scenario_sections(id),
   FOREIGN KEY (document_id, campaign_id) REFERENCES library_documents(id, campaign_id)
+);
+CREATE TABLE IF NOT EXISTS scenario_elements (
+  id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL, document_id INTEGER NOT NULL,
+  section_id INTEGER NOT NULL, pdf_page INTEGER NOT NULL, line_number INTEGER NOT NULL,
+  kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, quote TEXT NOT NULL,
+  reviewer TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'proposed' CHECK (status='proposed'),
+  UNIQUE (document_id,pdf_page,line_number,kind,title),
+  FOREIGN KEY (section_id) REFERENCES scenario_sections(id),
+  FOREIGN KEY (document_id,campaign_id) REFERENCES library_documents(id,campaign_id)
 );
 CREATE TABLE IF NOT EXISTS observations (
   id INTEGER PRIMARY KEY, campaign_id INTEGER NOT NULL REFERENCES campaigns(id),
@@ -167,8 +177,9 @@ def connect(path: str | Path) -> sqlite3.Connection:
             if column not in columns:
                 db.execute(f"ALTER TABLE {table} ADD COLUMN {column} INTEGER")
     candidate_columns = {row["name"] for row in db.execute("PRAGMA table_info(scenario_candidates)")}
-    if "category" not in candidate_columns:
-        db.execute("ALTER TABLE scenario_candidates ADD COLUMN category TEXT NOT NULL DEFAULT ''")
+    for column in ("category", "note"):
+        if column not in candidate_columns:
+            db.execute(f"ALTER TABLE scenario_candidates ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
     return db
 
 

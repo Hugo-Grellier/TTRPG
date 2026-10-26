@@ -1,12 +1,6 @@
-"""Resumable, private scenario dossier from page-addressed PDF text.
+"""Private scenario source packets and agent-reviewed dossier proposals."""
 
-Source excerpts remain proposals. A local model filters exact candidates; it never
-writes campaign facts or introduces uncited names.
-"""
-
-import json
 import re
-from urllib.request import Request, urlopen
 
 from .core import DomainError
 from .library import library_document
@@ -123,119 +117,120 @@ def dossier_stats(db, campaign_id, document_id):
         (campaign_id, document_id) * 5).fetchone()
 
 
-def _ollama(prompt, model, timeout=240, schema=None):
-    base = "http://127.0.0.1:11434"
-    with urlopen(base + "/api/tags", timeout=5) as response:
-        names = {item["name"] for item in json.load(response)["models"]}
-    if model not in names:
-        raise RuntimeError(f"Local Ollama model unavailable: {model}")
-    payload = json.dumps({"model": model, "prompt": prompt, "stream": False, "think": False,
-                          "format": schema or {"type": "object", "properties": {"keep": {"type": "array", "items": {"type": "integer"}}},
-                                               "required": ["keep"], "additionalProperties": False},
-                          "options": {"temperature": 0, "num_ctx": 4096, "num_predict": 350}}).encode()
-    with urlopen(Request(base + "/api/generate", data=payload, headers={"Content-Type": "application/json"}), timeout=timeout) as response:
-        result = json.load(response)
-    return json.loads(result["response"])
+CATEGORIES = {"person", "place", "faction", "item", "creature", "topic"}
+REVIEWERS = {"codex-chat", "claude-code-chat"}
+ELEMENT_KINDS = {"scene", "person", "place", "faction", "item", "creature", "clue",
+                 "choice", "event", "encounter", "secret", "hook", "rule"}
 
 
-def analyze_document(db, campaign_id, document_id, model="qwen3:4b-16k", batch_size=16, reviewer=None, progress=None):
-    """Filter source candidates in checkpoints. Safe to rerun after interruption."""
-    index_document(db, campaign_id, document_id)
-    reviewer = reviewer or (lambda prompt: _ollama(prompt, model))
-    with db:
-        db.execute("""UPDATE scenario_candidates SET status='selected',model='structural'
-            WHERE campaign_id=? AND document_id=? AND kind IN ('scene','heading','event','encounter') AND status='pending'""",
-            (campaign_id, document_id))
-    while True:
-        rows = db.execute("""SELECT id,kind,name,pdf_page FROM scenario_candidates
-            WHERE campaign_id=? AND document_id=? AND status='pending' ORDER BY id LIMIT ?""",
-            (campaign_id, document_id, batch_size)).fetchall()
-        if not rows:
-            break
-        choices = "\n".join(f"{r['id']} | {r['kind']} | PDF p.{r['pdf_page']} | {r['name']}" for r in rows)
-        prompt = (f"Tu édites un dossier PRATIQUE pour un MJ. Parmi les {len(rows)} fragments du PDF ci-dessous, "
-                  f"choisis AU MAXIMUM {min(6, len(rows))} éléments vraiment utilisables pendant une séance. "
-                  "Priorité aux scènes nommées, personnages, lieux, rencontres, indices précis et choix avec conséquence explicite. "
-                  "Rejette absolument les phrases coupées, titres répétés, crédits, renvois de livre, règles génériques et simple narration. "
-                  "Si aucun ne convient, keep est vide. Réponds uniquement en JSON {'keep':[ID,...]}.\n" + choices)
-        try:
-            response = reviewer(prompt)
-            valid = {row["id"] for row in rows}
-            keep = set(response["keep"])
-            if len(keep) > 6 or not all(type(item) is int and item in valid for item in keep):
-                raise ValueError("Model returned an unknown candidate ID")
-        except Exception:
-            with db:
-                db.executemany("UPDATE scenario_candidates SET attempts=attempts+1 WHERE id=?", [(row["id"],) for row in rows])
-            raise
-        with db:
-            db.executemany("UPDATE scenario_candidates SET status=?, attempts=attempts+1, model=? WHERE id=?",
-                           [("selected" if row["id"] in keep else "rejected", model, row["id"]) for row in rows])
-        if progress:
-            progress(dossier_stats(db, campaign_id, document_id))
-    return dossier_stats(db, campaign_id, document_id)
-
-
-def summarize_document(db, campaign_id, document_id, model="qwen3:4b-16k", summarizer=None, progress=None):
-    """Write short provisional chapter overviews from cited, selected cards."""
+def review_packet(db, campaign_id, document_id, first_page, last_page):
+    """Bounded private source packet for an agent already in the GM's chat."""
     document = library_document(db, campaign_id, document_id)
-    schema = {"type": "object", "properties": {"summary": {"type": "string"}},
-              "required": ["summary"], "additionalProperties": False}
-    summarizer = summarizer or (lambda prompt: _ollama(prompt, model, schema=schema))
-    sections = db.execute("""SELECT * FROM scenario_sections WHERE campaign_id=? AND document_id=?
-        AND summary_status='pending' ORDER BY start_page""", (campaign_id, document_id)).fetchall()
-    for section in sections:
-        if ((section["title"] == "Ouverture et repères" and document["page_count"] > 10)
-                or section["title"] == "Publicité et crédits"
-                or (document["page_count"] > 10 and section["title"].startswith("Annexe"))):
-            continue
-        rows = db.execute("""SELECT id,pdf_page,kind,evidence FROM scenario_candidates
-            WHERE section_id=? AND status='selected' ORDER BY pdf_page,line_number""",
-            (section["id"],)).fetchall()
-        if not rows:
-            continue
-        if len(rows) > 32:
-            rows = [rows[round(i * (len(rows) - 1) / 31)] for i in range(32)]
-        excerpts = "\n".join(f"{r['id']} | p.{r['pdf_page']} | {r['kind']} | {r['evidence'][:220]}" for r in rows)
-        prompt = (f"Rédige pour un MJ un aperçu de 2 à 4 phrases de la section « {section['title']} ». "
-                  "Utilise exclusivement les extraits exacts ci-dessous. Décris situation, action jouable et enjeu. "
-                  "Si les extraits sont insuffisants, dis-le. Ne complète pas l'intrigue de mémoire. "
-                  "Réponds en JSON avec summary.\n" + excerpts)
-        result = summarizer(prompt)
-        summary = result["summary"].strip()
-        if not summary or len(summary) > 800:
-            raise ValueError("Invalid section overview")
-        with db:
-            db.execute("UPDATE scenario_sections SET summary=?, summary_status='proposed' WHERE id=?",
-                       (summary, section["id"]))
-        if progress:
-            progress(section["title"])
+    if first_page < 1 or last_page < first_page or last_page > document["page_count"] or last_page - first_page >= 8:
+        raise ValueError("Choose one to eight PDF pages")
+    pages = db.execute("""SELECT pdf_page,text,quality FROM library_pages
+        WHERE campaign_id=? AND document_id=? AND pdf_page BETWEEN ? AND ? ORDER BY pdf_page""",
+        (campaign_id, document_id, first_page, last_page)).fetchall()
+    if len(pages) != last_page - first_page + 1:
+        raise ValueError("Missing source page")
+    sections = db.execute("""SELECT id,title,start_page,end_page FROM scenario_sections
+        WHERE campaign_id=? AND document_id=? AND end_page>=? AND start_page<=? ORDER BY start_page""",
+        (campaign_id, document_id, first_page, last_page)).fetchall()
+    candidates = db.execute("""SELECT id,pdf_page,line_number,kind,name,status,category,note,model
+        FROM scenario_candidates WHERE campaign_id=? AND document_id=? AND pdf_page BETWEEN ? AND ?
+        ORDER BY pdf_page,line_number""", (campaign_id, document_id, first_page, last_page)).fetchall()
+    return {"document_id": document_id, "source_sha256": document["sha256"],
+            "sections": [dict(row) for row in sections],
+            "pages": [{"pdf_page": row["pdf_page"], "quality": row["quality"],
+                       "lines": [{"line": number, "text": line} for number, line in enumerate(row["text"].splitlines(), 1)]}
+                      for row in pages],
+            "candidates": [dict(row) for row in candidates]}
 
 
-def classify_headings(db, campaign_id, document_id, model="qwen3:4b-16k", classifier=None, progress=None):
-    """Group named source headings for navigation; categories remain provisional."""
-    library_document(db, campaign_id, document_id)
-    categories = {"person", "place", "faction", "item", "creature", "topic"}
-    schema = {"type": "object", "properties": {"types": {"type": "object", "additionalProperties": {"type": "string", "enum": sorted(categories)}}},
-              "required": ["types"], "additionalProperties": False}
-    classifier = classifier or (lambda prompt: _ollama(prompt, model, schema=schema))
-    while True:
-        rows = db.execute("""SELECT id,name,evidence,pdf_page FROM scenario_candidates
-            WHERE campaign_id=? AND document_id=? AND kind='heading' AND status='selected' AND category=''
-            ORDER BY id LIMIT 10""", (campaign_id, document_id)).fetchall()
-        if not rows:
-            break
-        prompt = ("Classe chaque rubrique d'un scénario de jeu de rôle selon le type d'élément qu'elle nomme: "
-                  "person (personnage nommé), place (lieu), faction (groupe/organisation), item (objet), "
-                  "creature (espèce ou adversaire), topic (autre rubrique). Utilise le contexte exact. "
-                  "Réponds en JSON avec types, dictionnaire ID vers catégorie; inclue exactement tous les ID.\n" +
-                  "\n".join(f"{r['id']} | PDF p.{r['pdf_page']} | {r['name']} | {r['evidence'][:180]}" for r in rows))
-        result = classifier(prompt)["types"]
-        expected = {str(row["id"]) for row in rows}
-        if set(result) != expected or any(value not in categories for value in result.values()):
-            raise ValueError("Invalid heading classification")
-        with db:
-            db.executemany("UPDATE scenario_candidates SET category=? WHERE id=?",
-                           [(result[str(row["id"])], row["id"]) for row in rows])
-        if progress:
-            progress(len(rows))
+def apply_agent_review(db, campaign_id, document_id, review):
+    """Accept a chat agent's private JSON as source-linked proposals, never canon."""
+    if not isinstance(review, dict):
+        raise ValueError("Review must be an object")
+    document = library_document(db, campaign_id, document_id)
+    if review.get("document_id") != document_id or review.get("source_sha256") != document["sha256"]:
+        raise ValueError("Review does not match the imported PDF")
+    reviewer = review.get("reviewer")
+    if reviewer not in REVIEWERS:
+        raise ValueError("Reviewer must be a Codex or Claude Code chat session")
+    updates = review.get("candidates", [])
+    summaries = review.get("sections", [])
+    elements = review.get("elements", [])
+    if not isinstance(updates, list) or not isinstance(summaries, list) or not isinstance(elements, list):
+        raise ValueError("Invalid review lists")
+    seen_candidates, seen_sections = set(), set()
+    candidate_changes, section_changes, element_changes = [], [], []
+    for item in updates:
+        if not isinstance(item, dict):
+            raise ValueError("Invalid candidate decision")
+        candidate_id = item.get("id")
+        row = db.execute("""SELECT id,kind FROM scenario_candidates
+            WHERE id=? AND campaign_id=? AND document_id=?""", (candidate_id, campaign_id, document_id)).fetchone()
+        if row is None or candidate_id in seen_candidates:
+            raise ValueError("Unknown or duplicate candidate")
+        seen_candidates.add(candidate_id)
+        status = item.get("status")
+        category = item.get("category", "")
+        note = item.get("note", "")
+        if (status not in ("selected", "rejected") or not isinstance(category, str)
+                or category not in CATEGORIES | {""} or not isinstance(note, str)):
+            raise ValueError("Invalid candidate decision")
+        note = note.strip()
+        if category and row["kind"] != "heading":
+            raise ValueError("Only named headings have a category")
+        if status == "rejected" and (category or note):
+            raise ValueError("Rejected items cannot have notes")
+        if len(note) > 4000:
+            raise ValueError("Candidate note too long")
+        candidate_changes.append((status, category, note, reviewer, candidate_id))
+    for item in summaries:
+        if not isinstance(item, dict):
+            raise ValueError("Invalid section summary")
+        section_id = item.get("id")
+        row = db.execute("""SELECT id FROM scenario_sections WHERE id=? AND campaign_id=? AND document_id=?""",
+                         (section_id, campaign_id, document_id)).fetchone()
+        if row is None or section_id in seen_sections:
+            raise ValueError("Unknown or duplicate section")
+        seen_sections.add(section_id)
+        summary = item.get("summary", "")
+        if not isinstance(summary, str) or not summary.strip() or len(summary) > 4000:
+            raise ValueError("Invalid section summary")
+        section_changes.append((summary.strip(), section_id))
+    for item in elements:
+        if not isinstance(item, dict):
+            raise ValueError("Invalid scenario element")
+        page_number, line_number = item.get("pdf_page"), item.get("line_number")
+        page = db.execute("""SELECT text FROM library_pages WHERE campaign_id=? AND document_id=? AND pdf_page=?""",
+                          (campaign_id, document_id, page_number)).fetchone()
+        if page is None or not isinstance(line_number, int):
+            raise ValueError("Unknown source location")
+        lines = page["text"].splitlines()
+        if line_number < 1 or line_number > len(lines):
+            raise ValueError("Unknown source line")
+        kind, title, body, quote = (item.get("kind"), item.get("title", ""),
+                                    item.get("body", ""), item.get("quote", ""))
+        if (kind not in ELEMENT_KINDS or not isinstance(title, str) or not isinstance(body, str)
+                or not isinstance(quote, str) or not 3 <= len(title.strip()) <= 160
+                or not 8 <= len(body.strip()) <= 4000 or not 4 <= len(quote.strip()) <= 160
+                or _clean(quote) not in _clean(lines[line_number - 1])):
+            raise ValueError("Invalid or ungrounded scenario element")
+        section = db.execute("""SELECT id FROM scenario_sections WHERE campaign_id=? AND document_id=?
+            AND start_page<=? AND end_page>=?""", (campaign_id, document_id, page_number, page_number)).fetchone()
+        if section is None:
+            raise ValueError("Source page has no section")
+        element_changes.append((campaign_id, document_id, section["id"], page_number, line_number,
+                                kind, title.strip(), body.strip(), quote.strip(), reviewer))
+    with db:
+        db.executemany("""UPDATE scenario_candidates SET status=?,category=?,note=?,model=?
+            WHERE id=?""", candidate_changes)
+        db.executemany("""UPDATE scenario_sections SET summary=?,summary_status='proposed' WHERE id=?""", section_changes)
+        db.executemany("""INSERT INTO scenario_elements
+            (campaign_id,document_id,section_id,pdf_page,line_number,kind,title,body,quote,reviewer)
+            VALUES(?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(document_id,pdf_page,line_number,kind,title)
+            DO UPDATE SET body=excluded.body,quote=excluded.quote,reviewer=excluded.reviewer""", element_changes)
+    return {"candidates": len(candidate_changes), "sections": len(section_changes), "elements": len(element_changes)}

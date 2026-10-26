@@ -1,29 +1,30 @@
 import argparse
+import json
 import os
 from contextlib import closing
 from pathlib import Path
 
 from .core import DomainError
-from .library import import_pdf, library_document
+from .library import ROOT, import_pdf, library_document
 from .store import (add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, connect, correct_fact, create_campaign, establish_fact,
                     journey_view)
 from .web import serve
 from .paths import data_dir
-from .scenario import analyze_document, classify_headings, index_document, summarize_document
+from .scenario import apply_agent_review, index_document, review_packet
 
 
 def main():
     parser = argparse.ArgumentParser(description="Local campaign workbench")
-    parser.add_argument("command", choices=["serve", "fixture", "reset", "check", "import-pdf", "analyze-scenario"])
+    parser.add_argument("command", choices=["serve", "fixture", "reset", "check", "import-pdf", "index-scenario", "scenario-packet", "review-scenario"])
     parser.add_argument("--db", default=os.environ.get("CAMPAIGN_DB", data_dir() / "campaign.db"))
     parser.add_argument("--port", type=int, default=8899)
     parser.add_argument("--campaign-id", type=int)
     parser.add_argument("--file")
     parser.add_argument("--title", default="")
     parser.add_argument("--document-id", type=int)
-    parser.add_argument("--model", default="qwen3:4b-16k")
-    parser.add_argument("--index-only", action="store_true")
+    parser.add_argument("--first-page", type=int)
+    parser.add_argument("--last-page", type=int)
     args = parser.parse_args()
     path = Path(args.db)
     if args.command == "reset":
@@ -44,18 +45,27 @@ def main():
                 print(f"Open: http://127.0.0.1:{args.port}/workspace/{args.campaign_id}?doc=library_documents:{document_id}")
         except DomainError as exc:
             parser.error(exc.localized())
-    elif args.command == "analyze-scenario":
+    elif args.command in ("index-scenario", "scenario-packet", "review-scenario"):
         if not args.campaign_id or not args.document_id:
-            parser.error("analyze-scenario requires --campaign-id and --document-id")
+            parser.error(f"{args.command} requires --campaign-id and --document-id")
         with closing(connect(path)) as db:
-            show = lambda stats: print(f"{stats['pages']} pages · {stats['selected']} selected · {stats['pending']} pending", flush=True)
-            show(index_document(db, args.campaign_id, args.document_id))
-            if not args.index_only:
-                show(analyze_document(db, args.campaign_id, args.document_id, args.model, progress=show))
-                summarize_document(db, args.campaign_id, args.document_id, args.model,
-                                   progress=lambda title: print(f"Overview proposed: {title}", flush=True))
-                classify_headings(db, args.campaign_id, args.document_id, args.model,
-                                  progress=lambda count: print(f"Categorized {count} headings", flush=True))
+            if args.command == "index-scenario":
+                stats = index_document(db, args.campaign_id, args.document_id)
+                print(f"{stats['pages']} pages indexed · {stats['selected']} selected · {stats['pending']} pending")
+            elif args.command == "scenario-packet":
+                if not args.first_page or not args.last_page:
+                    parser.error("scenario-packet requires --first-page and --last-page")
+                print(json.dumps(review_packet(db, args.campaign_id, args.document_id,
+                                               args.first_page, args.last_page), ensure_ascii=False, indent=2))
+            else:
+                if not args.file:
+                    parser.error("review-scenario requires --file")
+                review_path = Path(args.file).expanduser().resolve()
+                if review_path.is_relative_to(ROOT):
+                    parser.error("Review JSON must stay outside the source repository")
+                result = apply_agent_review(db, args.campaign_id, args.document_id,
+                                            json.loads(review_path.read_text(encoding="utf-8")))
+                print(f"Agent review applied: {result['elements']} elements · {result['candidates']} candidates · {result['sections']} sections")
     elif args.command == "fixture":
         with closing(connect(path)) as db:
             existing = db.execute("""SELECT 1 FROM facts f JOIN decisions d ON d.id=f.decision_id

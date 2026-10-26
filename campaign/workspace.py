@@ -48,22 +48,32 @@ def preparation_markdown(db, campaign_id, preparation_id):
 def scenario_dossier_html(db, campaign_id, document_id):
     stats = dossier_stats(db, campaign_id, document_id)
     document = library_document(db, campaign_id, document_id)
+    authored_count = db.execute("SELECT COUNT(*) FROM scenario_elements WHERE campaign_id=? AND document_id=?",
+                                (campaign_id, document_id)).fetchone()[0]
     sections = db.execute("SELECT * FROM scenario_sections WHERE campaign_id=? AND document_id=? ORDER BY start_page",
                           (campaign_id, document_id)).fetchall()
     chapters = [row for row in sections if row["title"].startswith("CHAPITRE ")]
     summarized = sum(row["summary_status"] == "proposed" for row in chapters)
     source = f"/workspace/{campaign_id}?doc=library_documents:{document_id}"
     output = (f'<div class="dossier-status"><strong>{stats["pages"]}/{document["page_count"]} pages indexées</strong>'
-              f'<span>{stats["selected"]} éléments retenus · {stats["pending"]} à analyser · {summarized}/{len(chapters)} chapitres synthétisés</span>'
-              '<p>Éléments et catégories suggérés à partir du PDF privé. Rien ici n’est canonique. '
+              f'<span>{authored_count} fiches rédigées par l’agent · {stats["selected"]} repères extraits · {stats["pending"]} à revoir · {summarized}/{len(chapters)} chapitres synthétisés</span>'
+              '<p>Fiches et repères proposés à partir du PDF privé. Rien ici n’est canonique. '
               'Les catégories et synthèses doivent être relues ; chaque lien ouvre la page et la ligne du texte source.</p></div>'
               f'<nav class="dossier-source"><a href="{source}&amp;page=1">Ouvrir le PDF source</a></nav>')
-    labels = {"scene": "Scènes", "event": "Événements", "encounter": "Rencontres", "person": "Personnages", "place": "Lieux", "faction": "Factions", "item": "Objets", "creature": "Créatures", "heading": "Autres rubriques", "clue": "Indices et découvertes", "choice": "Choix et embranchements"}
+    labels = {"scene": "Scènes", "event": "Événements", "encounter": "Rencontres", "person": "Personnages", "place": "Lieux", "faction": "Factions", "item": "Objets", "creature": "Créatures", "heading": "Autres rubriques", "clue": "Indices et découvertes", "choice": "Choix et embranchements", "secret": "Secrets", "hook": "Accroches", "rule": "Règles"}
     for section in sections:
         counts = {row["status"]: row["n"] for row in db.execute(
             "SELECT status, COUNT(*) AS n FROM scenario_candidates WHERE section_id=? GROUP BY status", (section["id"],))}
         entries = db.execute("SELECT * FROM scenario_candidates WHERE section_id=? AND status='selected' ORDER BY pdf_page,line_number",
                              (section["id"],)).fetchall()
+        authored = db.execute("SELECT * FROM scenario_elements WHERE section_id=? ORDER BY pdf_page,line_number,id",
+                              (section["id"],)).fetchall()
+        authored_cards = ''.join(
+            f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
+            f'<small>{esc(labels.get(row["kind"], row["kind"]))} · PDF p. {row["pdf_page"]}, ligne {row["line_number"]}</small>'
+            f'<strong>{esc(row["title"])}</strong><span>{esc(row["body"])}</span>'
+            f'<q>{esc(row["quote"])}</q></a></li>' for row in authored if row["kind"] != "scene")
+        authored_scenes = {(row["pdf_page"], row["line_number"]): row for row in authored if row["kind"] == "scene"}
         scene_cards = ''
         for position, scene in enumerate(entries):
             if scene["kind"] != "scene":
@@ -77,27 +87,35 @@ def scenario_dossier_html(db, campaign_id, document_id):
                 f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
                 f'<small>{esc(labels.get(row["category"] or row["kind"], row["kind"]))} · p. {row["pdf_page"]}</small>'
                 f'<span>{esc(row["name"])}</span></a></li>' for row in related)
+            authored_scene = authored_scenes.get((scene["pdf_page"], scene["line_number"]))
+            scene_body = authored_scene["body"] if authored_scene else scene["evidence"]
             scene_cards += (f'<details class="dossier-scene"><summary>{esc(scene["name"])}'
                             f'<small>PDF p. {scene["pdf_page"]} · {len(related)} éléments liés</small></summary>'
-                            f'<p>{esc(scene["evidence"])}</p>'
+                            f'<p class="dossier-note">{esc(scene["note"])}</p>'
+                            f'<p>{esc(scene_body)}</p>'
                             f'<a class="dossier-scene-source" href="{source}&amp;page={scene["pdf_page"]}#L{scene["line_number"]}">Voir le passage source</a>'
                             f'<ul>{related_html}</ul></details>')
         groups = ''
         for kind, label in labels.items():
+            if kind == "scene" and scene_cards:
+                continue
             items = [row for row in entries if (row["kind"] == "heading" and row["category"] == kind)
                      or (row["kind"] == kind and (kind != "heading" or not row["category"]))]
             if not items:
                 continue
             cards = ''.join(f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
                             f'<strong>{esc(row["name"])}</strong>'
+                            f'<span class="dossier-note">{esc(row["note"])}</span>'
                             f'<span>{esc(row["evidence"])}</span>'
                             f'<small>PDF p. {row["pdf_page"]} · ligne {row["line_number"]}</small></a></li>'
                             for row in items)
             groups += f'<section class="dossier-kind"><h4>{label} <span>{len(items)}</span></h4><ul>{cards}</ul></section>'
-        overview = (f'<div class="dossier-overview"><small>Synthèse locale proposée · à vérifier dans les sources</small>'
+        overview = (f'<div class="dossier-overview"><small>Synthèse proposée par l’agent · à vérifier dans les sources</small>'
                     f'<p>{esc(section["summary"])}</p></div>') if section["summary_status"] == "proposed" else ''
         if scene_cards:
             groups = f'<section class="dossier-kind"><h4>Parcours par scène</h4>{scene_cards}</section>' + groups
+        if authored_cards:
+            groups = f'<section class="dossier-kind dossier-authored"><h4>Fiches rédigées dans le chat <span>{sum(row["kind"] != "scene" for row in authored)}</span></h4><ul>{authored_cards}</ul></section>' + groups
         output += (f'<details class="dossier-section" {"open" if section["title"].startswith("CHAPITRE 1") else ""}>'
                    f'<summary><strong>{esc(section["title"])}</strong><span>p. {section["start_page"]}–{section["end_page"]} · '
                    f'{counts.get("selected", 0)} retenus · {counts.get("pending", 0)} en attente</span></summary>'
@@ -360,11 +378,15 @@ def document_context(db, campaign_id, selected, page=1, include_text=True):
                 return intro + "The dossier text was not shared.\n\n"
             sections = db.execute("SELECT title,summary FROM scenario_sections WHERE campaign_id=? AND document_id=? ORDER BY start_page",
                                   (campaign_id, item_id)).fetchall()
-            cards = db.execute("""SELECT kind,name,pdf_page,line_number,evidence FROM scenario_candidates
+            cards = db.execute("""SELECT kind,name,pdf_page,line_number,evidence,note FROM scenario_candidates
                 WHERE campaign_id=? AND document_id=? AND status='selected' ORDER BY pdf_page,line_number""",
                 (campaign_id, item_id)).fetchall()
+            authored = db.execute("""SELECT kind,title,body,pdf_page,line_number FROM scenario_elements
+                WHERE campaign_id=? AND document_id=? ORDER BY pdf_page,line_number""",
+                (campaign_id, item_id)).fetchall()
             content = "\n".join(f"{row['title']}: {row['summary']}" for row in sections if row['summary'])
-            content += "\n" + "\n".join(f"{row['kind']} PDF p.{row['pdf_page']} line {row['line_number']}: {row['evidence']}" for row in cards)
+            content += "\n" + "\n".join(f"{row['kind']} {row['title']} PDF p.{row['pdf_page']} line {row['line_number']}: {row['body']}" for row in authored)
+            content += "\n" + "\n".join(f"{row['kind']} PDF p.{row['pdf_page']} line {row['line_number']}: {row['note']} | source: {row['evidence']}" for row in cards)
             return intro + "\n" + content[:16000] + ("\n[Dossier truncated]" if len(content) > 16000 else "") + "\n\n"
         if kind == "library_documents":
             document = library_document(db, campaign_id, item_id)
