@@ -1,6 +1,8 @@
 """Small local GM workbench. No player or remote access surface yet."""
 
 import html
+import json
+import sqlite3
 import threading
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,10 +16,11 @@ from .core import DomainError
 from .dossier_files import visual_file
 from .i18n import locale, t
 from .library import import_pdf
+from .markdown import render_markdown
 from .prep_drafts import apply_preparation_draft, ensure_preparation_draft, restart_preparation_draft
 from .store import (add_bible_comment, add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
                     add_source, campaign_view, connect, correct_fact, create_campaign,
-                    establish_fact, finish_agent_turn, journey_view, start_agent_turn)
+                    establish_fact, finish_agent_turn, journey_view, preview_agent_turn, start_agent_turn)
 from .workspace import document_context, preparation_markdown, render_workspace
 
 
@@ -117,8 +120,14 @@ def make_handler(db_path):
 
     def finish_chat(turn_id, provider, cli_prompt, previous_session, campaign_id, language):
         try:
+            def preview(response):
+                try:
+                    with closing(connect(db_path)) as db:
+                        preview_agent_turn(db, turn_id, response)
+                except sqlite3.Error:
+                    pass  # A missed preview must not interrupt the CLI turn.
             try:
-                response, session_id, success = run_cli(provider, cli_prompt, previous_session, campaign_id)
+                response, session_id, success = run_cli(provider, cli_prompt, previous_session, campaign_id, preview)
             except DomainError as exc:
                 response, session_id, success = exc.localized(language), None, False
             except Exception as exc:
@@ -165,10 +174,10 @@ def make_handler(db_path):
                         self._send(200, preparation_markdown(db, campaign_id, prep_id),
                                    content_type="text/markdown; charset=utf-8", filename=f"preparation-{prep_id}.md")
                         return
-                    if len(parts) == 3 and parts[0] == "campaign" and parts[2] == "chat-status":
+                    if len(parts) == 3 and parts[0] == "campaign" and parts[2] in ("chat-status", "chat-progress"):
                         campaign_id = int(parts[1])
                         campaign = campaign_view(db, campaign_id)[0]
-                        turn = db.execute("SELECT id, status, created_at FROM agent_turns WHERE campaign_id=? ORDER BY id DESC LIMIT 1",
+                        turn = db.execute("SELECT id, status, response, created_at FROM agent_turns WHERE campaign_id=? ORDER BY id DESC LIMIT 1",
                                           (campaign_id,)).fetchone()
                         if turn and turn["status"] == "running" and db.execute(
                             "SELECT datetime(?) < datetime('now', '-6 minutes')", (turn["created_at"],)
@@ -177,7 +186,13 @@ def make_handler(db_path):
                             status = "error"
                         else:
                             status = turn["status"] if turn else "idle"
-                        self._send(200, status, content_type="text/plain; charset=utf-8")
+                        if parts[2] == "chat-progress":
+                            preview = turn["response"] if turn and status == "running" else ""
+                            self._send(200, json.dumps({"turn_id": turn["id"] if turn else None, "status": status,
+                                                        "response": preview, "html": render_markdown(preview) if preview else ""}),
+                                       content_type="application/json; charset=utf-8")
+                        else:
+                            self._send(200, status, content_type="text/plain; charset=utf-8")
                         return
                     if parsed.path == "/":
                         body = render_home(db, parse_qs(parsed.query).get("lang", ["en"])[0][:16])

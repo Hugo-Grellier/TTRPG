@@ -1,3 +1,4 @@
+import json
 import tempfile
 import threading
 import time
@@ -144,6 +145,47 @@ class WorkspaceTest(unittest.TestCase):
             self.assertIn("--restricted", process.call_args.args[0])
             self.assertNotIn("Bash", " ".join(process.call_args.args[0]))
 
+    def test_cli_streams_only_assistant_text_from_local_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = Path(directory) / "fake-cli"
+            script.write_text('''#!/usr/bin/env python3
+import json, sys, time
+def emit(event):
+    print(json.dumps(event), flush=True)
+if "stream-json" in sys.argv:
+    emit({"type":"system","session_id":"claude-session"})
+    emit({"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"hidden reasoning"}}})
+    emit({"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"First "}}})
+    time.sleep(.25)
+    emit({"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"second"}}})
+    emit({"type":"result","result":"First second","session_id":"claude-session"})
+else:
+    emit({"type":"thread.started","thread_id":"codex-session"})
+    emit({"type":"item.completed","item":{"type":"command_execution","aggregated_output":"private tool output"}})
+    emit({"type":"item.completed","item":{"type":"agent_message","text":"First message"}})
+    time.sleep(.1)
+    emit({"type":"item.completed","item":{"type":"agent_message","text":"Second message"}})
+''')
+            script.chmod(0o700)
+            with patch("campaign.agent_cli.draft_checkout", return_value=Path(directory)), patch(
+                "campaign.agent_cli.shutil.which", return_value=str(script)
+            ):
+                updates = []
+                self.assertEqual(run_cli("codex", "Review", on_update=updates.append),
+                                 ("First message\n\nSecond message", "codex-session", True))
+                self.assertEqual(updates, ["First message", "First message\n\nSecond message"])
+                self.assertNotIn("private tool output", " ".join(updates))
+                updates = []
+                self.assertEqual(run_cli("claude", "Review", on_update=updates.append),
+                                 ("First second", "claude-session", True))
+                self.assertIn("First ", updates)
+                self.assertNotIn("hidden reasoning", " ".join(updates))
+                script.write_text('#!/usr/bin/env python3\nimport sys\nsys.stderr.write("Fake CLI failed")\nsys.exit(2)\n')
+                updates = []
+                self.assertEqual(run_cli("codex", "Review", on_update=updates.append),
+                                 ("Fake CLI failed", None, False))
+                self.assertEqual(updates, [])
+
     def test_comment_stays_private_and_does_not_change_canon(self):
         with tempfile.TemporaryDirectory() as directory, closing(connect(Path(directory) / "db.sqlite")) as db:
             cid = create_campaign(db, "Gué", "fr")
@@ -244,6 +286,7 @@ class WorkspaceTest(unittest.TestCase):
             started, release = threading.Event(), threading.Event()
             reply = "## Suggestion\n\n- **Mira** waits.\n\n<script>alert(1)</script>"
             def fake_cli(*args):
+                args[4]("Draft <script>alert(1)</script>")
                 started.set()
                 if not release.wait(3):
                     return "Mock timed out", None, False
@@ -254,8 +297,18 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertTrue(started.wait(2))
                 with urlopen(base + "/campaign/1/chat-status") as response:
                     self.assertEqual(response.read().decode(), "running")
+                with urlopen(base + "/campaign/1/chat-progress") as response:
+                    progress = json.loads(response.read())
+                    self.assertEqual((progress["status"], progress["response"]),
+                                     ("running", "Draft <script>alert(1)</script>"))
+                    self.assertIn('Draft &lt;script&gt;', progress["html"])
+                with urlopen(base + f"/campaign/{other}/chat-progress") as response:
+                    self.assertEqual(json.loads(response.read())["response"], "")
                 with urlopen(base + "/workspace/1?doc=sources:1") as response:
                     waiting = response.read().decode()
+                    self.assertIn('class="markdown-response streaming-response"', waiting)
+                    self.assertIn('Draft &lt;script&gt;', waiting)
+                    self.assertNotIn('Draft <script>', waiting)
                     self.assertIn('class="pending-elapsed"', waiting)
                     self.assertIn('data-pending="1"', waiting)
                     self.assertIn('You can draft your next message', waiting)

@@ -471,6 +471,12 @@ def finish_agent_turn(db, turn_id, response, status, session_id=None):
                    (response[:20000], status, session_id, turn_id))
 
 
+def preview_agent_turn(db, turn_id, response):
+    with db:
+        db.execute("UPDATE agent_turns SET response=? WHERE id=? AND status='running'",
+                   (response[:20000], turn_id))
+
+
 def agent_turns(db, campaign_id):
     _campaign(db, campaign_id)
     return db.execute("SELECT * FROM agent_turns WHERE campaign_id=? ORDER BY id", (campaign_id,)).fetchall()

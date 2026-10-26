@@ -217,6 +217,7 @@ if (chatForm) chatForm.addEventListener('submit', event => {
   button.textContent = '…';
 });
 if (chatForm?.dataset.pending === '1') {
+  let lastPreview = null;
   const status = chatForm.querySelector('.pending-message');
   const elapsed = status?.querySelector('.pending-elapsed');
   if (elapsed) {
@@ -232,15 +233,26 @@ if (chatForm?.dataset.pending === '1') {
   const poll = async () => {
     try {
       const response = await fetch(chatForm.dataset.statusUrl, {cache: 'no-store'});
-      if (response.ok && (await response.text()) !== 'running') {
-        try {
-          sessionStorage.setItem(`workspace-scroll:${location.pathname}${location.search}`, JSON.stringify({
-            page: window.scrollY,
-            document: document.querySelector('.document-scroll')?.scrollTop || 0,
-            review: document.querySelector('.review')?.scrollTop || 0,
-          }));
-        } catch (_) { /* Storage may be disabled. */ }
-        location.reload(); return;
+      if (response.ok) {
+        const progress = await response.json();
+        if (progress.status === 'running' && String(progress.turn_id) === chatForm.dataset.turnId) {
+          const preview = document.querySelector(`.streaming-response[data-turn-id="${progress.turn_id}"]`);
+          if (preview && progress.html && progress.response !== lastPreview) {
+            const follow = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 60;
+            preview.innerHTML = progress.html;
+            lastPreview = progress.response;
+            if (follow) messages.scrollTop = messages.scrollHeight;
+          }
+        } else {
+          try {
+            sessionStorage.setItem(`workspace-scroll:${location.pathname}${location.search}`, JSON.stringify({
+              page: window.scrollY,
+              document: document.querySelector('.document-scroll')?.scrollTop || 0,
+              review: document.querySelector('.review')?.scrollTop || 0,
+            }));
+          } catch (_) { /* Storage may be disabled. */ }
+          location.reload(); return;
+        }
       }
     } catch (_) { /* Keep the current document usable during a temporary local outage. */ }
     setTimeout(poll, 1500);

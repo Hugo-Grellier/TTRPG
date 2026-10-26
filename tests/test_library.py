@@ -69,7 +69,7 @@ class LibraryTest(unittest.TestCase):
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             seen = []
-            def fake_cli(provider, prompt, previous_session=None, campaign_id=1):
+            def fake_cli(provider, prompt, previous_session=None, campaign_id=1, on_update=None):
                 seen.append(prompt)
                 return "Mock answer", "mock-session", True
             try:

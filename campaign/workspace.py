@@ -519,8 +519,9 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
     diff = draft_diff(campaign_id)
     draft_html = f'<details class="draft-diff"><summary>{tr("workspace.draft_changes")}</summary><pre>{esc(diff)}</pre></details>' if diff else ''
     def turn_html(row):
-        reply = (f'<div class="markdown-response">{render_markdown(row["response"])}</div>'
-                 if row["response"] else f'<p>{tr("workspace.running")}</p>')
+        content = render_markdown(row["response"]) if row["response"] else f'<p>{tr("workspace.running")}</p>'
+        reply = (f'<div class="markdown-response streaming-response" data-turn-id="{row["id"]}">{content}</div>'
+                 if row["status"] == "running" else f'<div class="markdown-response">{content}</div>')
         provider_name = "Claude Code" if row["provider"] == "claude" else "Codex"
         return (f'<div class="message"><div class="message-head">{tr("workspace.you")} '
                 f'<small>{esc(row["created_at"])}</small></div><p>{esc(row["prompt"])}</p></div>'
@@ -564,7 +565,7 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
         </aside>
         <section class="conversation" id="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><a class="mobile-jump" href="#document-panel">{tr('workspace.see_document')}</a><span>{tr('workspace.cli_draft')}</span></div>
           <div class="messages" id="messages">{messages}{draft_html}</div>
-          <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-status" data-comment-instruction="{tr('workspace.comment_prompt')}" data-too-long="{tr('workspace.prompt_too_long')}">
+          <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-progress" data-turn-id="{turns[-1]["id"] if turns else ""}" data-comment-instruction="{tr('workspace.comment_prompt')}" data-too-long="{tr('workspace.prompt_too_long')}">
             {pending_message}
             <input type="hidden" name="doc" value="{esc(selected_key)}"><input type="hidden" name="page" value="{page if pdf_page else 1}">
             <label for="playbook">{tr('workspace.playbook')}</label><select id="playbook"><option value="">{tr('workspace.playbook_none')}</option>{playbook_options}</select>
