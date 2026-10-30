@@ -82,7 +82,7 @@ def plan(adventure, mapping, prefix):
         for page in sorted(journal.get("pages", []), key=lambda p: p.get("sort", 0)):
             level = (page.get("title") or {}).get("level", 1)
             note_type = rule["top"] if level == 1 else rule["rest"]
-            page_id = claim(slug(page["name"]), f"{journal_slug}-{slug(page['name'])}", f"{journal_slug}-{page['_id'].lower()}")
+            page_id = claim(slug(page["name"]), f"{journal_slug}-{slug(page['name'])}", f"{journal_slug}-{slug(page['_id'])}")
             meta = {"type": note_type, "title": page["name"], "origin": "ap",
                     "source": f"JournalEntry.{journal['_id']}.JournalEntryPage.{page['_id']}"}
             if rule.get("visibility"):
