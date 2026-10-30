@@ -2,6 +2,8 @@
 # A rule matches a journal by its folder or name. Level-1 pages get `top`,
 # deeper pages get `rest`; `parent` names the field linking a deeper page to
 # the last level-1 page before it.
+# Imported page ids start with this prefix, leaving short ids to campaign notes.
+prefix: km
 rules:
   - folder: Hex Encounters
     top: region

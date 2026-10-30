@@ -11,6 +11,7 @@ import yaml
 
 from . import check as checker
 from .foundry_import import import_adventure, import_module
+from .rename import rename
 
 TOOLS = Path(__file__).resolve().parent.parent
 
@@ -22,6 +23,12 @@ def cmd_check(args):
     notes = len(checker.vault.load(args.root).notes)
     print(f"{notes} notes, {len(report.errors)} errors, {len(report.items) - len(report.errors)} warnings")
     return 1 if report.errors else 0
+
+
+def cmd_rename(args):
+    changed = rename(args.root, args.old, args.new)
+    print(f"{args.old} -> {args.new}; links updated in {changed} notes")
+    return 0
 
 
 def cmd_maps(args):
@@ -41,7 +48,7 @@ def cmd_import_foundry(args):
         stats = import_adventure(args.root, json.loads(Path(args.json).read_text(encoding="utf-8")), args.module_id)
     else:
         stats = import_module(args.root, args.module)
-    print(f"{stats['written']} AP notes written, {stats['kept']} GM-edited notes kept, {stats['removed']} stale removed, "
+    print(f"{stats['relinked']} notes relinked to renamed pages, {stats['written']} AP notes written, {stats['kept']} GM-edited notes kept, {stats['removed']} stale removed, "
           f"{stats['seeded']} NPC drafts and {stats['maps']} maps seeded, {stats['indexed']} Foundry documents indexed")
     return 0
 
@@ -92,6 +99,12 @@ def main(argv=None):
     p.add_argument("root", nargs="?", default=".")
     p.add_argument("--fix", action="store_true", help="mark edited AP notes as origin: modified")
     p.set_defaults(func=cmd_check)
+
+    p = sub.add_parser("rename", help="rename a note and update every link to it")
+    p.add_argument("old")
+    p.add_argument("new")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_rename)
 
     p = sub.add_parser("maps", help="list maps by stage and places that still need one")
     p.add_argument("root", nargs="?", default=".")

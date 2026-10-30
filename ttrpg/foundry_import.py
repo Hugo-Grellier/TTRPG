@@ -18,6 +18,7 @@ from pathlib import Path
 import yaml
 
 from .html_md import to_markdown
+from .rename import relink
 from .vault import UUID, body_hash, join_frontmatter, split_frontmatter
 
 TOOLS = Path(__file__).resolve().parent.parent
@@ -106,13 +107,14 @@ def plan(adventure, mapping, prefix, reserved=()):
             continue
         rule = rule_for(mapping, adventure, journal)
         journal_slug = slug(journal["name"])
-        journal_id = claim(journal_slug, f"{prefix}-{journal_slug}")
+        journal_id = claim(f"{prefix}-{journal_slug}")
         journals[journal["_id"]] = {"id": journal_id, "dir": journal_slug, "journal": journal, "pages": []}
         parent = None
         for page in sorted(journal.get("pages", []), key=lambda p: p.get("sort", 0)):
             level = (page.get("title") or {}).get("level", 1)
             note_type = rule["top"] if level == 1 else rule["rest"]
-            page_id = claim(slug(page["name"]), f"{journal_slug}-{slug(page['name'])}", f"{journal_slug}-{slug(page['_id'])}")
+            page_id = claim(f"{prefix}-{slug(page['name'])}", f"{prefix}-{journal_slug}-{slug(page['name'])}",
+                            f"{prefix}-{journal_slug}-{slug(page['_id'])}")
             meta = {"type": note_type, "title": page["name"], "origin": "ap",
                     "source": f"JournalEntry.{journal['_id']}.JournalEntryPage.{page['_id']}"}
             if rule.get("visibility"):
@@ -216,6 +218,23 @@ def seed_map(path, scene, pages, stats, label):
     stats["maps"] += 1
 
 
+def follow_renames(root, journals, pages):
+    """When an AP page gets a new id, move a GM-edited copy and relink every note to the new id."""
+    planned = {entry["meta"]["source"]: root / entry["path"] for entry in pages.values()}
+    planned |= {f"JournalEntry.{j['journal']['_id']}": root / "adventure" / j["dir"] / f"{j['id']}.md" for j in journals.values()}
+    renames = {}
+    for path in (root / "adventure").rglob("*.md") if (root / "adventure").is_dir() else []:
+        meta, body, _, _ = split_frontmatter(path.read_text(encoding="utf-8"))
+        target = planned.get(meta.get("source"))
+        if target is None or target == path:
+            continue
+        renames[path.stem] = target.stem
+        if meta.get("origin") != "ap" or body_hash(body) != meta.get("source_hash"):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            path.rename(target)
+    return relink(root, renames)
+
+
 def remove_stale(root, planned, stats):
     """Delete untouched AP pages the module no longer has (or that moved)."""
     for path in (root / "adventure").rglob("*.md"):
@@ -234,8 +253,9 @@ def import_adventure(root, adventure, module_id):
     mapping = load_map(module_id)
     npcs = unique_npcs(adventure)
     maps = map_ids(adventure)
-    journals, pages = plan(adventure, mapping, slug(module_id), reserved=set(npcs) | set(maps.values()))
-    stats = {"written": 0, "kept": 0, "seeded": 0, "maps": 0, "removed": 0}
+    journals, pages = plan(adventure, mapping, mapping.get("prefix") or slug(module_id), reserved=set(npcs) | set(maps.values()))
+    stats = {"written": 0, "kept": 0, "seeded": 0, "maps": 0, "removed": 0, "relinked": 0}
+    stats["relinked"] = follow_renames(root, journals, pages)
     planned = {root / entry["path"] for entry in pages.values()}
     planned |= {root / "adventure" / journal["dir"] / f"{journal['id']}.md" for journal in journals.values()}
     if (root / "adventure").is_dir():

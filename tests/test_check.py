@@ -88,6 +88,21 @@ class CheckTest(unittest.TestCase):
         self.assertEqual(messages(self.root), [])
 
 
+class RenameTest(unittest.TestCase):
+    def test_rename_updates_links_and_keeps_ap_hash(self):
+        from ttrpg.rename import rename
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "f.md", "---\ntype: faction\ntitle: F\n---\n")
+            write(root, "n.md", "---\ntype: npc\ntitle: N\nfactions: [f]\n---\n[[f|F]] and [[f#Goal]]\n")
+            body = "See [[f]].\n"
+            write(root, "ap.md", f"---\ntype: note\ntitle: AP\norigin: ap\nsource_hash: {body_hash(body)}\n---\n{body}")
+            self.assertEqual(rename(root, "f", "swordlords"), 2)
+            self.assertIn("factions:\n- swordlords", (Path(root) / "n.md").read_text())
+            self.assertIn("[[swordlords|F]] and [[swordlords#Goal]]", (Path(root) / "n.md").read_text())
+            self.assertEqual(messages(root), [])
+
+
 class HtmlTest(unittest.TestCase):
     def test_foundry_html(self):
         html = ('<h2>Feast</h2><p>See @UUID[Actor.x]{Oleg} and <strong>run</strong>.</p>'
