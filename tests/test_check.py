@@ -170,6 +170,16 @@ class SessionTest(unittest.TestCase):
             write(root, "capture/decoded/speaker-001.wav", "")
             self.assertEqual([path.name for path in tracks([Path(root) / "capture"], Path(root))], ["speaker-001.wav"])
 
+    def test_glossary_from_babele(self):
+        import argparse
+        from ttrpg.__main__ import cmd_glossary
+        with tempfile.TemporaryDirectory() as root:
+            pack = Path(root) / "pf2-fr" / "babele" / "vf" / "fr"
+            pack.mkdir(parents=True)
+            (pack / "pf2e.spells-srd.json").write_text(json.dumps({"entries": {"Invisibility": {"name": "Invisibilité"}, "Same": {"name": "Same"}}}))
+            cmd_glossary(argparse.Namespace(module=str(Path(root) / "pf2-fr"), mode="vf", root=root))
+            self.assertEqual((Path(root) / "glossary.tsv").read_text(encoding="utf-8").splitlines()[1:], ["pf2e.spells-srd\tInvisibility\tInvisibilité"])
+
     def test_windows_cut_between_speech(self):
         from ttrpg.session import windows
         speech = [{"start": 0, "end": 5}, {"start": 8, "end": 10}, {"start": 12, "end": 20}, {"start": 30, "end": 31}]

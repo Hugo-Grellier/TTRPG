@@ -72,6 +72,24 @@ def cmd_maps(args):
     return 0
 
 
+def cmd_glossary(args):
+    """English -> campaign-language names from a Babele translation module (pf2-fr), for notes to name things as players see them."""
+    rows = set()
+    for path in sorted((Path(args.module) / "babele" / args.mode).glob("*/*.json")):
+        entries = json.loads(path.read_text(encoding="utf-8")).get("entries")
+        for english, entry in (entries.items() if isinstance(entries, dict) else ()):
+            name = entry.get("name") if isinstance(entry, dict) else None
+            if name and name != english:
+                rows.add((path.stem, english.replace("\t", " "), name.replace("\t", " ")))
+    if not rows:
+        print(f"no translated names under {Path(args.module) / 'babele' / args.mode}", file=sys.stderr)
+        return 1
+    out = Path(args.root) / "glossary.tsv"
+    out.write_text("pack\tsource\ttranslation\n" + "".join(f"{p}\t{e}\t{n}\n" for p, e, n in sorted(rows)), encoding="utf-8")
+    print(f"{len(rows)} names -> {out}")
+    return 0
+
+
 def cmd_import_foundry(args):
     if args.json:
         stats = import_adventure(args.root, json.loads(Path(args.json).read_text(encoding="utf-8")), args.module_id)
@@ -192,6 +210,12 @@ def main(argv=None):
     p = sub.add_parser("maps", help="list maps by stage and places that still need one")
     p.add_argument("root", nargs="?", default=".")
     p.set_defaults(func=cmd_maps)
+
+    p = sub.add_parser("glossary", help="write glossary.tsv: translated names from a Babele module (pf2-fr)")
+    p.add_argument("module", help="the translation module directory, e.g. Data/modules/pf2-fr")
+    p.add_argument("--mode", default="vf", help="its babele/ subdirectory (pf2-fr: vf, names in French only)")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_glossary)
 
     p = sub.add_parser("import-foundry", help="import a Foundry Adventure module into notes")
     p.add_argument("--root", default=".")

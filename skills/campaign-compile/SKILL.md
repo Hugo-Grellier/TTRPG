@@ -75,6 +75,10 @@ AP pages.
   introduction in your summary and skip dated events.
 - Link subjects to each other's campaign notes (`[[jamandi-aldori]]`), and to
   AP pages only as sources.
+- Names of items, spells, actions, conditions and creatures: as the campaign
+  language's edition names them, from `glossary.tsv` when present
+  (`grep -P "\tSleep Arrow\t" glossary.tsv`; the pack column tells a spell
+  from an item of the same name).
 - PDF citations `src:id#pN` use the PDF page, the number of the file in
   `.cache/sources/<id>/`, not the printed folio.
 - Do not change `adventure/` or the stat blocks; do not mark anything played.

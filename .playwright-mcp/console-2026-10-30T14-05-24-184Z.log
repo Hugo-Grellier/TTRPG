@@ -1,0 +1,297 @@
+[     372ms] [LOG] _______________________________________________________________
+ _____ ___  _   _ _   _ ____  ______   __ __     _______ _____
+|  ___/ _ \| | | | \ | |  _ \|  _ \ \ / / \ \   / |_   _|_   _|
+| |_ | | | | | | |  \| | | | | |_) \ V /   \ \ / /  | |   | |
+|  _|| |_| | |_| | |\  | |_| |  _ < | |     \ V /   | |   | |
+|_|   \___/ \___/|_| \_|____/|_| \_\|_|      \_/    |_|   |_|
+=============================================================== @ http://127.0.0.1:30001/scripts/foundry.mjs:221138
+[     372ms] [LOG] Foundry VTT | Foundry Virtual Tabletop ESModule loaded @ http://127.0.0.1:30001/scripts/foundry.mjs:221139
+[     391ms] [LOG] Foundry VTT | Connected to server socket using session 9aa9a74c83c23ae96f72db2c @ http://127.0.0.1:30001/scripts/foundry.mjs:206691
+[     401ms] [LOG] Foundry VTT | Initializing Foundry Virtual Tabletop Game @ http://127.0.0.1:30001/scripts/foundry.mjs:206846
+[     427ms] [LOG] Foundry VTT | Loaded localization file lang/en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[     486ms] [LOG] Foundry VTT | Retrieved and compiled template templates/setup/parts/join-form.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[     486ms] [LOG] Foundry VTT | Retrieved and compiled template templates/setup/parts/join-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[     486ms] [LOG] Foundry VTT | Retrieved and compiled template templates/setup/parts/join-setup.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[     486ms] [LOG] Foundry VTT | Retrieved and compiled template templates/setup/parts/join-world.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    2866ms] [LOG] _______________________________________________________________
+ _____ ___  _   _ _   _ ____  ______   __ __     _______ _____
+|  ___/ _ \| | | | \ | |  _ \|  _ \ \ / / \ \   / |_   _|_   _|
+| |_ | | | | | | |  \| | | | | |_) \ V /   \ \ / /  | |   | |
+|  _|| |_| | |_| | |\  | |_| |  _ < | |     \ V /   | |   | |
+|_|   \___/ \___/|_| \_|____/|_| \_\|_|      \_/    |_|   |_|
+=============================================================== @ http://127.0.0.1:30001/scripts/foundry.mjs:221138
+[    2866ms] [LOG] Foundry VTT | Foundry Virtual Tabletop ESModule loaded @ http://127.0.0.1:30001/scripts/foundry.mjs:221139
+[    2947ms] [LOG] Foundry VTT | Connected to server socket using session 9aa9a74c83c23ae96f72db2c @ http://127.0.0.1:30001/scripts/foundry.mjs:206691
+[    4726ms] [LOG] Foundry VTT | Initializing Foundry Virtual Tabletop Game @ http://127.0.0.1:30001/scripts/foundry.mjs:206846
+[    5029ms] [LOG] PF2e System | Initializing Pathfinder Second Edition @ http://127.0.0.1:30001/systems/pf2e/pf2e.mjs:116921
+[    5041ms] [LOG] [foundry-mcp-bridge] Initializing Foundry MCP Bridge... @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:37
+[    5041ms] [LOG] [foundry-mcp-bridge] Module initialized successfully @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:47
+[    5050ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/chat/check/roll.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5053ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/chat/check/target-dc-result.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5053ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/chat/damage/damage-taken.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/dice/damage-roll.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/dice/damage-tooltip.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/partials/elemental-blast.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/partials/feat-slot.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/partials/header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/partials/sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5054ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/partials/strike.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/actions.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/biography.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/character.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/crafting.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/effects.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/feats.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/inventory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/pfs.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/proficiencies.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/tabs/spellcasting.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5055ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/hazard/partials/header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/hazard/partials/sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/tabs/main.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/tabs/activities.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/tabs/world.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/tabs/features.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/tabs/ongoing.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/partials/build-entry-boosts.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/party/kingdom/partials/settlement.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5056ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/action.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/carry-type.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/coinage.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/dying-pips.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/effects.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/encumbrance.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/inventory-header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5057ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/inventory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5058ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/item-line.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5058ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/modifiers-tooltip.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5058ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/spell-collection.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5058ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/toggles.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5058ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/partials/total-bulk.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/partials/proficiencylevels-dropdown.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/icons/d20.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/icons/pfs.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/character/icons/plus.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/tabs/main.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/tabs/inventory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/tabs/effects.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/tabs/spells.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/tabs/notes.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/partials/header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5059ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/partials/sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/partials/action.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/npc/partials/attack.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/action-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/action-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/affliction-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/affliction-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/ammo-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/ancestry-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/ancestry-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/armor-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5060ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/background-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/backpack-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/book-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/campaign-feature-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/campaign-feature-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/class-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/condition-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/condition-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/consumable-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/deity-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/effect-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/effect-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5061ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/equipment-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/feat-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/feat-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/heritage-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/heritage-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/kit-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/lore-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/melee-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/mystify-panel.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/physical-sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/rules-panel.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/shield-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/spell-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/spell-overlay.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/treasure-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5062ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/weapon-details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/ability-activation.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/addendum.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/apex.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/duration.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/modular.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/other-tags.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/items/partials/self-applied-effect.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/loot/inventory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/loot/sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/vehicle-header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5063ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/sidebar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/tabs/details.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/tabs/actions.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/tabs/inventory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/tabs/description.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/actors/vehicle/tabs/effects.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/compendium-browser/settings/settings.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/compendium-browser/settings/pack-settings.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/compendium-browser/settings/source-settings.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/chat/action/header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/system/actions/repair/chat-button-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/system/actions/repair/repair-result-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/system/actions/repair/item-heading-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/partials/publication-data.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5064ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/system/settings/basic-setting.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    5084ms] [LOG] Foundry VTT | Loaded localization file lang/en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    5087ms] [LOG] Foundry VTT | Loaded localization file systems/pf2e/lang/action-en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    5088ms] [LOG] Foundry VTT | Loaded localization file systems/pf2e/lang/kingmaker-en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    5088ms] [LOG] Foundry VTT | Loaded localization file modules/foundry-mcp-bridge/lang/en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    5088ms] [LOG] Foundry VTT | Loaded localization file modules/pf2e-kingmaker/lang/en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    5088ms] [LOG] Foundry VTT | Loaded localization file systems/pf2e/lang/en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    5092ms] [LOG] Foundry VTT | Loaded localization file systems/pf2e/lang/re-en.json @ http://127.0.0.1:30001/scripts/foundry.mjs:205681
+[    9282ms] [LOG] Foundry VTT | Retrieved and compiled template templates/ui/scene-navigation.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9302ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9302ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tab.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9307ms] [LOG] Foundry VTT | Retrieved and compiled template templates/ui/players.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9312ms] [LOG] Foundry VTT | Retrieved and compiled template templates/ui/hotbar.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9314ms] [LOG] Foundry VTT | Retrieved and compiled template templates/ui/scene-controls-layers.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9314ms] [LOG] Foundry VTT | Retrieved and compiled template templates/ui/scene-controls-tools.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9330ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/chat/log.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9330ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/chat/notifications.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9330ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/chat/input.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9346ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/combat/header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9346ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/combat/tracker.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9346ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/combat/footer.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9346ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/sidebar/encounter-tracker/metrics.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9353ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/directory/header.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9354ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/directory/directory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9354ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/partials/scene-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9354ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/partials/folder-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9354ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/directory/footer.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9364ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/sidebar/actor-document-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9364ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/sidebar/party-document-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9389ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/sidebar/item-document-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9395ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/partials/document-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9399ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/playlist/controls.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9399ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/playlist/playlist-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9399ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/playlist/playing.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9399ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/playlist/sound-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9448ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/compendiums.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9448ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/partials/pack-partial.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9449ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/partials/document-match.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9455ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/settings.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9553ms] [LOG] Foundry VTT | Fonts loaded and ready. @ http://127.0.0.1:30001/scripts/foundry.mjs:100211
+[    9579ms] [LOG] Foundry VTT | Skipping game canvas - no active scene. @ http://127.0.0.1:30001/scripts/foundry.mjs:117965
+[    9580ms] [LOG] Applying buffered socket event: userActivity @ http://127.0.0.1:30001/scripts/foundry.mjs:206755
+[    9581ms] [LOG] PF2e System | Starting Pathfinder Second Edition @ http://127.0.0.1:30001/systems/pf2e/pf2e.mjs:121205
+[    9586ms] [LOG] [foundry-mcp-bridge] Foundry ready, checking bridge status... @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:65
+[    9586ms] [LOG] [foundry-mcp-bridge] Starting MCP bridge... @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:148
+[    9616ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/placeable/tabs.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9616ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/placeable/tab.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9618ms] [LOG] [foundry-mcp-bridge] Bridge started successfully - Type: websocket, State: connected @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:160
+[    9627ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/placeable/search.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9628ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/placeable/directory.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9628ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/placeable/tokens.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9628ms] [LOG] Foundry VTT | Retrieved and compiled template templates/sidebar/tabs/placeable/token.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[    9705ms] [LOG] [foundry-mcp-bridge] Heartbeat monitoring started (30000ms interval) @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:270
+[    9705ms] [INFO] 🔗 MCP Bridge connected successfully  @ http://127.0.0.1:30001/scripts/foundry.mjs:146102
+[    9705ms] [LOG] [foundry-mcp-bridge] GM connection established - Bridge active for user: Agent @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:172
+[    9717ms] [LOG] [foundry-mcp-bridge] Enhanced creature index exists, ready for instant searches @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:118
+[    9717ms] [LOG] [foundry-mcp-bridge] Starting ComfyUI monitoring... @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:346
+[    9718ms] [INFO] 🔗 Starting AI Map Generation service... (Models loading, please wait)  @ http://127.0.0.1:30001/scripts/foundry.mjs:146102
+[    9718ms] [LOG] [foundry-mcp-bridge] Module ready @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:84
+[   11719ms] [LOG] [foundry-mcp-bridge] Sent backend request: {type: check-comfyui-status, requestId: check-comfyui-status-1793369135902-4p0miimyj} @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/comfyui-manager.js:281
+[   11726ms] [LOG] [foundry-mcp-bridge] ComfyUI status check #1: {type: check-comfyui-status-response, requestId: check-comfyui-status-1793369135902-4p0miimyj, status: stopped, message: ComfyUI service is not running, pid: null} @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:358
+[   16726ms] [LOG] [foundry-mcp-bridge] Sent backend request: {type: check-comfyui-status, requestId: check-comfyui-status-1793369140910-m3ql9zmyg} @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/comfyui-manager.js:281
+[   16729ms] [LOG] [foundry-mcp-bridge] ComfyUI status check #2: {type: check-comfyui-status-response, requestId: check-comfyui-status-1793369140910-m3ql9zmyg, status: stopped, message: ComfyUI service is not running, pid: null} @ http://127.0.0.1:30001/modules/foundry-mcp-bridge/dist/main.js:358
+[   17006ms] [LOG] Foundry VTT | Viewing Scene GB5. Frog Pond @ http://127.0.0.1:30001/scripts/foundry.mjs:57025
+[   17020ms] [LOG] Foundry VTT | Drawing game canvas for scene GB5. Frog Pond @ http://127.0.0.1:30001/scripts/foundry.mjs:117687
+[   17038ms] [LOG] Loaded icons/svg/book.svg (1.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17042ms] [LOG] Loaded icons/svg/cowled.svg (3.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17042ms] [LOG] Loaded icons/svg/aura.svg (5.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17043ms] [LOG] Loaded icons/svg/combat.svg (6.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17044ms] [LOG] Loaded icons/svg/padlock.svg (8.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17046ms] [LOG] Loaded icons/svg/up.svg (10.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17048ms] [LOG] Loaded icons/svg/down.svg (11.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17049ms] [LOG] Loaded systems/pf2e/icons/other/dead.svg (13.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17049ms] [LOG] Loaded icons/svg/light.svg (15.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17050ms] [LOG] Loaded icons/svg/light-off.svg (16.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17052ms] [LOG] Loaded icons/svg/explosion.svg (18.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17053ms] [LOG] Loaded icons/svg/sound.svg (20.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17056ms] [LOG] Loaded icons/svg/sound-off.svg (21.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17072ms] [LOG] Loaded icons/svg/door-closed-outline.svg (23.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17074ms] [LOG] Loaded icons/svg/door-open-outline.svg (25.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17077ms] [LOG] Loaded icons/svg/door-secret-outline.svg (26.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17081ms] [LOG] Loaded icons/svg/door-locked-outline.svg (28.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17081ms] [LOG] Loaded icons/svg/wall-direction.svg (30.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17082ms] [LOG] Loaded icons/svg/levels.svg (31.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17092ms] [LOG] Loaded systems/pf2e/icons/conditions/blinded.webp (33.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17093ms] [LOG] Loaded systems/pf2e/icons/conditions/broken.webp (35.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17093ms] [LOG] Loaded systems/pf2e/icons/conditions/clumsy.webp (36.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17098ms] [LOG] Loaded systems/pf2e/icons/conditions/concealed.webp (38.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17099ms] [LOG] Loaded systems/pf2e/icons/conditions/confused.webp (40.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17100ms] [LOG] Loaded systems/pf2e/icons/conditions/controlled.webp (41.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17103ms] [LOG] Loaded systems/pf2e/icons/conditions/dazzled.webp (43.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17104ms] [LOG] Loaded systems/pf2e/icons/conditions/doomed.webp (45.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17107ms] [LOG] Loaded modules/pf2e-kingmaker/assets/actor-tokens/bestiaries/frog-giant.webp (46.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17108ms] [LOG] Loaded systems/pf2e/icons/conditions/drained.webp (48.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17108ms] [LOG] Loaded systems/pf2e/icons/conditions/deafened.webp (50.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17108ms] [LOG] Loaded systems/pf2e/icons/conditions/dying.webp (51.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17109ms] [LOG] Loaded systems/pf2e/icons/conditions/wounded.webp (53.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17109ms] [LOG] Loaded systems/pf2e/icons/conditions/unconscious.webp (55.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17114ms] [LOG] Loaded systems/pf2e/icons/conditions/undetected.webp (56.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17115ms] [LOG] Loaded systems/pf2e/icons/conditions/stupefied.webp (58.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17117ms] [LOG] Loaded modules/pf2e-kingmaker/assets/maps/forest-pond/tree-01.webp (60.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17120ms] [LOG] Loaded systems/pf2e/icons/conditions/stunned.webp (61.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17121ms] [LOG] Loaded systems/pf2e/icons/conditions/slowed.webp (63.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17123ms] [LOG] Loaded systems/pf2e/icons/conditions/sickened.webp (65.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17123ms] [LOG] Loaded systems/pf2e/icons/conditions/quickened.webp (66.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17124ms] [LOG] Loaded modules/pf2e-kingmaker/assets/maps/forest-pond/tree-02.webp (68.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17125ms] [LOG] Loaded systems/pf2e/icons/conditions/persistent-damage.webp (70.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17125ms] [LOG] Loaded systems/pf2e/icons/conditions/petrified.webp (71.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17125ms] [LOG] Loaded systems/pf2e/icons/conditions/restrained.webp (73.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17125ms] [LOG] Loaded systems/pf2e/icons/conditions/paralyzed.webp (75.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17126ms] [LOG] Loaded systems/pf2e/icons/conditions/prone.webp (76.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17126ms] [LOG] Loaded systems/pf2e/icons/conditions/invisible.webp (78.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17126ms] [LOG] Loaded systems/pf2e/icons/conditions/hidden.webp (80.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17126ms] [LOG] Loaded systems/pf2e/icons/conditions/immobilized.webp (81.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17128ms] [LOG] Loaded systems/pf2e/icons/conditions/off-guard.webp (83.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17129ms] [LOG] Loaded systems/pf2e/icons/conditions/grabbed.webp (85.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17129ms] [LOG] Loaded systems/pf2e/icons/conditions/frightened.webp (86.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17133ms] [LOG] Loaded systems/pf2e/icons/conditions/fatigued.webp (88.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17133ms] [LOG] Loaded systems/pf2e/icons/conditions/fleeing.webp (90.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17133ms] [LOG] Loaded systems/pf2e/icons/conditions/fascinated.webp (91.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17133ms] [LOG] Loaded systems/pf2e/icons/conditions/enfeebled.webp (93.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17133ms] [LOG] Loaded systems/pf2e/icons/conditions/encumbered.webp (95.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17276ms] [LOG] Loaded canvas/tokens/rings-bronze.json (96.67%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17415ms] [LOG] Loaded modules/pf2e-kingmaker/assets/maps/forest-pond/foreground.webp (98.33%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17523ms] [LOG] Loaded modules/pf2e-kingmaker/assets/maps/forest-pond/background.webp (100.00%) @ http://127.0.0.1:30001/scripts/foundry.mjs:106111
+[   17524ms] [LOG] Foundry VTT | Drawing the HiddenCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17525ms] [LOG] Foundry VTT | Drawing the RenderedCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17525ms] [LOG] Foundry VTT | Drawing the EnvironmentCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17527ms] [LOG] Foundry VTT | Drawing the PrimaryCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17528ms] [LOG] Foundry VTT | Drawing the WeatherEffects canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17528ms] [LOG] Foundry VTT | Drawing the EffectsCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17528ms] [LOG] Foundry VTT | Drawing the CanvasBackgroundAlterationEffects canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17529ms] [LOG] Foundry VTT | Drawing the CanvasIlluminationEffects canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17529ms] [LOG] Foundry VTT | Drawing the CanvasColorationEffects canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17529ms] [LOG] Foundry VTT | Drawing the CanvasDarknessEffects canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17529ms] [LOG] Foundry VTT | Drawing the CanvasVisibility canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17542ms] [LOG] Worker TextureCompressor of FogExtractor | Initialized Worker @ http://127.0.0.1:30001/scripts/worker.js:76
+[   17651ms] [LOG] Foundry VTT | Drawing the InterfaceCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   17651ms] [LOG] Foundry VTT | Drawing the GridLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17652ms] [LOG] Foundry VTT | Drawing the RegionLayerPF2e canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17652ms] [LOG] Foundry VTT | Drawing the DrawingsLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17652ms] [LOG] Foundry VTT | Drawing the TemplateLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17652ms] [LOG] Foundry VTT | Drawing the TilesLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17655ms] [LOG] Foundry VTT | Drawing the WallsLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17659ms] [LOG] Foundry VTT | Drawing the TokenLayerPF2e canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17667ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/scene/token/ruler/waypoint-label.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[   17676ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/scene/token/ruler/action-marker.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[   17679ms] [LOG] Foundry VTT | Drawing the SoundsLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17687ms] [LOG] Foundry VTT | Drawing the LightingLayerPF2e canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17688ms] [LOG] Foundry VTT | Drawing the NotesLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17691ms] [LOG] Foundry VTT | Drawing the ControlsLayer canvas layer @ http://127.0.0.1:30001/scripts/foundry.mjs:112048
+[   17701ms] [LOG] Foundry VTT | Retrieved and compiled template templates/hud/waypoint-label.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
+[   17701ms] [LOG] Foundry VTT | Drawing the OverlayCanvasGroup canvas group @ http://127.0.0.1:30001/scripts/foundry.mjs:111444
+[   18029ms] [LOG] Foundry VTT | Retrieved and compiled template systems/pf2e/templates/system/effects/panel.hbs @ http://127.0.0.1:30001/scripts/foundry.mjs:89529
