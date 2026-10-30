@@ -56,7 +56,7 @@ tools/bin/ttrpg transcribe <recordings>/2026-11-06-2004 --day 2026-11-06
 A recorder session directory is read through its `decoded/` WAVs, named by
 Discord username; `--names alice=Alice` overrides `campaign.yaml` for one run.
 
-Each track is decoded with ffmpeg, transcribed on CPU with voice activity
+Each track is decoded with ffmpeg, transcribed (on the GPU if CTranslate2 finds CUDA 12 and cuDNN 9, else the CPU; `TTRPG_WHISPER_DEVICE=cpu` forces it) with voice activity
 detection (silence skipped), split into remarks at pauses of one second and
 merged by time. The language is `campaign.yaml`'s; the day comes from
 Craig's `info.txt` or the recorder's `info.json`. The default model is

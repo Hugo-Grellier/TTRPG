@@ -7,6 +7,7 @@ skill turns them into reviewed notes. Speakers are mapped to players by the
 """
 
 import json
+import os
 import re
 import shlex
 import shutil
@@ -80,7 +81,8 @@ def whisper(model, language):
         raise SystemExit(INSTALL)
     if not shutil.which("ffmpeg"):
         raise SystemExit("ffmpeg is needed to decode the tracks (apt install ffmpeg)")
-    loaded = WhisperModel(model, device="cpu", compute_type="int8")
+    # auto: the GPU when CTranslate2 sees one (CUDA 12 + cuDNN 9), else the CPU; TTRPG_WHISPER_DEVICE=cpu to force.
+    loaded = WhisperModel(model, device=os.environ.get("TTRPG_WHISPER_DEVICE", "auto"), compute_type="int8")
 
     def run(path):
         # Decode with ffmpeg, as LoreForge does: faster-whisper 1.2.1's own decoder breaks on PyAV >= 16.
