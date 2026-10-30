@@ -21,7 +21,7 @@ from pathlib import Path
 from markdown_it import MarkdownIt
 
 from . import vault
-from .foundry_import import TOOLS, slug
+from .foundry_import import TOOLS, require_foundry_cli, slug
 from .vault import SOURCE, WIKILINK, body_hash, fields_for
 
 CATEGORIES = {
@@ -207,6 +207,7 @@ class Exporter:
         entries = list(self.entries())
         for entry in entries:
             (source / f"{entry['_id']}.json").write_text(json.dumps(entry, ensure_ascii=False, indent=1), encoding="utf-8")
+        require_foundry_cli()
         subprocess.run(["node", str(TOOLS / "ttrpg" / "pack.mjs"), str(source), str(out / "packs" / "notes")], check=True)
         shutil.rmtree(source)
         root = self.campaign.root.resolve()

@@ -38,10 +38,14 @@ def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "page"
 
 
-def unpack(pack_dir):
-    """Return the Adventure documents of a LevelDB pack, via the Foundry CLI."""
+def require_foundry_cli():
     if not (TOOLS / "node_modules" / "@foundryvtt" / "foundryvtt-cli").is_dir():
         raise SystemExit(f"Foundry CLI missing: run `npm ci` in {TOOLS}")
+
+
+def unpack(pack_dir):
+    """Return the Adventure documents of a LevelDB pack, via the Foundry CLI."""
+    require_foundry_cli()
     with tempfile.TemporaryDirectory() as work:
         # LevelDB writes its log and manifest on open: never open a live module's pack.
         copy, out = Path(work) / "pack", Path(work) / "json"
