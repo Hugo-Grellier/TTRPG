@@ -42,7 +42,7 @@ chapter only chooses which subjects to do.
    sources support, in order. Translate and reformulate; merge what several
    pages repeat; keep every fact, number, DC, condition and name.
    Frontmatter per `tools/ttrpg/schema.yaml`: the structured facts (level,
-   ancestry, location, factions, chapters, leader, region...) as fields;
+   ancestry, location, factions, leader, region...) as fields;
    `origin: ap`; `prep: ready` once every source is covered.
 4. **Check coverage.** Go through the list of pages read: each must be cited
    in the note, and each fact it gives about the subject must be in it. A

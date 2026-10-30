@@ -19,7 +19,6 @@ common:
   source: {kind: str}
   source_hash: {kind: str}
   foundry: {kind: str}
-  chapters: {kind: refs, to: [chapter], inverse: featuring}
 
 places: &places [location, settlement, hex, region]
 

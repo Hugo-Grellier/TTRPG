@@ -43,7 +43,7 @@ LABELS = {
                       "terrain": "Terrain", "members": "Membres", "residents": "Habitants", "settlements": "Colonies",
                       "contains": "Contient", "scenes": "Scènes", "maps": "Cartes", "hexes": "Hexes",
                       "subregions": "Sous-régions",
-                      "chapters": "Chapitres", "featuring": "Apparaissent", "ancestry": "Ascendance",
+                      "ancestry": "Ascendance",
                       "population": "Population", "government": "Gouvernement", "possessions": "Possède",
                       "items": "Objets"},
            "values": {"alive": "vivant", "dead": "mort", "missing": "disparu", "unknown": "inconnu",
