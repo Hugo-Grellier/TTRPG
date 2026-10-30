@@ -44,9 +44,9 @@ AP pages.
 2. **Gather every source.** `grep -ril` the title, each alias, short forms
    of the name and the Foundry id across `adventure/`, including
    appendices, gazetteers, handouts, the campaign synopsis and every later
-   chapter; and `.cache/sources/*` (PDF text) if present. Read each hit in
-   context, the whole paragraph or room, not the matching line. Keep the
-   list of pages read.
+   chapter; and `.cache/sources/*` (PDF text) if present. Open and read each
+   page in full, never only grep excerpts: what matters is often in the next
+   paragraph. Keep the list of pages read.
 3. **Write the note.** Every section of its type in `note-types.md` that the
    sources support, in order. Translate and reformulate; merge what several
    pages repeat; keep every fact, number, DC, condition and name.
@@ -64,7 +64,8 @@ AP pages.
 - Facts come from the adventure. Never fill a gap with invention presented as
   fact: `> [!question]` for what the GM must decide, `> [!idea]` for a
   suggestion. Where pages contradict each other, give both, cited, in a
-  `> [!question]`.
+  `> [!question]`, and never state either version as fact elsewhere in the
+  note.
 - What the players must not learn early goes in `> [!secret]` blocks, in the
   section it belongs to.
 - Relations live on one side (NPC `factions`, place `in`); see `inverse` in
