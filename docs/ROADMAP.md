@@ -12,10 +12,13 @@ template (AGENTS.md, skills, pre-commit hook, CI), both campaigns created.
 
 ## Next
 
-### 1b — Distill Kingmaker into the campaign layer
-Skill `campaign-distill`, run by a cloud agent on Chapter 1 and hex zones 1-2
-(Rostland, Greenbelt). GM reviews the pull request; adjust the skill, then
-run the remaining chapters.
+### 1b — Compile Kingmaker into the campaign layer
+Campaign notes are complete references (everything the adventure says about
+each subject, structured, in French); session prep condenses them. Skill
+`campaign-compile` gathers each subject from every page. Sample first
+(Jamandi, Tartuccio, the Greenbelt bandits, Oleg's Trading Post) for the GM
+to judge, then every subject of Kingmaker and the Beginner Box by cloud
+agents. The earlier distilled notes (Chapter 1, zones 1-2) are replaced.
 
 ### 1c — Foundry scene tools in the MCP (tools done; `map-ready` skill next)
 Add to a fork of foundry-vtt-mcp what the prototype needed: create a scene
