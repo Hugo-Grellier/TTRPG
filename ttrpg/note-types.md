@@ -13,7 +13,10 @@ needs.
 Write in the campaign language, translating the source. Proper names take
 their official translation when there is one (`glossary.tsv`, the edition in
 the campaign language: *The Stag Lord* → *Seigneur Cerf*), the source's name
-going to `aliases`; otherwise keep them as the source spells them. Use the heading wording of that language below (add a
+going to `aliases`; otherwise keep them as the source spells them. Common
+nouns around a name are translated (*Otari Market* → *Marché d'Otari*,
+*Ruins of the Thirsty Alpaca* → *Ruines du Thirsty Alpaca*); a business's
+own name stays (*The Rowdy Rockfish*). Use the heading wording of that language below (add a
 column for a new language), identically in every note, in this order. Leave
 out a section the sources say nothing about; in an original note, write the
 gap as a `> [!question]` instead. Facts that fit a frontmatter field (level,
