@@ -10,8 +10,10 @@ about it, structured, never summarized away. Condensing happens elsewhere:
 session prep sheets (`session-prep`) pick from these notes what one session
 needs.
 
-Write in the campaign language, translating the source; keep proper names as
-the source spells them. Use the heading wording of that language below (add a
+Write in the campaign language, translating the source. Proper names take
+their official translation when there is one (`glossary.tsv`, the edition in
+the campaign language: *The Stag Lord* → *Seigneur Cerf*), the source's name
+going to `aliases`; otherwise keep them as the source spells them. Use the heading wording of that language below (add a
 column for a new language), identically in every note, in this order. Leave
 out a section the sources say nothing about; in an original note, write the
 gap as a `> [!question]` instead. Facts that fit a frontmatter field (level,
