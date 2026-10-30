@@ -12,6 +12,11 @@ template (AGENTS.md, skills, pre-commit hook, CI), both campaigns created.
 
 ## Next
 
+### 1b — Distill Kingmaker into the campaign layer
+Skill `campaign-distill`, run by a cloud agent on Chapter 1 and hex zones 1-2
+(Rostland, Greenbelt). GM reviews the pull request; adjust the skill, then
+run the remaining chapters.
+
 ### 2 — Export to Foundry journals
 Generate a module whose compendium pack holds one JournalEntry per folder and
 one page per note (Markdown → HTML, `[[id]]` → `@UUID`, GM secrets kept GM-only,

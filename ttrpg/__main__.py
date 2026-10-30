@@ -29,7 +29,8 @@ def cmd_import_foundry(args):
         stats = import_adventure(args.root, json.loads(Path(args.json).read_text(encoding="utf-8")), args.module_id)
     else:
         stats = import_module(args.root, args.module)
-    print(f"{stats['written']} notes written, {stats['kept']} GM-edited notes kept, {stats['indexed']} Foundry documents indexed")
+    print(f"{stats['written']} AP notes written, {stats['kept']} GM-edited notes kept, {stats['removed']} stale removed, "
+          f"{stats['seeded']} NPC drafts seeded, {stats['indexed']} Foundry documents indexed")
     return 0
 
 

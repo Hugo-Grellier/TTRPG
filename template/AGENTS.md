@@ -13,7 +13,9 @@ submodule (web chat), read the same files in the `TTRPG` repository:
 With a shell, update the tools first, then check the campaign against them:
 
 ```sh
-git submodule update --init --remote tools && tools/bin/ttrpg check
+git submodule update --init --remote tools
+python3 -c 'import yaml' 2>/dev/null || pip install -r tools/requirements.txt
+tools/bin/ttrpg check
 ```
 
 If the update brings new errors, fix the notes (or tell the GM) and commit

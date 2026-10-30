@@ -15,8 +15,10 @@ Requires Node and `npm ci` once in `tools/`. Pages land in
 `adventure/<journal>/`, typed by `tools/ttrpg/maps/<module-id>.yaml` (add a map
 for a new module). Links between pages become `[[id]]`; actors, scenes and
 compendium links stay Foundry `@UUID` and are verified against
-`.foundry/index.json`. Re-running refreshes untouched AP notes and keeps every
-note the GM changed.
+`.foundry/index.json`. Every unique NPC actor also gets a draft in `npcs/` (short id, Foundry
+link, AP pages that mention it) for `campaign-distill` to complete.
+Re-running refreshes untouched AP notes, removes AP pages the module no
+longer has, and keeps every note the GM changed.
 
 PDF (citations and anything the module lacks):
 
@@ -29,4 +31,4 @@ This declares source `km` in `campaign.yaml` and writes page text to
 
 After an import, run `tools/bin/ttrpg check`, then report counts per type and
 what the GM should review first (chapter one, main NPCs). Do not rewrite
-imported text in bulk; refinement happens note by note with the GM.
+imported text; the campaign layer is built with `campaign-distill`.

@@ -40,6 +40,7 @@ types:
     in: {kind: ref, to: *places, inverse: contains}
   npc:
     state: {kind: enum, values: [alive, dead, missing, unknown], default: alive}
+    level: {kind: int}
     died: {kind: date}
     location: {kind: ref, to: *places, inverse: residents}
     factions: {kind: refs, to: [faction], inverse: members}

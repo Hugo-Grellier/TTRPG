@@ -60,9 +60,18 @@ def rule_for(mapping, adventure, journal):
     return {"top": "note", "rest": "note"}
 
 
-def plan(adventure, mapping, prefix):
+def unique_npcs(adventure):
+    """Named NPCs of the adventure, keyed by note id. They own the short ids."""
+    npcs = {}
+    for actor in adventure.get("actors", []):
+        if actor.get("type") == "npc" and ((actor.get("system") or {}).get("traits") or {}).get("rarity") == "unique":
+            npcs.setdefault(slug(actor["name"]), actor)
+    return npcs
+
+
+def plan(adventure, mapping, prefix, reserved=()):
     """Assign every kept page an id, path and frontmatter before converting any link."""
-    taken, pages, journals = set(), {}, {}
+    taken, pages, journals = set(reserved), {}, {}
 
     def claim(*candidates):
         for candidate in candidates:
@@ -139,13 +148,48 @@ def write_note(path, meta, body, stats):
     stats["written"] += 1
 
 
+def seed_npc(path, actor, pages, stats):
+    """Create a draft campaign NPC from a unique actor; never touch an existing one."""
+    if path.is_file():
+        return
+    level = ((actor.get("system") or {}).get("details") or {}).get("level", {}).get("value")
+    meta = {"type": "npc", "title": actor["name"], "origin": "ap", "prep": "draft", "foundry": f"Actor.{actor['_id']}"}
+    if isinstance(level, int):
+        meta["level"] = level
+    mentions = [entry for entry in pages.values() if actor["_id"] in json.dumps(entry["page"].get("text") or {})]
+    lines = [f"Statistiques : @UUID[Actor.{actor['_id']}]{{{actor['name']}}}", "",
+             "> [!todo] Fiche à distiller depuis le texte de l'aventure.", ""]
+    lines += ["Pages AP :"] + [f"- [[{entry['id']}]]" for entry in mentions] if mentions else []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(join_frontmatter(meta, "\n".join(lines).rstrip() + "\n"), encoding="utf-8")
+    stats["seeded"] += 1
+
+
+def remove_stale(root, planned, stats):
+    """Delete untouched AP pages the module no longer has (or that moved)."""
+    for path in (root / "adventure").rglob("*.md"):
+        if path in planned:
+            continue
+        meta, body, _, _ = split_frontmatter(path.read_text(encoding="utf-8"))
+        if meta.get("origin") == "ap" and body_hash(body) == meta.get("source_hash"):
+            path.unlink()
+            stats["removed"] += 1
+
+
 def import_adventure(root, adventure, module_id):
     root = Path(root)
     mapping = load_map(module_id)
-    journals, pages = plan(adventure, mapping, slug(module_id))
-    stats = {"written": 0, "kept": 0}
+    npcs = unique_npcs(adventure)
+    journals, pages = plan(adventure, mapping, slug(module_id), reserved=npcs)
+    stats = {"written": 0, "kept": 0, "seeded": 0, "removed": 0}
+    planned = {root / entry["path"] for entry in pages.values()}
+    planned |= {root / "adventure" / journal["dir"] / f"{journal['id']}.md" for journal in journals.values()}
+    if (root / "adventure").is_dir():
+        remove_stale(root, planned, stats)
     for entry in pages.values():
         write_note(root / entry["path"], entry["meta"], page_body(entry, journals, pages), stats)
+    for note_id, actor in npcs.items():
+        seed_npc(root / "npcs" / f"{note_id}.md", actor, pages, stats)
     for journal in journals.values():
         lines = []
         for page_id in journal["pages"]:
@@ -165,7 +209,7 @@ def import_adventure(root, adventure, module_id):
 def import_module(root, module_dir):
     module_dir = Path(module_dir)
     manifest = json.loads((module_dir / "module.json").read_text(encoding="utf-8"))
-    total = {"written": 0, "kept": 0, "indexed": 0}
+    total = {"written": 0, "kept": 0, "seeded": 0, "removed": 0, "indexed": 0}
     for pack in manifest.get("packs", []):
         if pack.get("type") != "Adventure":
             continue
