@@ -26,7 +26,7 @@ an image come from a TTRPG command (OpenCV) and are reviewed visually before
 use. Then a `map-ready` skill: map note + encounter notes → tokens, ambience,
 pins.
 
-### 2 — Export to Foundry journals
+### 2 — Export to Foundry journals (pack done; live update through MCP next)
 Generate a module whose compendium pack holds one JournalEntry per folder and
 one page per note (Markdown → HTML, `[[id]]` → `@UUID`, GM secrets kept GM-only,
 player notes with player ownership). Verify in the local Foundry

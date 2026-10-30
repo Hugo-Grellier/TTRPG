@@ -103,6 +103,28 @@ class RenameTest(unittest.TestCase):
             self.assertEqual(messages(root), [])
 
 
+class ExportTest(unittest.TestCase):
+    def test_links_secrets_and_inverse_relations(self):
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nsources:\n  km: {title: KM, pages: 9}\n")
+            write(root, "factions/f.md", "---\ntype: faction\ntitle: Lames\n---\nBut.\n")
+            write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\nfactions: [f]\n---\nVoir [[f|les Lames]], [[km-p]] [p. 3](src:km#p3).\n\n> [!secret]\n> Il ment.\n")
+            write(root, "adventure/j/km-p.md", "---\ntype: note\ntitle: Page\norigin: ap\nsource: JournalEntry.J.JournalEntryPage.P\n---\nAP\n")
+            exporter = Exporter(load(root))
+            entries = {entry["name"]: entry for entry in exporter.entries()}
+            self.assertEqual(sorted(entries), ["Factions", "PNJ"])
+            oleg = entries["PNJ"]["pages"][0]["text"]
+            faction = exporter.pages["f"]
+            self.assertIn(f"@UUID[JournalEntry.{faction[0]}.JournalEntryPage.{faction[1]}]{{les Lames}}", oleg["markdown"])
+            self.assertIn("@UUID[JournalEntry.J.JournalEntryPage.P]{Page}", oleg["markdown"])
+            self.assertIn("p. 3 (KM, p. 3)", oleg["markdown"])
+            self.assertIn('<section class="secret" id="secret-1"><p>Il ment.</p>', oleg["content"])
+            self.assertIn("**Membres** @UUID[", entries["Factions"]["pages"][0]["text"]["markdown"])
+            self.assertEqual(exporter.pages, Exporter(load(root)).pages)
+
+
 class HtmlTest(unittest.TestCase):
     def test_foundry_html(self):
         html = ('<h2>Feast</h2><p>See @UUID[Actor.x]{Oleg} and <strong>run</strong>.</p>'

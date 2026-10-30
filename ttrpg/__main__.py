@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 
 from . import check as checker
+from .foundry_export import export
 from .foundry_import import import_adventure, import_module
 from .rename import rename
 
@@ -23,6 +24,18 @@ def cmd_check(args):
     notes = len(checker.vault.load(args.root).notes)
     print(f"{notes} notes, {len(report.errors)} errors, {len(report.items) - len(report.errors)} warnings")
     return 1 if report.errors else 0
+
+
+def cmd_export_foundry(args):
+    result = export(args.root, args.out)
+    print(f"{result['pages']} pages in {result['entries']} journal entries -> {result['path']}")
+    if args.install:
+        target = Path(args.install) / result["module"]
+        if target.exists():
+            shutil.rmtree(target)
+        shutil.copytree(result["path"], target)
+        print(f"installed in {target}; enable the module, then import the compendium entries into the world")
+    return 0
 
 
 def cmd_rename(args):
@@ -99,6 +112,12 @@ def main(argv=None):
     p.add_argument("root", nargs="?", default=".")
     p.add_argument("--fix", action="store_true", help="mark edited AP notes as origin: modified")
     p.set_defaults(func=cmd_check)
+
+    p = sub.add_parser("export-foundry", help="build a Foundry module with the campaign notes as journals")
+    p.add_argument("--root", default=".")
+    p.add_argument("--out", help="module directory (default .cache/foundry/<module-id>)")
+    p.add_argument("--install", help="Foundry Data/modules directory to copy the module into")
+    p.set_defaults(func=cmd_export_foundry)
 
     p = sub.add_parser("rename", help="rename a note and update every link to it")
     p.add_argument("old")
