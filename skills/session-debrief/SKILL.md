@@ -15,9 +15,8 @@ Raw material lives in `sessions/<day>/` as GM-only notes tagged `raw`
 
 - `transcript.md`: `[h:mm:ss] Speaker: text`, one line per remark, merged
   from per-speaker tracks. If it is missing and the GM has the audio:
-  `tools/bin/ttrpg transcribe <Craig zip | Craig folder | probe capture dir>
-  ` (local faster-whisper; it prints the
-  install command if missing).
+  `tools/bin/ttrpg transcribe <Craig zip | Craig folder | recorder dir>`
+  (local faster-whisper; it prints the install command if missing).
 - `flight.md`: scenes, combats, checks and conditions Foundry recorded. If
   missing and the GM has imported the session with `ffr import`:
   `tools/bin/ttrpg flight <session|latest> --db <ffr.db>`.
