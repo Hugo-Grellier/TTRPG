@@ -27,7 +27,11 @@ before building anything.
 ## 2. Build
 
 1. Scene: copy with `create-scene` (`sourceUuid`) or create from `image`.
-   Name it after the place (`GB12. Tuskgutter's Lair`).
+   Name it after the place (`GB12. Tuskgutter's Lair`) and give it a fixed
+   `id`: 16 letters/digits derived from the map note id (`python3 -c "from
+   ttrpg.foundry_export import foundry_id; print(foundry_id('ttrpg-<campaign>',
+   'scene', '<map note id>'))"` run in `tools/`), so the scene has the same id in
+   every world and exported links to it keep working.
 2. `capture-scene` (plan) and look at it before placing anything. Coordinates
    are image pixels: pixel in the capture / `pixelsPerImagePixel`.
 3. Remove what does not belong (tokens and pins of a reused generic map).
@@ -35,7 +39,10 @@ before building anything.
    movement and sight, doors as `door: 1`, secret doors `door: 2`. Check the
    result in a capture before going on.
 5. Tokens with `actorUuid`, at the positions the text gives; hidden (`hidden:
-   true`) if the PCs should not see them on arrival.
+   true`) if the PCs should not see them on arrival. On outdoor maps, bushes
+   and forest edges are walled: a yellow outline in the plan capture blocks
+   sight. Measure the open ground in the capture before placing, and never put
+   a token or pin inside an outline unless the text hides it there.
 6. Ambience: darkness for the time of day (`create-scene` `darkness`), a light
    per fire or lamp the text mentions, ambient sounds that fit (look in the
    module's `assets/audio-*` paths first), with `darkness: {min, max}` for
