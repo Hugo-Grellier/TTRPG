@@ -1,0 +1,16 @@
+# How the pf2e-beginner-box Adventure journals map to note types (see pf2e-kingmaker.yaml).
+prefix: bb
+rules:
+  - journal: Menace Under Otari
+    top: chapter
+    rest: scene
+    parent: chapter
+  - journal: Otari Gazetteer
+    top: location
+    rest: location
+  - folder: Artwork Handouts
+    top: handout
+    rest: handout
+    visibility: players
+skip:
+  - Beginner Box Credits
