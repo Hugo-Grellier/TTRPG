@@ -66,7 +66,9 @@ def foundry_id(*parts):
 
 
 def exported(note):
-    """Campaign notes, plus imported adventure pages the GM has changed."""
+    """Campaign notes, plus imported adventure pages the GM has changed; raw session material stays home."""
+    if "raw" in (note.meta.get("tags") or []):
+        return False
     return not note.rel.startswith("adventure/") or note.get("origin") != "ap"
 
 

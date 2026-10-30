@@ -102,26 +102,36 @@ def cmd_pdf_text(args):
 
 
 def session_dir(root, day):
-    out = Path(root) / ".cache" / "sessions" / day
+    out = Path(root) / "sessions" / day
     out.mkdir(parents=True, exist_ok=True)
     return out
 
 
 def cmd_transcribe(args):
-    out = session_dir(args.root, args.day)
+    config = yaml.safe_load((Path(args.root) / "campaign.yaml").read_text(encoding="utf-8")) or {}
     names = dict(pair.split("=", 1) for pair in args.names)
-    files = session.tracks(args.audio, out / "audio")
+    audio = Path(args.root) / ".cache" / "sessions" / "audio"
+    files = session.tracks(args.audio, audio)
     if not files:
         raise SystemExit("no audio tracks found")
-    config = yaml.safe_load((Path(args.root) / "campaign.yaml").read_text(encoding="utf-8")) or {}
+    day = args.day or session.craig_day(audio) or next(filter(None, (session.craig_day(p) for p in map(Path, args.audio) if p.is_dir())), None) or date.today().isoformat()
+    sources = []
+    for path in files:
+        who, role = session.speaker(path, names, config.get("players"))
+        if role == "bot":
+            print(f"skipping {path.name}: bot", flush=True)
+            continue
+        if role == "unknown":
+            print(f"warning: {path.name} is not in campaign.yaml players; kept as {who}", flush=True)
+        sources.append((who, path))
     run = session.whisper(args.model, args.language or config.get("language"))
-    sources = [(session.speaker(path, names), path) for path in files]
     segments = {}
     for who, path in sources:
         print(f"transcribing {path.name} as {who}", flush=True)
         segments.setdefault(who, []).extend(run(path))
     lines = session.merge(segments)
-    (out / "transcript.md").write_text(session.transcript(lines, sources, args.model), encoding="utf-8")
+    out = session_dir(args.root, day)
+    (out / "transcript.md").write_text(session.transcript(lines, sources, args.model, day), encoding="utf-8")
     print(f"{len(lines)} lines from {len(sources)} tracks -> {out / 'transcript.md'}")
     return 0
 
@@ -198,16 +208,16 @@ def main(argv=None):
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_pdf_text)
 
-    p = sub.add_parser("transcribe", help="transcribe per-speaker session tracks locally into .cache/sessions/<day>/")
+    p = sub.add_parser("transcribe", help="transcribe per-speaker session tracks locally into sessions/<day>/")
     p.add_argument("audio", nargs="+", help="audio files, a directory (Craig export, probe capture) or a Craig zip")
     p.add_argument("--names", nargs="*", default=[], metavar="TRACK=NAME", help="e.g. speaker-001=Hugo 1-alice=Alice")
-    p.add_argument("--day", default=date.today().isoformat(), help="real-world session day (default today)")
+    p.add_argument("--day", help="real-world session day (default: the Craig start time, else today)")
     p.add_argument("--language", help="default: campaign.yaml language")
-    p.add_argument("--model", default=os.environ.get("TTRPG_WHISPER_MODEL", "small"), help="faster-whisper model name or directory")
+    p.add_argument("--model", default=os.environ.get("TTRPG_WHISPER_MODEL", session.MODEL), help="faster-whisper model name or directory")
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_transcribe)
 
-    p = sub.add_parser("flight", help="summarize a Foundry Flight Recorder session into .cache/sessions/<day>/")
+    p = sub.add_parser("flight", help="summarize a Foundry Flight Recorder session into sessions/<day>/")
     p.add_argument("session", nargs="?", default="latest", help="ffr session id, prefix or latest")
     p.add_argument("--db", help="ffr database (default $FFR_DB)")
     p.add_argument("--ffr", default=os.environ.get("FFR", "ffr"), help="ffr command")

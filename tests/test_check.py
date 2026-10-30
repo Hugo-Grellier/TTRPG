@@ -159,8 +159,12 @@ class SessionTest(unittest.TestCase):
         alice = utterances(words)
         self.assertEqual(alice, [(1.0, 2.0, "The bridge."), (12.0, 13.0, "The river.")])
         self.assertEqual([who for _, _, who, _ in merge({"Alice": alice, "Bob": [(6.0, 7.0, "Fire!")]})], ["Alice", "Bob", "Alice"])
-        self.assertEqual(speaker(Path("1-alice_0.flac"), {}), "alice")
-        self.assertEqual(speaker(Path("speaker-001.wav"), {"speaker-001": "Hugo"}), "Hugo")
+        self.assertEqual(speaker(Path("1-alice.flac"), {}), ("alice", "unknown"))
+        self.assertEqual(speaker(Path("speaker-001.wav"), {"speaker-001": "Hugo"}), ("Hugo", "player"))
+        players = {".omegadraco": {"name": "Hugo", "role": "gm"}, "Archivist AI": {"role": "bot"}, "theo.bueno": {"name": "Théo"}}
+        self.assertEqual(speaker(Path("5-_omegadraco.flac"), {}, players), ("Hugo", "gm"))
+        self.assertEqual(speaker(Path("2-Archivist_AI_1906.flac"), {}, players), ("Archivist_AI_1906", "bot"))
+        self.assertEqual(speaker(Path("3-theo_bueno.flac"), {}, players), ("Théo", "player"))
         with tempfile.TemporaryDirectory() as root:
             write(root, "capture/tracks/speaker-001.opus-packets", "")
             write(root, "capture/decoded/speaker-001.wav", "")

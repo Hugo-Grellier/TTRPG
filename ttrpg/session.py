@@ -1,7 +1,9 @@
 """After a session: local transcript of per-speaker tracks and a Flight Recorder summary.
 
-Both are written under .cache/sessions/<day>/ (ignored by Git): raw table talk
-is private and long; the session-debrief skill turns it into reviewed notes.
+Both are written as raw notes in the campaign's sessions/<day>/ (tagged `raw`,
+never exported to Foundry); the audio stays in .cache/. The session-debrief
+skill turns them into reviewed notes. Speakers are mapped to players by the
+`players` section of campaign.yaml.
 """
 
 import json
@@ -17,7 +19,8 @@ AUDIO = {".wav", ".flac", ".ogg", ".opus", ".m4a", ".mp3", ".aac"}
 INSTALL = """faster-whisper is not installed in the Python that runs ttrpg. Install it in the tools venv (local only, no service):
   uv venv --python 3.14 tools/.venv
   uv pip install --python tools/.venv/bin/python -r tools/requirements.txt faster-whisper==1.2.1
-The first run downloads the model (default `small`, ~480 MB) once; pass --model <dir> to use a local copy."""
+The first run downloads the model (default large-v3-turbo, ~1.6 GB) once; pass --model <dir> to use a local copy."""
+MODEL = "mobiuslabsgmbh/faster-whisper-large-v3-turbo"
 
 
 def tracks(inputs, unpack):
@@ -39,10 +42,23 @@ def tracks(inputs, unpack):
     return found
 
 
-def speaker(path, names):
-    """Craig names tracks `1-alice_0.flac`, the probe `speaker-001.wav`; --names maps either form."""
-    name = re.sub(r"_\d+$", "", re.sub(r"^\d+-", "", path.stem))
-    return names.get(path.stem) or names.get(name) or name
+def handle(text):
+    """Compare Discord names loosely: Craig writes `.omegadraco` as `_omegadraco` and `Archivist AI#1906` as `Archivist_AI_1906`."""
+    text = re.sub(r"[^a-z0-9]+", "_", str(text).lower()).strip("_")
+    return re.sub(r"_\d{4}$", "", text)
+
+
+def speaker(path, names, players=None):
+    """(name, role) for a track. Craig names tracks `1-alice.flac`, the recorder `alice.wav`.
+    --names wins, then campaign.yaml `players` (Discord name -> {name, character, role}); unknown names stay as they are."""
+    raw = re.sub(r"^\d+-", "", path.stem)
+    if path.stem in names or raw in names:
+        return names.get(path.stem) or names[raw], "player"
+    known = {handle(key): value or {} for key, value in (players or {}).items()}
+    player = known.get(handle(raw))
+    if player is None:
+        return raw, "unknown"
+    return player.get("name") or raw, player.get("role", "player")
 
 
 def merge(segments):
@@ -89,10 +105,33 @@ def utterances(words, pause=1.0):
     return [(start, end, text.strip()) for start, end, text in lines if text.strip()]
 
 
-def transcript(lines, sources, model):
-    head = [f"# Transcript\n", f"Model: faster-whisper {model}, local. Tracks: " +
-            ", ".join(f"{who} ({path.name})" for who, path in sources) + ".", "Machine transcript: names, numbers and words can be wrong.\n"]
-    return "\n".join(head + [f"[{clock(start)}] {who}: {text}" for start, _, who, text in lines]) + "\n"
+def raw_note(title, body, **fields):
+    """A campaign note holding raw material: GM only, tagged raw so it is never exported."""
+    import yaml
+    meta = {"type": "note", "title": title, "visibility": "gm", "tags": ["raw"], **fields}
+    return "---\n" + yaml.safe_dump(meta, allow_unicode=True, sort_keys=False) + "---\n" + body
+
+
+def transcript(lines, sources, model, day):
+    present = sorted({who for _, _, who, _ in lines})
+    head = [f"Model: faster-whisper {model}, local. Tracks: " + ", ".join(f"{who} ({path.name})" for who, path in sources) + ".",
+            "Machine transcript: names, numbers and words can be wrong.\n"]
+    body = "\n".join(head + [f"[{clock(start)}] {who}: {text}" for start, _, who, text in lines]) + "\n"
+    return raw_note(f"Transcription {day}", body, present=present)
+
+
+def craig_day(directory):
+    """The real-world day a recording started: the recorder's info.json or Craig's info.txt."""
+    for info in Path(directory).rglob("info.json"):
+        started = json.loads(info.read_text()).get("started_at")
+        if started:
+            return datetime.fromisoformat(started.replace("Z", "+00:00")).astimezone().date().isoformat()
+    for info in Path(directory).rglob("info.txt"):
+        found = re.search(r"Start time:\s*(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})", info.read_text(errors="replace"))
+        if found:
+            stamp = datetime.fromisoformat(f"{found[1]}T{found[2]}:{found[3]}:00+00:00").astimezone()
+            return stamp.date().isoformat()
+    return None
 
 
 def flight_events(session, db, ffr):
@@ -140,9 +179,10 @@ def flight_summary(timeline):
             name = (data.get("item") or {}).get("name") or "?"
             conditions.append(f"- {at} {actor(data)}: {data.get('op') or ''} {name}{f' {data['value']}' if data.get('value') else ''}")
     started = datetime.fromisoformat(timeline["t0"]).astimezone()
-    out = [f"# Flight Recorder: {label}\n", f"Started {started:%Y-%m-%d %H:%M}, ended {end}. Times are from the session start.",
+    out = [f"Started {started:%Y-%m-%d %H:%M}, ended {end}. Times are from the session start.",
            "Only what happened in Foundry: table talk, theatre of the mind and players who declined recording leave no trace.\n",
            "## Scenes\n", *scenes.values(), "", "## Combats\n",
            *(f"- {c['start']} to {c['end']}, {c['rounds']} rounds: {', '.join(c['names'])}" for c in combats.values()), "",
            "## Checks\n", *checks, "", "## Conditions\n", *conditions]
-    return "\n".join(out) + "\n", started.date().isoformat()
+    day = started.date().isoformat()
+    return raw_note(f"Flight Recorder {day}" + (f" ({label})" if label else ""), "\n".join(out) + "\n"), day
