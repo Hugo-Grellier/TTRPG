@@ -2,6 +2,7 @@
 
 import html
 import json
+import re
 import sqlite3
 import threading
 from contextlib import closing
@@ -15,7 +16,7 @@ from .campaign_file_drafts import (apply_campaign_file_draft, ensure_campaign_fi
 from .core import DomainError
 from .dossier_files import visual_file
 from .i18n import locale, t
-from .library import import_pdf
+from .library import import_pdf, library_document
 from .markdown import render_markdown
 from .prep_drafts import apply_preparation_draft, ensure_preparation_draft, restart_preparation_draft
 from .store import (add_bible_comment, add_comment, add_observation, add_preparation, add_proposal, add_simulated_event,
@@ -138,6 +139,13 @@ def make_handler(db_path):
             chat_lock.release()
 
     class Handler(BaseHTTPRequestHandler):
+        def _pdf_source(self, db, campaign_id, document_id):
+            document = library_document(db, campaign_id, document_id)
+            source = Path(document["source_path"])
+            if not source.is_file() or source.suffix.lower() != ".pdf":
+                raise DomainError("error.pdf_invalid")
+            return source
+
         def _send(self, status, body, location=None, content_type="text/html; charset=utf-8", filename=None):
             data = body if isinstance(body, bytes) else body.encode("utf-8")
             self.send_response(status)
@@ -145,13 +153,72 @@ def make_handler(db_path):
             self.send_header("Content-Length", str(len(data)))
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "same-origin")
-            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'")
+            self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self'; connect-src 'self'; frame-src 'self'; form-action 'self'; base-uri 'none'")
             if filename:
                 self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
             if location:
                 self.send_header("Location", location)
             self.end_headers()
             self.wfile.write(data)
+
+        def _send_pdf(self, path, document_id, head_only=False):
+            size = path.stat().st_size
+            requested = self.headers.get("Range")
+            start, end = 0, size - 1
+            if requested:
+                match = re.fullmatch(r"bytes=(\d*)-(\d*)", requested)
+                if not match or not any(match.groups()):
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{size}")
+                    self.end_headers()
+                    return
+                first, last = match.groups()
+                if first:
+                    start = int(first)
+                    end = min(int(last), size - 1) if last else size - 1
+                else:
+                    start = max(0, size - int(last))
+                if start > end or start >= size:
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{size}")
+                    self.end_headers()
+                    return
+            self.send_response(206 if requested else 200)
+            self.send_header("Content-Type", "application/pdf")
+            self.send_header("Content-Length", str(end - start + 1))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Content-Disposition", f'inline; filename="source-{document_id}.pdf"')
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "private, no-store")
+            if requested:
+                self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+            self.end_headers()
+            if head_only:
+                return
+            with path.open("rb") as source:
+                source.seek(start)
+                remaining = end - start + 1
+                while remaining:
+                    chunk = source.read(min(64 * 1024, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
+
+        def do_HEAD(self):
+            if not self._local_host():
+                return
+            parts = urlparse(self.path).path.strip("/").split("/")
+            try:
+                if len(parts) != 4 or parts[0] != "campaign" or parts[2] != "pdf":
+                    self.send_error(404)
+                    return
+                with closing(connect(db_path)) as db:
+                    document_id = int(parts[3])
+                    source = self._pdf_source(db, int(parts[1]), document_id)
+                    self._send_pdf(source, document_id, head_only=True)
+            except (DomainError, ValueError, IndexError):
+                self.send_error(400)
 
         def do_GET(self):
             if not self._local_host():
@@ -165,6 +232,11 @@ def make_handler(db_path):
                     return
                 with closing(connect(db_path)) as db:
                     parts = parsed.path.strip("/").split("/")
+                    if len(parts) == 4 and parts[0] == "campaign" and parts[2] == "pdf":
+                        campaign_id, document_id = int(parts[1]), int(parts[3])
+                        source = self._pdf_source(db, campaign_id, document_id)
+                        self._send_pdf(source, document_id)
+                        return
                     if len(parts) == 4 and parts[0] == "campaign" and parts[2] == "visual":
                         visual = visual_file(db, int(parts[1]), parts[3])
                         self._send(200, visual.read_bytes(), content_type="image/png")

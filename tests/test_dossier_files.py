@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from campaign.dossier_files import (backlinks, dossier_document, dossier_documents,
+from campaign.dossier_files import (backlinks, bible_element_texts, dossier_document, dossier_documents,
                                     init_dossier, linked_markdown, validate_dossier, visual_file)
 from campaign.store import (add_bible_comment, add_comment, add_observation, add_source, bible_comments,
                             comments_for, connect, create_campaign, establish_fact)
@@ -17,6 +17,27 @@ from campaign.web import make_handler
 
 
 class CampaignDossierFilesTest(unittest.TestCase):
+    def test_bible_review_targets_tolerate_missing_optional_fields(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db = connect(Path(temp) / 'campaign.db')
+            campaign = create_campaign(db, 'Partial bible', 'fr')
+            root = init_dossier(db, campaign)
+            (root / 'bible.json').write_text(json.dumps({
+                'title': 'Départ', 'lead': 'Essai',
+                'state': [{'label': 'Table'}, {'text': 'Sans étiquette'}],
+                'stakes': [{'file': '01-Enjeux.md'}, {'title': 'Sans fiche'}],
+                'scenes': [{'file': '00-Commencer.md', 'summary': 'Ouverture'}],
+                'relations': {'nodes': [{'file': '02-Relations.md'}]},
+            }))
+            self.assertEqual(bible_element_texts(db, campaign), {
+                'hero': 'Départ — Essai',
+                'state:Table': 'Table',
+                'stakes:01-Enjeux.md': '01-Enjeux.md',
+                'scenes:00-Commencer.md': '00-Commencer.md — Ouverture',
+                'relation:02-Relations.md': '02-Relations.md',
+            })
+            db.close()
+
     def test_private_markdown_files_link_comment_and_update_from_another_editor(self):
         with tempfile.TemporaryDirectory() as temp:
             db = connect(Path(temp) / 'campaign.db')
@@ -30,8 +51,15 @@ class CampaignDossierFilesTest(unittest.TestCase):
             home, person = docs
             self.assertIn(f'campaign_files:{person["id"]}', linked_markdown(db, campaign, home['id'],
                            dossier_document(db, campaign, home['id'])[1]))
+            self.assertIn(f'/workspace/{campaign}?doc=library_documents:7&page=12', linked_markdown(
+                db, campaign, home['id'], '[PDF](source:pdf/7/12#L4)'))
             self.assertEqual(backlinks(db, campaign, person['id']), [(home['id'], 'Commencer')])
             html = render_workspace(db, campaign, f'campaign_files:{person["id"]}')
+            self.assertIn('sheet-mode ', html)
+            self.assertNotIn('sheet-mode review-open', html)
+            self.assertIn('id="sheet-review-toggle" aria-expanded="false"', html)
+            self.assertIn('id="comment-form" hidden', html)
+            self.assertIn('data-line-start="3" data-line-end="3"', html)
             self.assertIn('Fiches de campagne', html)
             self.assertIn('Liens entrants', html)
             self.assertIn('Commencer', html)
@@ -39,6 +67,9 @@ class CampaignDossierFilesTest(unittest.TestCase):
             self.assertIn('Elle garde le pont.', document_context(db, campaign, f'campaign_files:{person["id"]}', include_text=True))
             add_comment(db, campaign, 'campaign_files', person['id'], 'pont', 'Quel pont ?', line_start=3, line_end=3)
             self.assertEqual(len(comments_for(db, campaign, 'campaign_files', person['id'])), 1)
+            with_comments = render_workspace(db, campaign, f'campaign_files:{person["id"]}')
+            self.assertIn('sheet-mode review-open', with_comments)
+            self.assertIn('id="sheet-review-toggle" aria-expanded="true"', with_comments)
             (root / 'personnages/mira.md').write_text('# Mira\n\nElle garde le gué.\n')
             updated = render_workspace(db, campaign, f'campaign_files:{person["id"]}')
             self.assertIn('Elle garde le gué.', updated)
@@ -81,8 +112,11 @@ class CampaignDossierFilesTest(unittest.TestCase):
             (root / 'assets/map.png').write_bytes(b'private map')
             (root / 'bible.json').write_text(json.dumps({'title': 'Départ', 'lead': 'État proposé',
                                                           'map': 'map.png', 'map_file': '00-Commencer.md',
-                                                          'state': [{'label': 'Table', 'text': 'Aucune séance jouée'}]}))
+                                                          'state': [{'label': 'Table', 'text': 'Aucune séance jouée'}],
+                                                          'stakes': [{'tag': 'Urgence · rouge', 'title': 'Sauvetage'}]}))
             self.assertIn('Aucune séance jouée', render_workspace(db, campaign))
+            self.assertIn('<small>Urgence</small>', render_workspace(db, campaign))
+            self.assertNotIn('Urgence · rouge', render_workspace(db, campaign))
             self.assertIn(f'/campaign/{campaign}/visual/map.png', render_workspace(db, campaign))
             commented = add_bible_comment(db, campaign, 'state:Table', 'Préciser le début de séance')
             self.assertEqual(bible_comments(db, campaign)[0]['id'], commented)

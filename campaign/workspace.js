@@ -141,6 +141,19 @@ if (sheetReviewToggle) sheetReviewToggle.addEventListener('click', () => {
     document.querySelector('.review').scrollIntoView({block: 'start', behavior: 'smooth'});
 });
 const chatForm = document.getElementById('chat-form');
+const chatToggle = document.getElementById('chat-toggle');
+const openChat = () => {
+  document.querySelector('.app-shell').classList.add('chat-open');
+  if (chatToggle) {
+    chatToggle.setAttribute('aria-expanded', 'true');
+    chatToggle.textContent = chatToggle.dataset.close;
+  }
+};
+if (chatToggle) chatToggle.addEventListener('click', () => {
+  const open = document.querySelector('.app-shell').classList.toggle('chat-open');
+  chatToggle.setAttribute('aria-expanded', String(open));
+  chatToggle.textContent = open ? chatToggle.dataset.close : chatToggle.dataset.open;
+});
 const chatDraftKey = `workspace-next-message:${location.pathname}${location.search}`;
 const saveChatDraft = () => {
   if (!chatForm) return;
@@ -179,6 +192,7 @@ document.querySelector('.review')?.addEventListener('click', event => {
   }
   prompt.value = next;
   saveChatDraft();
+  openChat();
   prompt.scrollIntoView({block: 'center', behavior: 'smooth'});
   prompt.focus({preventScroll: true});
 });

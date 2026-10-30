@@ -7,6 +7,7 @@ from contextlib import closing
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -49,6 +50,13 @@ class LibraryTest(unittest.TestCase):
                 with patch("campaign.workspace.draft_diff", return_value=""):
                     page = render_workspace(db, campaign, f"library_documents:{document}", 1, "Mira")
                 self.assertIn("PDF page 1 / 2", page)
+                self.assertIn(f'/campaign/{campaign}/pdf/{document}#page=1', page)
+                self.assertIn(f'<iframe class="pdf-reader" src="/campaign/{campaign}/pdf/{document}#page=1"', page)
+                self.assertIn('<details class="pdf-extracted" open>', page)
+                empty_page = render_workspace(db, campaign, f"library_documents:{document}", 2)
+                self.assertIn('sheet-mode ', empty_page)
+                self.assertNotIn('sheet-mode review-open', empty_page)
+                self.assertIn(f'<iframe class="pdf-reader" src="/campaign/{campaign}/pdf/{document}#page=2"', empty_page)
                 self.assertIn("Ask why", page)
                 self.assertIn("&lt;script&gt;", page)
                 self.assertNotIn("<script>alert(1)</script>", page)
@@ -73,6 +81,21 @@ class LibraryTest(unittest.TestCase):
                 seen.append(prompt)
                 return "Mock answer", "mock-session", True
             try:
+                pdf_url = f"http://127.0.0.1:{server.server_port}/campaign/{campaign}/pdf/{document}"
+                with urlopen(pdf_url) as response:
+                    self.assertEqual(response.headers["Content-Type"], "application/pdf")
+                    self.assertIn("inline", response.headers["Content-Disposition"])
+                    self.assertEqual(response.read(), path.read_bytes())
+                with urlopen(Request(pdf_url, method="HEAD")) as response:
+                    self.assertEqual(response.headers["Content-Length"], str(path.stat().st_size))
+                    self.assertEqual(response.read(), b"")
+                with urlopen(Request(pdf_url, headers={"Range": "bytes=0-7"})) as response:
+                    self.assertEqual(response.status, 206)
+                    self.assertEqual(response.headers["Content-Range"], f"bytes 0-7/{path.stat().st_size}")
+                    self.assertEqual(response.read(), path.read_bytes()[:8])
+                with self.assertRaises(HTTPError) as denied:
+                    urlopen(f"http://127.0.0.1:{server.server_port}/campaign/{other}/pdf/{document}")
+                self.assertEqual(denied.exception.code, 400)
                 with patch("campaign.web.run_cli", side_effect=fake_cli):
                     for include_page in (False, True):
                         fields = {"provider": "codex", "doc": f"library_documents:{document}",

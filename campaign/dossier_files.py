@@ -70,7 +70,7 @@ def linked_markdown(db, campaign_id, file_id, content):
         other = paths.get("/".join(parts))
         return f"](/workspace/{campaign_id}?doc=campaign_files:{other}{match[2] or ''})" if other else match[0]
     content = LINK.sub(link, content)
-    content = SOURCE.sub(lambda m: f"](/workspace/{campaign_id}?doc=library_documents:{m[1]}&page={m[2]}#L{m[3]})", content)
+    content = SOURCE.sub(lambda m: f"](/workspace/{campaign_id}?doc=library_documents:{m[1]}&page={m[2]})", content)
     return VISUAL.sub(lambda m: f"](/campaign/{campaign_id}/visual/{m[1]})", content)
 
 
@@ -97,12 +97,18 @@ def bible_element_texts(db, campaign_id):
         return {}
     elements = {"hero": f'{bible.get("title", "")} — {bible.get("lead", "")}' }
     for item in bible.get("state", []):
-        elements[f'state:{item["label"]}'] = f'{item["label"]} — {item["text"]}'
+        if not isinstance(item, dict) or not item.get("label"):
+            continue
+        elements[f'state:{item["label"]}'] = f'{item["label"]} — {item["text"]}' if item.get("text") else item["label"]
     for group in ("stakes", "scenes", "people"):
         for item in bible.get(group, []):
-            elements[f'{group}:{item["file"]}'] = f'{item["title"]} — {item.get("summary", "")}'
+            if not isinstance(item, dict) or not item.get("file"):
+                continue
+            title = item.get("title") or item["file"]
+            elements[f'{group}:{item["file"]}'] = f'{title} — {item["summary"]}' if item.get("summary") else title
     for item in bible.get("relations", {}).get("nodes", []):
-        elements[f'relation:{item["file"]}'] = item["label"]
+        if isinstance(item, dict) and item.get("file"):
+            elements[f'relation:{item["file"]}'] = item.get("label") or item["file"]
     if bible.get("map_file"):
         elements[f'map:{bible["map_file"]}'] = bible.get("map_alt", "Carte")
     for row in db.execute("SELECT id,text FROM facts WHERE campaign_id=?", (campaign_id,)):

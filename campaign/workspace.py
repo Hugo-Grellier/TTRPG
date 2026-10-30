@@ -60,12 +60,12 @@ def bible_html(db, campaign_id, bible, established_facts, comment_counts, langua
         img = f'<img loading="lazy" src="{esc(picture)}" alt="{esc(item.get("alt", ""))}"{style}>' if picture else ""
         return (f'<a class="bible-card {kind}" {target(f"people:{item.get("file", "")}")} href="{esc(href(item.get("file", "")))}">{img}'
                 f'<span class="bible-card-copy"><small>{esc(item.get("tag", ""))}</small>'
-                f'<strong>{esc(item["title"])}</strong><span>{esc(item.get("summary", ""))}</span></span></a>')
+                f'<strong>{esc(item.get("title", ""))}</strong><span>{esc(item.get("summary", ""))}</span></span></a>')
     map_src = visual(bible.get("map", ""))
     hero_image = f'<img src="{esc(map_src)}" alt="{esc(bible.get("map_alt", t("bible.map_alt", language)))}">' if map_src else ""
     map_html = (f'<a class="bible-map" {target(f"map:{bible.get("map_file", "")}")} href="{esc(href(bible.get("map_file", "")))}"><img src="{esc(map_src)}" '
                 f'alt="{esc(bible.get("map_alt", t("bible.map_alt", language)))}"><span>{tx("bible.explore")}</span></a>') if map_src else ""
-    state_rows = ''.join(f'<li {target(f"state:{fact["label"]}")}><span>{esc(fact["label"])}</span><strong>{esc(fact["text"])}</strong></li>' for fact in bible.get("state", []))
+    state_rows = ''.join(f'<li {target(f"state:{fact.get("label", "")}")}><span>{esc(fact.get("label", ""))}</span><strong>{esc(fact.get("text", ""))}</strong></li>' for fact in bible.get("state", []))
     if established_facts:
         established_rows = ''.join(f'<li {target(f"fact:{fact["id"]}")}><span>{tx("bible.fact")}</span><strong>{esc(fact["text"])}</strong></li>'
                                    for fact in established_facts[:4])
@@ -74,9 +74,9 @@ def bible_html(db, campaign_id, bible, established_facts, comment_counts, langua
     else:
         truth = t("bible.truth_empty", language)
     stakes = ''.join(f'<a class="bible-stake {esc(item.get("tone", ""))}" {target(f"stakes:{item.get("file", "")}")} href="{esc(href(item.get("file", "")))}">'
-                     f'<small>{esc(item.get("tag", t("bible.stake_tag", language)))}</small><strong>{esc(item["title"])}</strong>'
+                     f'<small>{esc(item.get("tag", t("bible.stake_tag", language)).split("·", 1)[0].strip())}</small><strong>{esc(item.get("title", ""))}</strong>'
                      f'<span>{esc(item.get("summary", ""))}</span></a>' for item in bible.get("stakes", []))
-    steps = ''.join(f'<a {target(f"scenes:{item.get("file", "")}")} href="{esc(href(item.get("file", "")))}"><i>{index:02d}</i><span><strong>{esc(item["title"])}</strong>'
+    steps = ''.join(f'<a {target(f"scenes:{item.get("file", "")}")} href="{esc(href(item.get("file", "")))}"><i>{index:02d}</i><span><strong>{esc(item.get("title", ""))}</strong>'
                     f'<small>{esc(item.get("summary", ""))}</small></span></a>' for index, item in enumerate(bible.get("scenes", []), 1))
     people = ''.join(card(item, "person") for item in bible.get("people", []))
     nodes = bible.get("relations", {}).get("nodes", [])
@@ -85,7 +85,7 @@ def bible_html(db, campaign_id, bible, established_facts, comment_counts, langua
     edge_svg = ''.join(f'<line x1="{positions[a][0]}" y1="{positions[a][1]}" x2="{positions[b][0]}" y2="{positions[b][1]}"/>'
                        for a, b in edges if 0 <= a < len(nodes) and 0 <= b < len(nodes) and a < len(positions) and b < len(positions))
     node_svg = ''.join(f'<a {target(f"relation:{node.get("file", "")}")} href="{esc(href(node.get("file", "")))}"><circle cx="{positions[i][0]}" cy="{positions[i][1]}" r="36"/>'
-                       f'<text x="{positions[i][0]}" y="{positions[i][1] + 3}" text-anchor="middle">{esc(node["label"])}</text></a>'
+                       f'<text x="{positions[i][0]}" y="{positions[i][1] + 3}" text-anchor="middle">{esc(node.get("label", ""))}</text></a>'
                        for i, node in enumerate(nodes[:6]))
     graph_html = (f'<section class="bible-relations"><div class="bible-section-title"><small>{tx("bible.section_network")}</small><h2>{tx("bible.network")}</h2>'
                   f'<a href="{esc(href("02-Relations.md"))}">{tx("bible.network_full")}</a></div>'
@@ -93,7 +93,7 @@ def bible_html(db, campaign_id, bible, established_facts, comment_counts, langua
                   f'<g class="relation-lines">{edge_svg}</g><g class="relation-nodes">{node_svg}</g></svg>'
                   f'<p>{esc(bible.get("relations", {}).get("caption", ""))}</p></section>') if nodes else ""
     return (f'<div class="bible"><header class="bible-hero"><div {target("hero")}><p class="bible-eyebrow">{tx("bible.hero_label")} <span>·</span> {tx("bible.mixed" if established_facts else "bible.proposed")}</p>'
-            f'<h1>{esc(bible["title"])}</h1><p>{esc(bible["lead"])}</p><div class="bible-hero-links">'
+            f'<h1>{esc(bible.get("title", ""))}</h1><p>{esc(bible.get("lead", ""))}</p><div class="bible-hero-links">'
             f'<a href="{esc(href("02-Relations.md"))}">{tx("bible.relations")}</a>'
             f'<a href="{esc(href("04-Chronologie.md"))}">{tx("bible.timeline")}</a></div></div>'
             f'<div class="bible-hero-art">{hero_image}</div></header>'
@@ -176,11 +176,12 @@ def scenario_dossier_html(db, campaign_id, document_id):
     chapters = [row for row in sections if row["title"].startswith("CHAPITRE ")]
     summarized = sum(row["summary_status"] == "proposed" for row in chapters)
     source = f"/workspace/{campaign_id}?doc=library_documents:{document_id}"
+    pdf = lambda page: f"/workspace/{campaign_id}?doc=library_documents:{document_id}&page={page}"
     output = (f'<div class="dossier-status"><strong>{stats["pages"]}/{document["page_count"]} pages indexées</strong>'
               f'<span>{authored_count} fiches rédigées par l’agent · {stats["selected"]} repères extraits · {stats["pending"]} à revoir · {summarized}/{len(chapters)} chapitres synthétisés</span>'
               '<p>Fiches et repères proposés à partir du PDF privé. Rien ici n’est canonique. '
-              'Les catégories et synthèses doivent être relues ; chaque lien ouvre la page et la ligne du texte source.</p></div>'
-              f'<nav class="dossier-source"><a href="{source}&amp;page=1">Ouvrir le PDF source</a></nav>')
+              'Les catégories et synthèses doivent être relues ; chaque lien ouvre la page du PDF original.</p></div>'
+              f'<nav class="dossier-source"><a href="{pdf(1)}">Ouvrir le PDF source</a></nav>')
     labels = {"scene": "Scènes", "event": "Événements", "encounter": "Rencontres", "person": "Personnages", "place": "Lieux", "faction": "Factions", "item": "Objets", "creature": "Créatures", "heading": "Autres rubriques", "clue": "Indices et découvertes", "choice": "Choix et embranchements", "secret": "Secrets", "hook": "Accroches", "rule": "Règles"}
     for section in sections:
         counts = {row["status"]: row["n"] for row in db.execute(
@@ -190,7 +191,7 @@ def scenario_dossier_html(db, campaign_id, document_id):
         authored = db.execute("SELECT * FROM scenario_elements WHERE section_id=? ORDER BY pdf_page,line_number,id",
                               (section["id"],)).fetchall()
         authored_cards = ''.join(
-            f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
+            f'<li><a href="{pdf(row["pdf_page"])}">'
             f'<small>{esc(labels.get(row["kind"], row["kind"]))} · PDF p. {row["pdf_page"]}, ligne {row["line_number"]}</small>'
             f'<strong>{esc(row["title"])}</strong><span>{esc(row["body"])}</span>'
             f'<q>{esc(row["quote"])}</q></a></li>' for row in authored if row["kind"] != "scene")
@@ -205,7 +206,7 @@ def scenario_dossier_html(db, campaign_id, document_id):
                     break
                 related.append(following)
             related_html = ''.join(
-                f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
+                f'<li><a href="{pdf(row["pdf_page"])}">'
                 f'<small>{esc(labels.get(row["category"] or row["kind"], row["kind"]))} · p. {row["pdf_page"]}</small>'
                 f'<span>{esc(row["name"])}</span></a></li>' for row in related)
             authored_scene = authored_scenes.get((scene["pdf_page"], scene["line_number"]))
@@ -214,7 +215,7 @@ def scenario_dossier_html(db, campaign_id, document_id):
                             f'<small>PDF p. {scene["pdf_page"]} · {len(related)} éléments liés</small></summary>'
                             f'<p class="dossier-note">{esc(scene["note"])}</p>'
                             f'<p>{esc(scene_body)}</p>'
-                            f'<a class="dossier-scene-source" href="{source}&amp;page={scene["pdf_page"]}#L{scene["line_number"]}">Voir le passage source</a>'
+                            f'<a class="dossier-scene-source" href="{pdf(scene["pdf_page"])}">Voir le passage source</a>'
                             f'<ul>{related_html}</ul></details>')
         groups = ''
         for kind, label in labels.items():
@@ -224,7 +225,7 @@ def scenario_dossier_html(db, campaign_id, document_id):
                      or (row["kind"] == kind and (kind != "heading" or not row["category"]))]
             if not items:
                 continue
-            cards = ''.join(f'<li><a href="{source}&amp;page={row["pdf_page"]}#L{row["line_number"]}">'
+            cards = ''.join(f'<li><a href="{pdf(row["pdf_page"])}">'
                             f'<strong>{esc(row["name"])}</strong>'
                             f'<span class="dossier-note">{esc(row["note"])}</span>'
                             f'<span>{esc(row["evidence"])}</span>'
@@ -396,7 +397,14 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
                       f'<label for="pdf-query">{tr("workspace.library_search")}</label>'
                       f'<div><input id="pdf-query" name="q" value="{esc(library_query)}" maxlength="100">'
                       f'<button>{tr("action.search")}</button></div></form>')
-            section_html = search + results + pager + section_html + pager
+            original_url = f'/campaign/{campaign_id}/pdf/{item_id}#page={page}'
+            reader = (f'<iframe class="pdf-reader" src="{original_url}" title="{tr("workspace.pdf_page")} {page}" '
+                      f'loading="eager"></iframe>'
+                      f'<p class="pdf-original"><a href="{original_url}" target="_blank" rel="noopener">'
+                      f'{tr("workspace.open_original_pdf")}</a></p>')
+            extracted = (f'<details class="pdf-extracted" {"open" if library_query or comments else ""}>'
+                         f'<summary>{tr("workspace.extracted_text")}</summary>{section_html}</details>')
+            section_html = reader + pager + search + results + extracted
             storage = (f'<details class="source-path"><summary>{tr("workspace.source_not_canon")} · {tr("workspace.source_file")}</summary>'
                        f'<code>{esc(document["source_path"])}</code></details>'
                        f'<span>{tr("workspace.extraction_quality")}: {counts.get("text", 0)} / {document["page_count"]} '
@@ -552,18 +560,18 @@ def render_workspace(db, campaign_id, selected="", page=1, library_query="", com
     if bible and not selected:
         document_control = (f'<a class="comment-mode-toggle" href="/workspace/{campaign_id}{"" if comment_mode else "?comment=1"}">'
                             f'{tr("bible.done" if comment_mode else "bible.review")} <span>{len(bible_rows)}</span></a>')
-    elif choice and choice[0] == "campaign_files":
-        document_control = (f'<button type="button" class="sheet-review-toggle" id="sheet-review-toggle" aria-expanded="false">'
+    elif choice and choice[0] in ("campaign_files", "library_documents"):
+        document_control = (f'<button type="button" class="sheet-review-toggle" id="sheet-review-toggle" aria-expanded="{str(bool(comments)).lower()}">'
                             f'{tr("workspace.comments")} <span>{len(comments)}</span></button>')
     else:
         document_control = f'<span>{tr("workspace.review")}</span>'
     return f'''<!doctype html><html lang="{locale(language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(campaign['name'])} · {tr('workspace.title')}</title><link rel="stylesheet" href="/assets/workspace.css"></head>
-      <body><div class="app-shell {"bible-mode" if bible and not selected else ""} {"comment-mode" if bible and not selected and comment_mode else ""} {"sheet-mode" if choice and choice[0] == "campaign_files" else ""}">
+      <body><div class="app-shell {"bible-mode" if bible and not selected else ""} {"comment-mode" if bible and not selected and comment_mode else ""} {"sheet-mode" if choice and choice[0] in ("campaign_files", "library_documents") else ""} {"review-open" if choice and choice[0] in ("campaign_files", "library_documents") and comments else ""} {"chat-open" if pending else ""}">
         <aside class="sidebar"><div class="brand"><a href="/">{tr('app.title')}</a><strong>{esc(campaign['name'])}</strong><span>{tr('workspace.private')}</span></div>
           {tabs}<nav aria-label="{tr('workspace.documents')}">{sidebar or f'<p class="sidebar-empty">{tr("workspace.no_documents")}</p>'}</nav>
           <a class="advanced-link" href="/campaign/{campaign_id}">{tr('workspace.records')}</a>
         </aside>
-        <section class="conversation" id="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><a class="mobile-jump" href="#document-panel">{tr('workspace.see_document')}</a><span>{tr('workspace.cli_draft')}</span></div>
+        <section class="conversation" id="conversation"><div class="panel-head"><h1>{tr('workspace.conversation')}</h1><button type="button" class="chat-toggle" id="chat-toggle" aria-expanded="{str(bool(pending)).lower()}" data-open="{tr('workspace.open_chat')}" data-close="{tr('workspace.close_chat')}">{tr('workspace.close_chat' if pending else 'workspace.open_chat')}</button><a class="mobile-jump" href="#document-panel">{tr('workspace.see_document')}</a><span>{tr('workspace.cli_draft')}</span></div>
           <div class="messages" id="messages">{messages}{draft_html}</div>
           <form class="composer" method="post" action="/campaign/{campaign_id}/chat" id="chat-form" data-pending="{int(pending)}" data-status-url="/campaign/{campaign_id}/chat-progress" data-turn-id="{turns[-1]["id"] if turns else ""}" data-comment-instruction="{tr('workspace.comment_prompt')}" data-too-long="{tr('workspace.prompt_too_long')}">
             {pending_message}

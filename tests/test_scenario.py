@@ -56,7 +56,7 @@ class ScenarioDossierTests(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT COUNT(*) FROM facts').fetchone()[0], 0)
         html = render_workspace(self.db, self.campaign, f'scenario_dossiers:{self.document}')
         self.assertIn('3/3 pages indexées', html)
-        self.assertIn(f'doc=library_documents:{self.document}&amp;page=2#L3', html)
+        self.assertIn(f'/workspace/{self.campaign}?doc=library_documents:{self.document}&page=2', html)
         self.assertIn('Les PJ explorent la porte et le pont.', html)
         self.assertIn('Lieu à explorer.', html)
         self.assertIn('Fiches rédigées dans le chat', html)
