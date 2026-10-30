@@ -24,9 +24,9 @@ from .vault import UUID, body_hash, join_frontmatter, split_frontmatter
 
 TOOLS = Path(__file__).resolve().parent.parent
 LABELS = {
-    "fr": {"stats": "Statistiques", "todo": "Fiche à distiller depuis le texte de l'aventure.",
+    "fr": {"stats": "Statistiques", "todo": "Fiche à compiler depuis le texte de l'aventure.",
            "pages": "Pages AP", "scene": "Scène Foundry", "pins": "Épingles"},
-    "en": {"stats": "Statistics", "todo": "Draft: distill from the adventure text.",
+    "en": {"stats": "Statistics", "todo": "Draft: compile from the adventure text.",
            "pages": "AP pages", "scene": "Foundry scene", "pins": "Pins"},
 }
 INDEXED = {"actors": "Actor", "scenes": "Scene", "tables": "RollTable", "items": "Item",

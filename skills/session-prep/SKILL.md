@@ -13,8 +13,16 @@ description: Prepare the next game session from the campaign repository - what t
    what is ready (`prep: ready`) and what is missing (stat references, map,
    motivation, consequences).
 4. Write `sessions/<day>-prep.md` (`type: note`, `visibility: gm`) with: where
-   we start, three to five likely threads, NPCs to have at hand, open GM
-   decisions as `> [!question]`, and a short missing-prep checklist.
+   we start, three to five likely threads, open GM decisions as
+   `> [!question]`, and a short missing-prep checklist. This sheet is where
+   the campaign is condensed: the notes are complete references, the sheet
+   keeps only what this session needs, each item linking to its note.
+   - **NPCs to have at hand**: per NPC, a card of four to six lines: role now,
+     look and voice, what they want from the PCs this session, what they
+     can reveal and at what price, their statistics link.
+   - **Places and scenes**: per likely scene, the read-aloud text, the stakes,
+     the opposition with its link, and the outcomes, from the scene note.
+   - Secrets the PCs may learn this session, in `> [!secret]` blocks.
 5. Do not mark anything as played. Run `tools/bin/ttrpg check`.
 6. If the GM wants it at the table: `tools/bin/ttrpg export-foundry --install
    <Foundry Data/modules>` builds the module of journals (one entry per kind

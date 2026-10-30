@@ -19,6 +19,7 @@ common:
   source: {kind: str}
   source_hash: {kind: str}
   foundry: {kind: str}
+  chapters: {kind: refs, to: [chapter], inverse: featuring}
 
 places: &places [location, settlement, hex, region]
 
@@ -26,7 +27,10 @@ types:
   note: {}
   chapter: {}
   handout: {}
-  item: {}
+  item:
+    level: {kind: int}
+    owner: {kind: ref, to: [npc, faction], inverse: possessions}
+    location: {kind: ref, to: *places, inverse: items}
   region:
     region: {kind: ref, to: [region], inverse: subregions}
   hex:
@@ -36,11 +40,15 @@ types:
   settlement:
     region: {kind: ref, to: *places, inverse: settlements}
     leader: {kind: ref, to: [npc]}
+    level: {kind: int}
+    population: {kind: int}
+    government: {kind: str}
   location:
     in: {kind: ref, to: *places, inverse: contains}
   npc:
     state: {kind: enum, values: [alive, dead, missing, unknown], default: alive}
     level: {kind: int}
+    ancestry: {kind: str}
     died: {kind: date}
     location: {kind: ref, to: *places, inverse: residents}
     factions: {kind: refs, to: [faction], inverse: members}
