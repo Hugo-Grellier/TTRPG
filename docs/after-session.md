@@ -153,8 +153,19 @@ Run the tests with `npm ci --prefix recorder` once, then `make recorder-test`
 ### Transcribe a recording
 
 The container has only Node: it decodes, but cannot run `ttrpg transcribe`
-(Python, ffmpeg, faster-whisper). Either transcribe from your machine over
-the NAS share:
+(Python, ffmpeg, faster-whisper). On the machine that holds the recordings,
+`recorder/transcribe-new.sh` transcribes every finished session (it has an
+`info.json`) not yet done into a campaign checkout, and pushes it on a branch
+`session/<day>` for review and debrief. The checkout needs push access (a
+deploy key with write access on the campaign repository); `TTRPG` points at a
+tools install with faster-whisper if the campaign's own `tools/` has none.
+From cron, every ten minutes, one run at a time:
+
+```sh
+*/10 * * * * TTRPG=/opt/ttrpg/bin/ttrpg flock -n /run/transcribe-new.lock /opt/ttrpg/recorder/transcribe-new.sh /opt/recorder/recordings /opt/campaign-beginner-box >> /var/log/transcribe-new.log 2>&1
+```
+
+Or transcribe from your machine over the NAS share:
 
 ```sh
 tools/bin/ttrpg transcribe /mnt/nas/recorder/recordings/2026-11-06-2004 --day 2026-11-06
