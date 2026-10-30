@@ -23,6 +23,15 @@ and threat it contains or mentions. List them first and say how many.
 Each subject is compiled from the whole adventure, not from the scope: a
 chapter only chooses which subjects to do.
 
+Order: places, hexes and scenes first, then items and quests, then NPCs and
+factions. Facts live in their subject's note (`note-types.md`): a scene's
+mechanics go in the scene note, and an NPC compiled after it only links it.
+When a subject you write about has no note yet (a place, a scene, an NPC the
+scope mentions), create it: compiled if it is in the scope, otherwise a
+draft (`prep: draft`, the facts you saw, a `> [!todo]` and its AP pages) so
+links and fields (`base`, `in`, `location`) point at campaign notes, never at
+AP pages.
+
 ## For each subject
 
 1. **Find the note.** Search `npcs/`, `factions/`, `places/`, `scenes/`,
@@ -44,9 +53,11 @@ chapter only chooses which subjects to do.
    Frontmatter per `tools/ttrpg/schema.yaml`: the structured facts (level,
    ancestry, location, factions, leader, region...) as fields;
    `origin: ap`; `prep: ready` once every source is covered.
-4. **Check coverage.** Go through the list of pages read: each must be cited
-   in the note, and each fact it gives about the subject must be in it. A
-   page that says nothing new is still cited in Sources.
+4. **Check coverage.** Go through the list of pages read: each fact a page
+   gives about the subject is in the note (or in the note of the scene or
+   subject it belongs to, linked), and every page that says something about
+   the subject is cited. Pages that only match a homonym or a generic word
+   are left out.
 
 ## Rules
 
@@ -64,6 +75,8 @@ chapter only chooses which subjects to do.
   introduction in your summary and skip dated events.
 - Link subjects to each other's campaign notes (`[[jamandi-aldori]]`), and to
   AP pages only as sources.
+- PDF citations `src:id#pN` use the PDF page, the number of the file in
+  `.cache/sources/<id>/`, not the printed folio.
 - Do not change `adventure/` or the stat blocks; do not mark anything played.
 
 ## Finish

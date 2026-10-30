@@ -20,17 +20,29 @@ current state: `location` is where the subject is now in play (the
 adventure's starting point before play); its moves over the campaign go in
 In the campaign.
 
-Every paragraph ends with the sources it comes from, `([[ap-page]])` or
-`([p. N](src:id#pN))`; the Sources section lists them all. An original note
-has none.
+Each fact lives in the note of its subject; other notes say in one line what
+it means for them and link it. A scene's read-aloud text, mechanics, DCs,
+tactics, speeches and outcomes are in the scene note: the NPC note says what
+they do there and links the scene; the place note links its scenes. A
+faction's members keep their own story in their notes.
+
+Every paragraph or list item ends with the sources it comes from,
+`([[ap-page]])` or `([p. N](src:id#pN))`, N being the PDF page (what a PDF
+viewer opens, not the printed folio); the Sources section lists every page
+that says something about the subject. An original note has none.
+
+Name items, spells, actions, conditions and creatures as the game's edition
+in the campaign language names them, keeping the Foundry link:
+`@UUID[Compendium.pf2e.equipment-srd.Item.…]{Broche de protection}`. Where
+that name is unknown, keep the source's and add `> [!question]`.
 
 Callouts: `> [!secret]` never reaches players, `> [!question]` is a GM
 decision still open, `> [!idea]` is a suggestion not yet adopted.
 
 | Type | Sections (en) | Sections (fr) |
 | --- | --- | --- |
-| npc | In brief · Appearance · Personality · Background · Motivations · In the campaign · What they know · Relations · Rewards · Statistics · Sources | En bref · Apparence · Personnalité · Passé · Motivations · Dans la campagne · Ce qu'il sait · Relations · Récompenses · Statistiques · Sources |
-| faction | In brief · History · Goals · Organization and means · Territory · In the campaign · If the PCs do nothing · Relations · Sources | En bref · Histoire · Objectifs · Organisation et moyens · Territoire · Dans la campagne · Si les PJ n'agissent pas · Relations · Sources |
+| npc | In brief · Appearance · Personality · Background · Motivations · In the campaign · What they know · Relations · Rewards · Statistics · Sources | En bref · Apparence · Personnalité · Passé · Motivations · Dans la campagne · Ce que sait le PNJ · Relations · Récompenses · Statistiques · Sources |
+| faction | In brief · History · Goals · Organization and means · Members · Territory · In the campaign · If the PCs do nothing · Relations · Sources | En bref · Histoire · Objectifs · Organisation et moyens · Membres · Territoire · Dans la campagne · Si les PJ n'agissent pas · Relations · Sources |
 | location, settlement | In brief · Show the players · Description · History · Inhabitants · What is here · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Histoire · Habitants · Ce qui s'y trouve · Dans la campagne · Sources |
 | region, hex | In brief · Show the players · Description · Encounters · What is here · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Rencontres · Ce qui s'y trouve · Dans la campagne · Sources |
 | quest | In brief · Hook · Goal · How it unfolds · Reward · Done when · Failure · Sources | En bref · Accroche · Objectif · Déroulement · Récompense · Terminée quand · Échec · Sources |
@@ -51,7 +63,11 @@ What goes in each:
 - **Motivations / Goals**: what they want, openly and secretly, and why.
 - **In the campaign**: every appearance or role, in campaign order (by
   chapter in an adventure; by arc, front or session in a sandbox), with its conditions ("if the PCs...", "once the kingdom
-  reaches level 5..."), how they change, and how it ends.
+  reaches level 5..."), how they change, and how it ends; each scene in one
+  or two lines with its link.
+- **Members** (faction): one line per member by link, with rank and role; the
+  membership itself is the NPC's `factions` field. Rank and file without a
+  note: numbers, roles and statistics links.
 - **What they know** (npc): what they can reveal, at what price or condition.
 - **Relations**: one line per link to another note, with its stakes. The
   structured relation itself is a frontmatter field on one side only.
