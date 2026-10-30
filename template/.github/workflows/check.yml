@@ -3,6 +3,9 @@ on: [push, pull_request]
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -12,3 +15,10 @@ jobs:
           python-version: '3.12'
       - run: pip install -r tools/requirements.txt
       - run: tools/bin/ttrpg check
+      # Free private repositories have no branch protection, so this job is the
+      # gate: a Dependabot tools bump that checks clean merges itself.
+      - if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+        run: gh pr merge --squash --delete-branch "$PR"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
