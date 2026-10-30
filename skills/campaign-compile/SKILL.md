@@ -52,7 +52,9 @@ AP pages.
    pages repeat; keep every fact, number, DC, condition and name.
    Frontmatter per `tools/ttrpg/schema.yaml`: the structured facts (level,
    ancestry, location, factions, leader, region...) as fields;
-   `origin: ap`; `prep: ready` once every source is covered.
+   `origin: ap` (compiling is not changing the adventure: `modified` is for
+   the GM's own changes); `prep: ready` once every source is covered, open
+   `[!question]`s included.
 4. **Check coverage.** Go through the list of pages read: each fact a page
    gives about the subject is in the note (or in the note of the scene or
    subject it belongs to, linked), and every page that says something about
@@ -65,7 +67,12 @@ AP pages.
   fact: `> [!question]` for what the GM must decide, `> [!idea]` for a
   suggestion. Where pages contradict each other, give both, cited, in a
   `> [!question]`, and never state either version as fact elsewhere in the
-  note.
+  note, In brief included.
+- A name with no official translation in `glossary.tsv` keeps the source's
+  spelling: never invent a French name for a proper name, a creature or a
+  game term (*Old Sharptooth* stays *Old Sharptooth*). Names of documents
+  that exist only in the adventure module (world items, effects, actors) stay
+  as Foundry shows them.
 - What the players must not learn early goes in `> [!secret]` blocks, in the
   section it belongs to.
 - Relations live on one side (NPC `factions`, place `in`); see `inverse` in
