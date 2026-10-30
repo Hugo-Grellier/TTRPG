@@ -170,6 +170,11 @@ class SessionTest(unittest.TestCase):
             write(root, "capture/decoded/speaker-001.wav", "")
             self.assertEqual([path.name for path in tracks([Path(root) / "capture"], Path(root))], ["speaker-001.wav"])
 
+    def test_windows_cut_between_speech(self):
+        from ttrpg.session import windows
+        speech = [{"start": 0, "end": 5}, {"start": 8, "end": 10}, {"start": 12, "end": 20}, {"start": 30, "end": 31}]
+        self.assertEqual(windows(speech, size=10), [(0, 10), (12, 20), (30, 31)])
+
     def test_flight_summary_counts_a_check_once(self):
         from ttrpg.session import flight_summary
         check = {"type": "pf2e.check", "at": "+1:00.0", "data": {"actor": {"name": "Kyra"}, "statistic": "diplomacy", "outcome": "success", "dc": 20, "roll": {"total": 24}}}

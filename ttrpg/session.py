@@ -75,6 +75,7 @@ def whisper(model, language):
     try:
         import numpy
         from faster_whisper import WhisperModel
+        from faster_whisper.vad import get_speech_timestamps
     except ImportError:
         raise SystemExit(INSTALL)
     if not shutil.which("ffmpeg"):
@@ -87,10 +88,26 @@ def whisper(model, language):
         pcm = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(path), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
                              capture_output=True, check=True).stdout
         samples = numpy.frombuffer(pcm, numpy.int16).astype(numpy.float32) / 32768
-        # VAD skips the long silences of a per-speaker track, where Whisper would invent text.
-        items, _ = loaded.transcribe(samples, language=language, vad_filter=True, condition_on_previous_text=False, word_timestamps=True)
-        return utterances([(word.start, word.end, word.word) for item in items for word in item.words])
+        words = []
+        # Whisper's features for a whole 3 h track take over 6 GB: transcribe windows cut in silences.
+        for start, end in windows(get_speech_timestamps(samples)):
+            # VAD skips the long silences of a per-speaker track, where Whisper would invent text.
+            items, _ = loaded.transcribe(samples[start:end], language=language, vad_filter=True, condition_on_previous_text=False, word_timestamps=True)
+            offset = start / 16000
+            words += [(word.start + offset, word.end + offset, word.word) for item in items for word in item.words]
+        return utterances(words)
     return run
+
+
+def windows(speech, size=20 * 60 * 16000):
+    """Group VAD speech chunks ({"start", "end"} in samples) into spans of about `size`, each cut between two chunks."""
+    spans = []
+    for chunk in speech:
+        if spans and chunk["end"] - spans[-1][0] <= size:
+            spans[-1][1] = chunk["end"]
+        else:
+            spans.append([chunk["start"], chunk["end"]])
+    return [tuple(span) for span in spans]
 
 
 def utterances(words, pause=1.0):
