@@ -9,6 +9,7 @@ refreshes untouched AP notes and never overwrites a modified or custom one.
 
 import json
 import re
+import shutil
 import subprocess
 import tempfile
 import unicodedata
@@ -39,9 +40,12 @@ def unpack(pack_dir):
     """Return the Adventure documents of a LevelDB pack, via the Foundry CLI."""
     if not (TOOLS / "node_modules" / "@foundryvtt" / "foundryvtt-cli").is_dir():
         raise SystemExit(f"Foundry CLI missing: run `npm ci` in {TOOLS}")
-    with tempfile.TemporaryDirectory() as out:
-        subprocess.run(["node", str(TOOLS / "ttrpg" / "unpack.mjs"), str(pack_dir), out], check=True)
-        return [json.loads(path.read_text(encoding="utf-8")) for path in sorted(Path(out).glob("*.json"))]
+    with tempfile.TemporaryDirectory() as work:
+        # LevelDB writes its log and manifest on open: never open a live module's pack.
+        copy, out = Path(work) / "pack", Path(work) / "json"
+        shutil.copytree(pack_dir, copy, ignore=shutil.ignore_patterns("LOCK"))
+        subprocess.run(["node", str(TOOLS / "ttrpg" / "unpack.mjs"), str(copy), str(out)], check=True)
+        return [json.loads(path.read_text(encoding="utf-8")) for path in sorted(out.glob("*.json"))]
 
 
 def load_map(module_id):
