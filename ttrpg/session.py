@@ -82,7 +82,12 @@ def whisper(model, language):
     if not shutil.which("ffmpeg"):
         raise SystemExit("ffmpeg is needed to decode the tracks (apt install ffmpeg)")
     # auto: the GPU when CTranslate2 sees one (CUDA 12 + cuDNN 9), else the CPU; TTRPG_WHISPER_DEVICE=cpu to force.
-    loaded = WhisperModel(model, device=os.environ.get("TTRPG_WHISPER_DEVICE", "auto"), compute_type="int8")
+    device = os.environ.get("TTRPG_WHISPER_DEVICE", "auto")
+    if device == "auto":
+        import ctranslate2
+        device = "cuda" if ctranslate2.get_cuda_device_count() else "cpu"
+    # float32 on the GPU: int8 hangs at random on the GTX 1080 (sm_61), which has no fast float16 either.
+    loaded = WhisperModel(model, device=device, compute_type="float32" if device == "cuda" else "int8")
 
     def run(path):
         # Decode with ffmpeg, as LoreForge does: faster-whisper 1.2.1's own decoder breaks on PyAV >= 16.

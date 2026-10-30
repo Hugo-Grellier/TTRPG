@@ -56,14 +56,15 @@ tools/bin/ttrpg transcribe <recordings>/2026-11-06-2004 --day 2026-11-06
 A recorder session directory is read through its `decoded/` WAVs, named by
 Discord username; `--names alice=Alice` overrides `campaign.yaml` for one run.
 
-Each track is decoded with ffmpeg, transcribed (on the GPU if CTranslate2 finds CUDA 12 and cuDNN 9, else the CPU; `TTRPG_WHISPER_DEVICE=cpu` forces it) with voice activity
+Each track is decoded with ffmpeg, transcribed (on the GPU in float32 if CTranslate2 finds CUDA 12 and cuDNN 9, else the CPU in int8; `TTRPG_WHISPER_DEVICE=cpu` forces it; int8 hangs at random on the GTX 1080 of CT 113) with voice activity
 detection (silence skipped), split into remarks at pauses of one second and
 merged by time. The language is `campaign.yaml`'s; the day comes from
 Craig's `info.txt` or the recorder's `info.json`. The default model is
 `large-v3-turbo` (downloaded once from Hugging Face; `--model` or
 `TTRPG_WHISPER_MODEL` to change it): good French, slow on CPU. Measured on this
 machine (16 cores): 15 minutes of speech in under 6 minutes, so a three-hour
-session of five players takes several hours: run it overnight.
+session of five players takes several hours: run it overnight. On the GTX 1080
+of CT 113 (float32): two minutes of speech in 5 seconds, about 23 times real time.
 
 ## 3. Foundry Flight Recorder
 
