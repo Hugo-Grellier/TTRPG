@@ -91,6 +91,12 @@ AP pages.
   remaster one and its translation); the kind column tells a spell from an
   item of the same name. Rules text and details: <https://2e.aonprd.com>
   (English) and <https://pf2e.pathfinder-fr.org> (French).
+- Foundry links and the `foundry` field point only at documents of this
+  campaign's world: the adventure's own (as its pages link them) or the
+  system compendiums (`Compendium.pf2e.…`). A same-named actor from another
+  publication is not this NPC. A field the sources do not support (a
+  `location` the text never gives, a `level` without statistics) stays
+  empty; an image-only page (a portrait) is a source for Appearance.
 - A scene's `level` is the level of its encounter or, if none, the party
   level the adventure gives. Area numbers and other facts you deduce (from a
   map, an index order) are written as such ("probablement la zone 06"), never
