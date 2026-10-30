@@ -12,6 +12,7 @@ import yaml
 from . import check as checker
 from .foundry_export import export
 from .foundry_import import import_adventure, import_module
+from .foundry_sync import pull
 from .rename import rename
 
 TOOLS = Path(__file__).resolve().parent.parent
@@ -36,6 +37,18 @@ def cmd_export_foundry(args):
         shutil.copytree(result["path"], target)
         print(f"installed in {target}; enable the module, then import the compendium entries into the world")
     return 0
+
+
+def cmd_pull_foundry(args):
+    report = pull(args.root, args.world)
+    for rel in report["updated"]:
+        print(f"updated {rel}")
+    for rel in report["conflicts"]:
+        print(f"conflict {rel}: changed in the repository and in Foundry since the export; repository kept")
+    for note_id in report["missing"]:
+        print(f"missing {note_id}: exported page whose note no longer exists")
+    print(f"{len(report['updated'])} updated, {len(report['conflicts'])} conflicts, {report['unchanged']} unchanged; review with git diff")
+    return 1 if report["conflicts"] else 0
 
 
 def cmd_rename(args):
@@ -118,6 +131,11 @@ def main(argv=None):
     p.add_argument("--out", help="module directory (default .cache/foundry/<module-id>)")
     p.add_argument("--install", help="Foundry Data/modules directory to copy the module into")
     p.set_defaults(func=cmd_export_foundry)
+
+    p = sub.add_parser("pull-foundry", help="bring journal pages edited in Foundry back into the notes")
+    p.add_argument("world", help="Foundry world directory (Data/worlds/<id>)")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_pull_foundry)
 
     p = sub.add_parser("rename", help="rename a note and update every link to it")
     p.add_argument("old")

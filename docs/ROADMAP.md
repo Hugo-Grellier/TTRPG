@@ -33,7 +33,7 @@ player notes with player ownership). Verify in the local Foundry
 (`foundry-local-1`, port 30001) with Kingmaker imported alongside. Then live
 edits through foundry-vtt-mcp.
 
-### 3 — Foundry changes back to the repository
+### 3 — Foundry changes back to the repository (done from world files; MCP route for remote servers next)
 Read world journals (pack or MCP), turn changed pages back into Markdown,
 write them over the notes and leave the diff for GM review. Repository wins a
 conflict.

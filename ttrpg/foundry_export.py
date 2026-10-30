@@ -22,7 +22,7 @@ from markdown_it import MarkdownIt
 
 from . import vault
 from .foundry_import import TOOLS, slug
-from .vault import SOURCE, WIKILINK, fields_for
+from .vault import SOURCE, WIKILINK, body_hash, fields_for
 
 CATEGORIES = {
     "npc": "npcs", "faction": "factions", "location": "places", "settlement": "places", "region": "places",
@@ -81,6 +81,7 @@ class Exporter:
         self.pages = {note.id: (foundry_id(self.module_id, "entry", CATEGORIES.get(note.type, "notes")),
                                 foundry_id(self.module_id, "page", note.id)) for note in self.notes}
         self.inverse = self.inverse_relations()
+        self.assets = set()
 
     def inverse_relations(self):
         """target id -> [(inverse field, source note)], from the schema's `inverse` names."""
@@ -114,10 +115,14 @@ class Exporter:
         def wikilink(match):
             embed, target, anchor, label = match[1], match[2].strip(), (match[3] or "")[1:], match[4]
             if re.search(r"\.[A-Za-z0-9]{2,4}$", target):
+                self.assets.add(target)
                 path = f"modules/{self.module_id}/assets/{target}"
                 return f"![{label or ''}]({path})" if embed else f"[{label or target}]({path})"
             return self.link(target, label, anchor)
-        text = WIKILINK.sub(wikilink, text)
+        return WIKILINK.sub(wikilink, text)
+
+    def cite(self, text):
+        """Source citations as plain text in HTML; the Markdown keeps src: links for the way back."""
         sources = self.config.get("sources") or {}
         return re.sub(r"\[([^\]]*)\]\((" + SOURCE.pattern + r")\)",
                       lambda m: f"{m[1]} ({sources.get(m[3], {}).get('title', m[3])}, p. {m[4]})", text)
@@ -154,19 +159,26 @@ class Exporter:
                 return f'<section class="secret" id="secret-{next(secret)}">{body}</section>\n\n'
             title = self.label.get(kind, kind.capitalize())
             return f'<blockquote class="callout-{kind}">' + (f"<p><strong>{title}</strong></p>" if title else "") + f"{body}</blockquote>\n\n"
-        return self.markdown.render(CALLOUT.sub(callout, markdown))
+        return self.markdown.render(CALLOUT.sub(callout, self.cite(markdown)))
 
     def page(self, note):
         entry, page = self.pages[note.id]
         header = self.header(note)
-        markdown = self.convert((header + "\n\n" if header else "") + note.body.strip() + "\n")
         players = note.get("visibility") == "players"
+        body = note.body.strip() + "\n"
+        if players:
+            # Clients receive a page's raw text: a page players can read carries no secrets.
+            body = CALLOUT.sub(lambda m: "" if m[1].lower() == "secret" else m[0], body)
+        markdown = self.convert((header + "\n\n" if header else "") + body)
         return {
             "_id": page, "_key": f"!journal.pages!{entry}.{page}", "name": note.meta.get("title") or note.id,
             "type": "text", "title": {"show": True, "level": 1},
             "text": {"format": 2, "markdown": markdown, "content": self.html(markdown)},
             "ownership": {"default": 2 if players else -1},
-            "flags": {"ttrpg": {"id": note.id, "path": note.rel}},
+            # The way back compares against these: what was exported, and the repository body it came from.
+            "flags": {"ttrpg": {"id": note.id, "path": note.rel, "header": self.convert(header),
+                                "exported": body_hash(markdown), "body": body_hash(note.body),
+                                "players": players}},
             "sort": 0,
         }
 
@@ -197,17 +209,22 @@ class Exporter:
             (source / f"{entry['_id']}.json").write_text(json.dumps(entry, ensure_ascii=False, indent=1), encoding="utf-8")
         subprocess.run(["node", str(TOOLS / "ttrpg" / "pack.mjs"), str(source), str(out / "packs" / "notes")], check=True)
         shutil.rmtree(source)
-        assets = out / "assets"
-        for path, rel in vault.walk(self.campaign.root):
-            if path.suffix != ".md" and not rel.parts[0].startswith(".") and rel.name != "campaign.yaml":
-                assets.mkdir(exist_ok=True)
-                shutil.copy2(path, assets / path.name)
+        root = self.campaign.root.resolve()
+        files = {path.name: path for path, rel in vault.walk(root)
+                 if path.suffix != ".md" and not any(part.startswith(".") for part in rel.parts)}
+        for name in sorted(self.assets):
+            path = files.get(name)
+            # Only files the exported notes cite, real files inside the campaign.
+            if path is None or path.is_symlink() or not path.resolve().is_relative_to(root):
+                continue
+            (out / "assets").mkdir(exist_ok=True)
+            shutil.copy2(path, out / "assets" / name)
         manifest = {
             "id": self.module_id, "title": f"{self.config.get('name')} (TTRPG)",
             "description": "Campaign notes exported from the campaign repository. Regenerated by ttrpg export-foundry; edit the repository, not this module.",
             "version": date.today().isoformat(), "compatibility": {"minimum": "13", "verified": "14"},
             "packs": [{"name": "notes", "label": f"{self.config.get('name')}", "path": "packs/notes", "type": "JournalEntry",
-                       "ownership": {"PLAYER": "OBSERVER", "ASSISTANT": "OWNER"}}],
+                       "ownership": {"PLAYER": "NONE", "TRUSTED": "NONE", "ASSISTANT": "OWNER"}}],
         }
         (out / "module.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         return {"module": self.module_id, "entries": len(entries), "pages": sum(len(e["pages"]) for e in entries), "path": str(out)}

@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -119,10 +120,27 @@ class ExportTest(unittest.TestCase):
             faction = exporter.pages["f"]
             self.assertIn(f"@UUID[JournalEntry.{faction[0]}.JournalEntryPage.{faction[1]}]{{les Lames}}", oleg["markdown"])
             self.assertIn("@UUID[JournalEntry.J.JournalEntryPage.P]{Page}", oleg["markdown"])
-            self.assertIn("p. 3 (KM, p. 3)", oleg["markdown"])
+            self.assertIn("[p. 3](src:km#p3)", oleg["markdown"])
+            self.assertIn("p. 3 (KM, p. 3)", oleg["content"])
             self.assertIn('<section class="secret" id="secret-1"><p>Il ment.</p>', oleg["content"])
             self.assertIn("**Membres** @UUID[", entries["Factions"]["pages"][0]["text"]["markdown"])
             self.assertEqual(exporter.pages, Exporter(load(root)).pages)
+            write(root, "h.md", "---\ntype: handout\ntitle: Lettre\nvisibility: players\n---\nTexte.\n\n> [!secret]\n> Faux.\n")
+            handout = next(Exporter(load(root)).entries())
+            self.assertNotIn("Faux", json.dumps(handout))
+
+    def test_foundry_markdown_comes_back_as_repository_markdown(self):
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.foundry_sync import reverse_links
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "factions/f.md", "---\ntype: faction\ntitle: Lames\n---\nBut.\n")
+            body = "Voir [[f]] et [[f|les Lames]], ![[x.png|carte]].\n\n> [!secret]\n> Il ment."
+            write(root, "npcs/n.md", f"---\ntype: npc\ntitle: Oleg\n---\n{body}\n")
+            write(root, "x.png", "png")
+            exporter = Exporter(load(root))
+            self.assertEqual(reverse_links(exporter.convert(body), exporter), body)
 
 
 class HtmlTest(unittest.TestCase):

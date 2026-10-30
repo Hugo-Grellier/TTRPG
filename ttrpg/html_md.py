@@ -7,7 +7,7 @@ from html.parser import HTMLParser
 BLOCK = {"p", "div", "section", "article", "aside", "header", "footer", "figure", "figcaption", "blockquote",
          "ul", "ol", "li", "table", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "br", "dl", "dt", "dd"}
 LISTED = re.compile(r"\s*(-|\d+\.) ")
-CALLOUT = {"sidebar": "note", "milestone": "info", "read-aloud": "quote", "readaloud": "quote", "gm": "secret"}
+CALLOUT = {"secret": "secret", "sidebar": "note", "milestone": "info", "read-aloud": "quote", "readaloud": "quote", "gm": "secret"}
 
 
 class _Converter(HTMLParser):
