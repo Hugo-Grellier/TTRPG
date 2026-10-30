@@ -79,8 +79,11 @@ class _Converter(HTMLParser):
         elif tag in ("em", "i"):
             self.write("*")
         elif tag == "a":
-            self.href.append(attrs.get("href") or "")
-            self.write("[")
+            href = attrs.get("href") or ""
+            href = "" if href.startswith("#") else href
+            self.href.append(href)
+            if href:
+                self.write("[")
         elif tag == "img" and attrs.get("src"):
             src = attrs["src"].replace("\\", "/")
             self.write(f"![{attrs.get('alt') or ''}]({src})")
@@ -108,7 +111,8 @@ class _Converter(HTMLParser):
             self.write("*")
         elif tag == "a" and self.href:
             href = self.href.pop()
-            self.write(f"]({href})" if href and not href.startswith("#") else "]")
+            if href:
+                self.write(f"]({href})")
         if tag in BLOCK and self.cell is None:
             self.flush()
         if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
@@ -145,5 +149,5 @@ def to_markdown(html):
         tight = text and (LISTED.match(block) and LISTED.match(text.rsplit("\n", 1)[-1])
                           or block.startswith(">") and text.rsplit("\n", 1)[-1].startswith(">"))
         text += ("\n" if tight else "\n\n") + block if text else block
-    text = re.sub(r"\[\]\(([^)]*)\)", "", text)
+    text = re.sub(r"(?<!!)\[\]\(([^)]*)\)", "", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
