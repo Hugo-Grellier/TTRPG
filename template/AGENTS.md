@@ -29,7 +29,8 @@ the tools move.
 - One subject, one note. The file name is the id (`armag-twice-born.md`),
   unique across the repository. Link with `[[id]]` or `[[id|text]]`, embed
   images with `![[file.png]]`. Never use relative Markdown links.
-- Frontmatter follows `tools/ttrpg/schema.yaml`. A relation is written on one
+- Frontmatter follows `tools/ttrpg/schema.yaml`; note sections follow
+  `tools/ttrpg/note-types.md`. A relation is written on one
   side only (an NPC lists its `factions`; a faction never lists members).
 - `origin: ap` notes are imported adventure text. When you change their body,
   set `origin: modified`. New notes are `origin: custom`.

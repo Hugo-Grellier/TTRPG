@@ -21,49 +21,24 @@ list what you saw for later instead.
 
 ## What to produce
 
-For each subject that matters in the scope, create or complete one note.
+For each subject that matters in the scope, create or complete one note in
+the campaign layer, written as `tools/ttrpg/note-types.md` says for its type.
 Search first (`grep -ril` on titles and `aliases`): `npcs/` already holds a
 draft for every unique Foundry actor (`prep: draft`, a todo callout and the
 AP pages that mention it). Complete it; never create a second note.
 
-Every note: frontmatter per `tools/ttrpg/schema.yaml`, `origin: ap` (facts
-from the adventure; `custom` for your own suggestions, which go in
-`> [!idea]` blocks), `prep: ready` once it holds everything below, sources as
-`[[ap-page-id]]` links (add `src:` PDF pages only if `.cache/sources/` is
-available). Keep proper names as in the AP; translate the rest. Aim for one
-screen per note: the AP page keeps the detail.
-
-**NPC** (`npcs/<id>.md`): fields `level`, `state`, `location`, `factions`,
-`foundry`. Body sections:
-- `## À la table` - role in two lines, appearance and voice in two lines,
-  what they want, how they react to the PCs.
-- `## Ce qu'il sait` - what they can reveal, and at what price or condition.
-- `## Relations` - one line per relation to another note, with its stakes.
-- `## Statistiques` - the `@UUID[Actor...]` link, plus any AP adjustment.
-- `## Sources` - the AP pages.
-
-**Faction** (`factions/<id>.md`): `leader`, `base`. `## But`, `## Moyens`
-(members by link, resources), `## Ce qui se passe si les PJ n'agissent pas`
-(link the faction's clock), `## Sources`.
-
-**Place** (`places/<id>.md`, type `location` or `settlement`; hexes already
-exist as `hex` notes in `adventure/`): `in` or `region`. `## À montrer aux
-joueurs`, `## Ce qui s'y trouve` (scenes, NPCs, treasure by link),
-`## Sources`.
-
-**Quest** (`quests/<id>.md`): `giver`, `state: open`. Goal, reward,
-completion condition, sources. The AP's quest pages already exist as `quest`
-notes in `adventure/`: if one covers it, link it instead of copying.
-
-**Clock** (`clocks/<id>.md`) for every threat or faction that advances on its
-own: `segments`, `filled: 0`, `owner`. One line per segment: what happens
-when it fills. This is the front: what the world does without the PCs.
-
-**Event** (`events/<id>.md`) for the adventure's expected timeline:
-`date` (quoted in-game `"YYYY-MM-DD"`), `participants`, `location`,
-`played: "no"`. If the AP gives no absolute date, derive it from
-`start` in `campaign.yaml`; if that key is missing, propose one from the AP
-introduction in your summary and skip dated events.
+- Folders: `npcs/`, `factions/`, `places/` (location, settlement), `quests/`,
+  `clocks/`, `events/`. Hexes and regions already exist in `adventure/`;
+  the AP quest pages too: link them instead of copying.
+- Frontmatter per `tools/ttrpg/schema.yaml`; `origin: ap` for facts from the
+  adventure, `prep: ready` once the note has every section.
+- Sources: `[[ap-page-id]]` links; add `src:` PDF pages only if
+  `.cache/sources/` is available. Keep proper names as in the AP; translate
+  the rest.
+- A clock for every threat or faction that advances on its own.
+- Events for the adventure's expected timeline, `played: "no"`, dated from
+  `start` in `campaign.yaml`. If `start` is missing, propose one from the AP
+  introduction in your summary and skip dated events.
 
 ## Rules
 

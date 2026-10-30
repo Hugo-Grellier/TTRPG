@@ -59,7 +59,7 @@ def cmd_new(args):
         raise SystemExit(f"{root} is not empty")
     shutil.copytree(TOOLS / "template", root, dirs_exist_ok=True)
     config = {"name": args.name, "system": args.system, "language": args.language,
-              "calendar": args.calendar, "sources": {}}
+              "calendar": args.calendar, "start": args.start or None, "sources": {}}
     (root / "campaign.yaml").write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
     run = lambda *command: subprocess.run(command, cwd=root, check=True)
     run("git", "init", "-q", "-b", "main")
@@ -102,6 +102,7 @@ def main(argv=None):
     p.add_argument("--system", default="pf2e")
     p.add_argument("--language", default="fr")
     p.add_argument("--calendar", default="golarion")
+    p.add_argument("--start", default="", help='in-game date play begins, e.g. "4710-03-01"')
     p.add_argument("--tools-url", required=True, help="Git URL of this tools repository")
     p.set_defaults(func=cmd_new)
 

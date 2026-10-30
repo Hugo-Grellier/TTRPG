@@ -56,6 +56,10 @@ class CheckTest(unittest.TestCase):
         self.assertIn("goes back before s1.md", found)
         self.assertIn("mentions oleg, dead since", found)
 
+    def test_campaign_start_date(self):
+        write(self.root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nstart: 4710-03-01\n")
+        self.assertIn("start must be a quoted in-game date YYYY-MM-DD", messages(self.root))
+
     def test_player_visibility(self):
         write(self.root, "h.md", "---\ntype: handout\ntitle: H\nvisibility: players\n---\n[[oleg]]\n")
         self.assertIn("players note links GM-only note [[oleg]]", messages(self.root))

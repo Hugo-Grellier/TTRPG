@@ -5,8 +5,9 @@ description: Create or change notes in a campaign repository (NPC, place, factio
 
 # Edit campaign notes
 
-1. Read `campaign.yaml` for language and system, and `tools/ttrpg/schema.yaml`
-   for the note type you touch. Write in the campaign language.
+1. Read `campaign.yaml` for language and system, `tools/ttrpg/schema.yaml`
+   for the fields of the note type you touch and `tools/ttrpg/note-types.md`
+   for its sections. Write in the campaign language.
 2. Find before you create: search file names and `aliases` for the subject.
    If a note exists, edit it; do not create a second one.
 3. New note: file `<id>.md` in the folder of its kind (`npcs/`, `places/`,

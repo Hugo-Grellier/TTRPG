@@ -56,6 +56,8 @@ def check_config(campaign, report):
     for key in ("name", "system", "language"):
         if not config.get(key):
             report.error("campaign.yaml", f"missing {key}")
+    if config.get("start") is not None and not (isinstance(config["start"], str) and DATE.fullmatch(config["start"])):
+        report.error("campaign.yaml", "start must be a quoted in-game date YYYY-MM-DD")
     for source_id, source in (config.get("sources") or {}).items():
         if not isinstance(source, dict) or not isinstance(source.get("pages"), int):
             report.error("campaign.yaml", f"source {source_id!r} needs an integer pages count")
