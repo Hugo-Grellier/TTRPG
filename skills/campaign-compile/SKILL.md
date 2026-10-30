@@ -89,8 +89,10 @@ AP pages.
   first (`grep TmQalYKNNRuEdoTh glossary.tsv`), else the English name
   (`grep -P "\tMage Armor\t" glossary.tsv`: pre-remaster names give the
   remaster one and its translation); the kind column tells a spell from an
-  item of the same name. Rules text and details: <https://2e.aonprd.com>
-  (English) and <https://pf2e.pathfinder-fr.org> (French).
+  item of the same name. The official French rules text of a system item,
+  spell or creature is in `.cache/glossary/<kind>.json` (the entry with that
+  `_id`, `translations.fr.description`), left there by `ttrpg glossary`;
+  <https://2e.aonprd.com> has the English and the legacy versions.
 - Foundry links and the `foundry` field point only at documents of this
   campaign's world: the adventure's own (as its pages link them) or the
   system compendiums (`Compendium.pf2e.…`). A same-named actor from another
