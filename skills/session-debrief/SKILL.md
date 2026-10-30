@@ -10,12 +10,13 @@ push, never decide canon the sources do not state.
 
 ## 1. Gather the material
 
-All raw material lives in `.cache/sessions/<day>/` (ignored by Git, private):
+Raw material lives in `sessions/<day>/` as GM-only notes tagged `raw`
+(never exported); players are named per `campaign.yaml` `players`:
 
 - `transcript.md`: `[h:mm:ss] Speaker: text`, one line per remark, merged
   from per-speaker tracks. If it is missing and the GM has the audio:
   `tools/bin/ttrpg transcribe <Craig zip | Craig folder | probe capture dir>
-  --day <day> --names <track>=<name> ...` (local faster-whisper; it prints the
+  ` (local faster-whisper; it prints the
   install command if missing).
 - `flight.md`: scenes, combats, checks and conditions Foundry recorded. If
   missing and the GM has imported the session with `ffr import`:

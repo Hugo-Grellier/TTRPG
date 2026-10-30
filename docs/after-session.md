@@ -4,9 +4,23 @@ Record per speaker, transcribe locally, summarize Foundry, then let an agent
 propose the note updates (skill `session-debrief`). Nothing leaves the
 machine: no audio or transcript goes to a service.
 
-Everything raw goes to `<campaign>/.cache/sessions/<day>/` (ignored by Git):
-a transcript is the players' own words, long and private; only the reviewed
-session note and note updates are committed.
+Transcripts and Flight Recorder summaries are committed in the (private)
+campaign repository as raw notes, `sessions/<day>/transcript.md` and
+`flight.md` (`tags: [raw]`, `visibility: gm`, never exported to Foundry). The
+audio stays outside Git, under `<campaign>/.cache/sessions/audio/`.
+
+Speakers are matched to players by `campaign.yaml` (Discord name, loosely
+compared: `.omegadraco`, `_omegadraco` and Craig's `Archivist_AI_1906` all
+match their account). Who is present varies by session: the transcript lists
+in `present` whoever spoke. Bots are skipped; unknown names are kept and
+reported.
+
+```yaml
+players:
+  .omegadraco: {name: Hugo, role: gm}
+  patatecherie: {name: Alice, character: Amiri}
+  Archivist AI: {role: bot}
+```
 
 ## 1. Record
 
@@ -40,14 +54,16 @@ tools/bin/ttrpg transcribe <recordings>/2026-11-06-2004 --day 2026-11-06
 ```
 
 A recorder session directory is read through its `decoded/` WAVs, named by
-Discord username; `--names alice=Alice` renames a speaker in the transcript.
+Discord username; `--names alice=Alice` overrides `campaign.yaml` for one run.
 
 Each track is decoded with ffmpeg, transcribed on CPU with voice activity
 detection (silence skipped), split into remarks at pauses of one second and
-merged by time. The language is `campaign.yaml`'s. The default model `small`
-is downloaded once from Hugging Face; `--model <dir>` (or
-`TTRPG_WHISPER_MODEL`) uses a local copy, e.g. LoreForge's
-`models/faster-whisper-small` or a larger model for better French.
+merged by time. The language is `campaign.yaml`'s; the day comes from
+Craig's `info.txt` or the recorder's `info.json`. The default model is
+`large-v3-turbo` (downloaded once from Hugging Face; `--model` or
+`TTRPG_WHISPER_MODEL` to change it): good French, slow on CPU. Measured on this
+machine (16 cores): 15 minutes of speech in under 6 minutes, so a three-hour
+session of five players takes several hours: run it overnight.
 
 ## 3. Foundry Flight Recorder
 
