@@ -290,10 +290,12 @@ def import_adventure(root, adventure, module_id):
 def import_module(root, module_dir):
     module_dir = Path(module_dir)
     manifest = json.loads((module_dir / "module.json").read_text(encoding="utf-8"))
-    total = Counter()
+    # One plan for all the module's adventures: shared ids, one stale sweep, one Foundry index.
+    combined = {}
     for pack in manifest.get("packs", []):
-        if pack.get("type") != "Adventure":
-            continue
-        for adventure in unpack(module_dir / pack["path"]):
-            total.update(import_adventure(root, adventure, manifest["id"]))
-    return total
+        if pack.get("type") == "Adventure":
+            for adventure in unpack(module_dir / pack["path"]):
+                for key, value in adventure.items():
+                    if isinstance(value, list):
+                        combined.setdefault(key, []).extend(value)
+    return Counter(import_adventure(root, combined, manifest["id"])) if combined else Counter()
