@@ -20,6 +20,12 @@ from .html_md import to_markdown
 from .vault import UUID, body_hash, join_frontmatter, split_frontmatter
 
 TOOLS = Path(__file__).resolve().parent.parent
+LABELS = {
+    "fr": {"stats": "Statistiques", "todo": "Fiche à distiller depuis le texte de l'aventure.",
+           "pages": "Pages AP", "scene": "Scène Foundry", "pins": "Épingles"},
+    "en": {"stats": "Statistics", "todo": "Draft: distill from the adventure text.",
+           "pages": "AP pages", "scene": "Foundry scene", "pins": "Pins"},
+}
 INDEXED = {"actors": "Actor", "scenes": "Scene", "tables": "RollTable", "items": "Item",
            "macros": "Macro", "playlists": "Playlist"}
 
@@ -69,6 +75,17 @@ def unique_npcs(adventure):
     return npcs
 
 
+def map_ids(adventure):
+    """One map note per scene, prefixed so it never takes a page's id."""
+    ids, taken = {}, set()
+    for scene in adventure.get("scenes", []):
+        note_id = f"map-{slug(scene['name'])}"
+        note_id = note_id if note_id not in taken else f"{note_id}-{slug(scene['_id'])}"
+        taken.add(note_id)
+        ids[scene["_id"]] = note_id
+    return ids
+
+
 def plan(adventure, mapping, prefix, reserved=()):
     """Assign every kept page an id, path and frontmatter before converting any link."""
     taken, pages, journals = set(reserved), {}, {}
@@ -106,7 +123,7 @@ def plan(adventure, mapping, prefix, reserved=()):
     return journals, pages
 
 
-def convert_links(text, journal_id, journals, pages):
+def convert_links(text, journals, pages, maps):
     def replace(match):
         uuid, label = match[1], match[2]
         target = uuid.split("#")[0]
@@ -118,6 +135,8 @@ def convert_links(text, journal_id, journals, pages):
             note_id = pages.get(parts[3], {}).get("id")
         elif parts[0] == "JournalEntry" and len(parts) == 2:
             note_id = journals.get(parts[1], {}).get("id")
+        elif parts[0] == "Scene" and len(parts) == 2 and parts[1] in maps:
+            note_id = maps[parts[1]]
         else:
             return match[0]
         if note_id is None:
@@ -126,13 +145,13 @@ def convert_links(text, journal_id, journals, pages):
     return UUID.sub(replace, text)
 
 
-def page_body(entry, journals, pages):
+def page_body(entry, journals, pages, maps):
     page = entry["page"]
     if page.get("type") == "image" and page.get("src"):
         return f"![{page['name']}]({page['src']})\n" + (f"\n{page['image']['caption']}\n" if (page.get("image") or {}).get("caption") else "")
     text = page.get("text") or {}
     body = text.get("markdown") if text.get("format") == 2 and text.get("markdown") else to_markdown(text.get("content") or "")
-    return convert_links(body, entry["journal"], journals, pages)
+    return convert_links(body, journals, pages, maps)
 
 
 def write_note(path, meta, body, stats):
@@ -148,7 +167,7 @@ def write_note(path, meta, body, stats):
     stats["written"] += 1
 
 
-def seed_npc(path, actor, pages, stats):
+def seed_npc(path, actor, pages, stats, label):
     """Create a draft campaign NPC from a unique actor; never touch an existing one."""
     if path.is_file():
         return
@@ -157,12 +176,39 @@ def seed_npc(path, actor, pages, stats):
     if isinstance(level, int):
         meta["level"] = level
     mentions = [entry for entry in pages.values() if actor["_id"] in json.dumps(entry["page"].get("text") or {})]
-    lines = [f"Statistiques : @UUID[Actor.{actor['_id']}]{{{actor['name']}}}", "",
-             "> [!todo] Fiche à distiller depuis le texte de l'aventure.", ""]
-    lines += ["Pages AP :"] + [f"- [[{entry['id']}]]" for entry in mentions] if mentions else []
+    lines = [f"{label['stats']} : @UUID[Actor.{actor['_id']}]{{{actor['name']}}}", "",
+             f"> [!todo] {label['todo']}", ""]
+    lines += [f"{label['pages']} :"] + [f"- [[{entry['id']}]]" for entry in mentions] if mentions else []
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(join_frontmatter(meta, "\n".join(lines).rstrip() + "\n"), encoding="utf-8")
     stats["seeded"] += 1
+
+
+def seed_map(path, scene, pages, stats, label):
+    """Create a campaign map note from a Foundry scene; never touch an existing one."""
+    if path.is_file():
+        return
+    level = next(iter(scene.get("levels") or []), {})
+    image = (level.get("background") or {}).get("src") or (scene.get("background") or {}).get("src") or ""
+    counts = {kind: len(scene.get(kind) or []) for kind in ("walls", "lights", "sounds", "tokens", "notes")}
+    stage = "lit" if counts["walls"] and counts["lights"] else "walled" if counts["walls"] else "raw"
+    meta = {"type": "map", "title": scene["name"], "origin": "ap", "prep": "draft",
+            "foundry": f"Scene.{scene['_id']}", "stage": stage}
+    if image:
+        meta["image"] = image
+    if isinstance((scene.get("grid") or {}).get("size"), int):
+        meta["grid"] = scene["grid"]["size"]
+    pinned = []
+    for pin in scene.get("notes") or []:
+        page_id = pages.get(pin.get("pageId") or "", {}).get("id")
+        if page_id and page_id not in pinned:
+            pinned.append(page_id)
+    lines = ([f"![{scene['name']}]({image})", ""] if image else [])
+    lines += [f"{label['scene']} : " + ", ".join(f"{count} {kind}" for kind, count in counts.items()), ""]
+    lines += [f"{label['pins']} :"] + [f"- [[{page_id}]]" for page_id in pinned] if pinned else []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(join_frontmatter(meta, "\n".join(lines).rstrip() + "\n"), encoding="utf-8")
+    stats["maps"] += 1
 
 
 def remove_stale(root, planned, stats):
@@ -178,18 +224,23 @@ def remove_stale(root, planned, stats):
 
 def import_adventure(root, adventure, module_id):
     root = Path(root)
+    config = yaml.safe_load((root / "campaign.yaml").read_text(encoding="utf-8")) if (root / "campaign.yaml").is_file() else {}
+    label = LABELS.get((config or {}).get("language"), LABELS["en"])
     mapping = load_map(module_id)
     npcs = unique_npcs(adventure)
-    journals, pages = plan(adventure, mapping, slug(module_id), reserved=npcs)
-    stats = {"written": 0, "kept": 0, "seeded": 0, "removed": 0}
+    maps = map_ids(adventure)
+    journals, pages = plan(adventure, mapping, slug(module_id), reserved=set(npcs) | set(maps.values()))
+    stats = {"written": 0, "kept": 0, "seeded": 0, "maps": 0, "removed": 0}
     planned = {root / entry["path"] for entry in pages.values()}
     planned |= {root / "adventure" / journal["dir"] / f"{journal['id']}.md" for journal in journals.values()}
     if (root / "adventure").is_dir():
         remove_stale(root, planned, stats)
     for entry in pages.values():
-        write_note(root / entry["path"], entry["meta"], page_body(entry, journals, pages), stats)
+        write_note(root / entry["path"], entry["meta"], page_body(entry, journals, pages, maps), stats)
     for note_id, actor in npcs.items():
-        seed_npc(root / "npcs" / f"{note_id}.md", actor, pages, stats)
+        seed_npc(root / "npcs" / f"{note_id}.md", actor, pages, stats, label)
+    for scene in adventure.get("scenes", []):
+        seed_map(root / "maps" / f"{maps[scene['_id']]}.md", scene, pages, stats, label)
     for journal in journals.values():
         lines = []
         for page_id in journal["pages"]:
@@ -209,7 +260,7 @@ def import_adventure(root, adventure, module_id):
 def import_module(root, module_dir):
     module_dir = Path(module_dir)
     manifest = json.loads((module_dir / "module.json").read_text(encoding="utf-8"))
-    total = {"written": 0, "kept": 0, "seeded": 0, "removed": 0, "indexed": 0}
+    total = {"written": 0, "kept": 0, "seeded": 0, "maps": 0, "removed": 0, "indexed": 0}
     for pack in manifest.get("packs", []):
         if pack.get("type") != "Adventure":
             continue

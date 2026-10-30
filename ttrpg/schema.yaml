@@ -63,6 +63,11 @@ types:
     segments: {kind: int, required: true}
     filled: {kind: int, default: 0}
     owner: {kind: ref, to: [npc, faction]}
+  map:
+    image: {kind: str}
+    stage: {kind: enum, values: [raw, walled, lit, ready], default: raw}
+    grid: {kind: int}
+    locations: {kind: refs, to: *places, inverse: maps}
   session:
     day: {kind: day, required: true}
     ingame: {kind: date}

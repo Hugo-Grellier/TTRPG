@@ -1,5 +1,6 @@
 """Coherence checks for a campaign repository. Run before every commit and in CI."""
 
+import fnmatch
 import json
 import re
 from datetime import date as Date
@@ -45,7 +46,40 @@ def check(root, fix=False):
         check_body(campaign, note, foundry_index, report)
         check_origin(note, report, fix)
     check_chronology(campaign, report)
+    check_assets(campaign, report)
     return campaign, report
+
+
+WARN_BYTES, MAX_BYTES = 5_000_000, 50_000_000
+
+
+def check_assets(campaign, report):
+    """Large binaries bloat every clone: keep big maps in Git LFS or compress them."""
+    attributes = campaign.root / ".gitattributes"
+    lfs = [line.split()[0] for line in attributes.read_text(encoding="utf-8").splitlines()
+           if "filter=lfs" in line] if attributes.is_file() else []
+    for path, rel in vault.walk(campaign.root):
+        if path.suffix == ".md" or any(fnmatch.fnmatch(rel.as_posix(), pattern) or fnmatch.fnmatch(path.name, pattern) for pattern in lfs):
+            continue
+        size = path.stat().st_size
+        if size > MAX_BYTES:
+            report.error(rel.as_posix(), f"{size // 1_000_000} MB: track it with Git LFS")
+        elif size > WARN_BYTES:
+            report.warn(rel.as_posix(), f"{size // 1_000_000} MB: compress it (webp) or track it with Git LFS")
+
+
+def map_gaps(campaign):
+    """Hexes and places with creatures in their text but no map linked to them."""
+    notes = campaign.notes.values()
+    mapped = {strip_link(place) for note in notes if note.type == "map" for place in note.get("locations") or []}
+    gaps = []
+    for note in notes:
+        if note.type not in ("hex", "location", "settlement") or note.id in mapped or "@UUID[Actor." not in note.body:
+            continue
+        links = {match[2].strip() for match in WIKILINK.finditer(note.body)}
+        if not any(campaign.notes.get(link) and campaign.notes[link].type == "map" for link in links):
+            gaps.append(note)
+    return gaps
 
 
 def check_config(campaign, report):

@@ -24,13 +24,25 @@ def cmd_check(args):
     return 1 if report.errors else 0
 
 
+def cmd_maps(args):
+    campaign = checker.vault.load(args.root)
+    maps = [note for note in campaign.notes.values() if note.type == "map"]
+    for stage in ("raw", "walled", "lit", "ready"):
+        print(f"{stage}: {sum(1 for note in maps if note.get('stage') == stage)} maps")
+    gaps = checker.map_gaps(campaign)
+    print(f"\n{len(gaps)} places with creatures and no map:")
+    for note in sorted(gaps, key=lambda note: (str(note.get('region') or ''), note.id)):
+        print(f"  {note.get('region') or '-'}: {note.id} ({note.rel})")
+    return 0
+
+
 def cmd_import_foundry(args):
     if args.json:
         stats = import_adventure(args.root, json.loads(Path(args.json).read_text(encoding="utf-8")), args.module_id)
     else:
         stats = import_module(args.root, args.module)
     print(f"{stats['written']} AP notes written, {stats['kept']} GM-edited notes kept, {stats['removed']} stale removed, "
-          f"{stats['seeded']} NPC drafts seeded, {stats['indexed']} Foundry documents indexed")
+          f"{stats['seeded']} NPC drafts and {stats['maps']} maps seeded, {stats['indexed']} Foundry documents indexed")
     return 0
 
 
@@ -80,6 +92,10 @@ def main(argv=None):
     p.add_argument("root", nargs="?", default=".")
     p.add_argument("--fix", action="store_true", help="mark edited AP notes as origin: modified")
     p.set_defaults(func=cmd_check)
+
+    p = sub.add_parser("maps", help="list maps by stage and places that still need one")
+    p.add_argument("root", nargs="?", default=".")
+    p.set_defaults(func=cmd_maps)
 
     p = sub.add_parser("import-foundry", help="import a Foundry Adventure module into notes")
     p.add_argument("--root", default=".")

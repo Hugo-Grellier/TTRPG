@@ -23,6 +23,7 @@ decision still open, `> [!idea]` is a suggestion not yet adopted.
 | clock | Segments (one line each: what happens when it fills) | Segments |
 | event | What happens · Consequences | Ce qui se passe · Conséquences |
 | scene | Situation · Stakes · Opposition · Outcomes · Sources | Situation · Enjeux · Opposition · Issues · Sources |
+| map | Show the players · Areas · Tokens · Ambience · Sources | À montrer aux joueurs · Zones · Tokens · Ambiance · Sources |
 | session | What happened · Consequences · Open threads | Ce qui s'est passé · Conséquences · Fils ouverts |
 
 What goes in each:
@@ -41,5 +42,11 @@ What goes in each:
 - **Situation / Stakes / Opposition / Outcomes** (scene): table-facing first;
   a scene is runnable when the GM needs no other document during it.
 - **Segments** (clock): `segments` in frontmatter matches the number of lines.
+- **Map** notes describe a Foundry scene; the scene itself (walls, lights,
+  sounds, token positions) is edited in Foundry. `stage`: `raw` (image only),
+  `walled`, `lit`, `ready` (set by the GM once played or checked). **Areas**
+  link the scene notes of each zone; **Tokens** list which NPC or creature goes
+  where; **Ambience** gives lighting, darkness, sounds and playlist. Places
+  link their maps with `[[map-id]]` in the body or the map's `locations`.
 - **Events** are dated in-game (`date`); `played: "yes"` only after a session.
   Planned events take dates from `start` in `campaign.yaml`.

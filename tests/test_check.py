@@ -60,6 +60,18 @@ class CheckTest(unittest.TestCase):
         write(self.root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nstart: 4710-03-01\n")
         self.assertIn("start must be a quoted in-game date YYYY-MM-DD", messages(self.root))
 
+    def test_large_assets_and_map_gaps(self):
+        from ttrpg.check import map_gaps
+        from ttrpg.vault import load
+        (Path(self.root) / "big.png").write_bytes(b"0" * 6_000_000)
+        self.assertIn("6 MB: compress it (webp) or track it with Git LFS", messages(self.root))
+        write(self.root, ".gitattributes", "*.png filter=lfs diff=lfs merge=lfs -text\n")
+        self.assertEqual(messages(self.root), [])
+        write(self.root, "h1.md", "---\ntype: hex\ntitle: H1\n---\n@UUID[Actor.a]{Boar}\n")
+        write(self.root, "h2.md", "---\ntype: hex\ntitle: H2\n---\n@UUID[Actor.b]{Bear} [[map-den]]\n")
+        write(self.root, "map-den.md", "---\ntype: map\ntitle: Den\n---\n")
+        self.assertEqual([note.id for note in map_gaps(load(self.root))], ["h1"])
+
     def test_player_visibility(self):
         write(self.root, "h.md", "---\ntype: handout\ntitle: H\nvisibility: players\n---\n[[oleg]]\n")
         self.assertIn("players note links GM-only note [[oleg]]", messages(self.root))
