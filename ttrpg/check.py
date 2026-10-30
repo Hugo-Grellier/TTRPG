@@ -155,7 +155,7 @@ def check_body(campaign, note, foundry_index, report):
         uuid = match[1]
         if "JournalEntry" in uuid and not uuid.startswith("Compendium."):
             report.error(where, f"Foundry journal link @UUID[{uuid}]: use [[id]] instead")
-        elif foundry_index is not None and uuid.split(".")[0] in INDEXED and uuid not in foundry_index:
+        elif foundry_index is not None and uuid.split(".")[0] in INDEXED and ".".join(uuid.split(".")[:2]) not in foundry_index:
             report.error(where, f"unknown Foundry document @UUID[{uuid}]")
 
 

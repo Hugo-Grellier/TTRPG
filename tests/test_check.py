@@ -23,7 +23,7 @@ class CheckTest(unittest.TestCase):
         self.root = self.dir.name
         write(self.root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nsources:\n  km: {title: KM, pages: 10}\n")
         write(self.root, "factions/swordlords.md", "---\ntype: faction\ntitle: Swordlords\n---\nAldori.\n")
-        write(self.root, "npcs/oleg.md", "---\ntype: npc\ntitle: Oleg\nfactions: [swordlords]\n---\nSee [[swordlords]], [p. 3](src:km#p3).\n")
+        write(self.root, "npcs/oleg.md", "---\ntype: npc\ntitle: Oleg\nfactions: [swordlords]\n---\nSee [[swordlords]], [p. 3](src:km#p3), roll [[/r 1d4]].\n")
 
     def tearDown(self):
         self.dir.cleanup()
