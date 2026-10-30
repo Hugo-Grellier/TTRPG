@@ -91,11 +91,19 @@ AP pages.
   remaster one and its translation); the kind column tells a spell from an
   item of the same name. Rules text and details: <https://2e.aonprd.com>
   (English) and <https://pf2e.pathfinder-fr.org> (French).
+- A scene's `level` is the level of its encounter or, if none, the party
+  level the adventure gives. Area numbers and other facts you deduce (from a
+  map, an index order) are written as such ("probablement la zone 06"), never
+  as if the text gave them.
 - PDF citations `src:id#pN` use the PDF page, the number of the file in
   `.cache/sources/<id>/`, not the printed folio.
 - Do not change `adventure/` or the stat blocks; do not mark anything played.
 
 ## Finish
+
+When you are one of several agents compiling in parallel, skip this: report
+your notes, their `[!question]`s and the subjects without a note to the
+agent that gave you your list, which finishes for all.
 
 1. `tools/bin/ttrpg check` with zero errors.
 2. Append the scope, date, the subjects compiled and those seen but left for
