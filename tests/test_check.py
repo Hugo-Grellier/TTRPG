@@ -71,6 +71,10 @@ class CheckTest(unittest.TestCase):
         write(self.root, "h2.md", "---\ntype: hex\ntitle: H2\n---\n@UUID[Actor.b]{Bear} [[map-den]]\n")
         write(self.root, "map-den.md", "---\ntype: map\ntitle: Den\n---\n")
         self.assertEqual([note.id for note in map_gaps(load(self.root))], ["h1"])
+        write(self.root, "map-world.md", "---\ntype: map\ntitle: World\nkind: overview\n---\nPins: [[h1]]\n")
+        self.assertEqual([note.id for note in map_gaps(load(self.root))], ["h1"])
+        write(self.root, "map-lair.md", "---\ntype: map\ntitle: Lair\n---\nPins: [[h1]]\n")
+        self.assertEqual(map_gaps(load(self.root)), [])
 
     def test_player_visibility(self):
         write(self.root, "h.md", "---\ntype: handout\ntitle: H\nvisibility: players\n---\n[[oleg]]\n")

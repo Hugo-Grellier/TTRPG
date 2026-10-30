@@ -44,7 +44,9 @@ What goes in each:
 - **Segments** (clock): `segments` in frontmatter matches the number of lines.
 - **Map** notes describe a Foundry scene; the scene itself (walls, lights,
   sounds, token positions) is edited in Foundry. `stage`: `raw` (image only),
-  `walled`, `lit`, `ready` (set by the GM once played or checked). **Areas**
+  `walled`, `lit`, `ready` (set by the GM once played or checked); `kind`:
+  `battle` (tactical, square grid) or `overview` (region or world map, which
+  never counts as a place's battle map). **Areas**
   link the scene notes of each zone; **Tokens** list which NPC or creature goes
   where; **Ambience** gives lighting, darkness, sounds and playlist. Places
   link their maps with `[[map-id]]` in the body or the map's `locations`.

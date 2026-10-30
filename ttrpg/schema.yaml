@@ -64,6 +64,7 @@ types:
     filled: {kind: int, default: 0}
     owner: {kind: ref, to: [npc, faction]}
   map:
+    kind: {kind: enum, values: [battle, overview], default: battle}
     image: {kind: str}
     stage: {kind: enum, values: [raw, walled, lit, ready], default: raw}
     grid: {kind: int}

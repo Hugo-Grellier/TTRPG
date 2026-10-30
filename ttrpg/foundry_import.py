@@ -197,7 +197,8 @@ def seed_map(path, scene, pages, stats, label):
     counts = {kind: len(scene.get(kind) or []) for kind in ("walls", "lights", "sounds", "tokens", "notes")}
     stage = "lit" if counts["walls"] and counts["lights"] else "walled" if counts["walls"] else "raw"
     meta = {"type": "map", "title": scene["name"], "origin": "ap", "prep": "draft",
-            "foundry": f"Scene.{scene['_id']}", "stage": stage}
+            "foundry": f"Scene.{scene['_id']}", "stage": stage,
+            "kind": "battle" if (scene.get("grid") or {}).get("type") == 1 else "overview"}
     if image:
         meta["image"] = image
     if isinstance((scene.get("grid") or {}).get("size"), int):

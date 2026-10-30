@@ -71,13 +71,15 @@ def check_assets(campaign, report):
 def map_gaps(campaign):
     """Hexes and places with creatures in their text but no map linked to them."""
     notes = campaign.notes.values()
-    mapped = {strip_link(place) for note in notes if note.type == "map" for place in note.get("locations") or []}
+    maps = [note for note in notes if note.type == "map" and note.get("kind") == "battle"]
+    mapped = {strip_link(place) for note in maps for place in note.get("locations") or []}
+    mapped |= {match[2].strip() for note in maps for match in WIKILINK.finditer(note.body)}
     gaps = []
     for note in notes:
         if note.type not in ("hex", "location", "settlement") or note.id in mapped or "@UUID[Actor." not in note.body:
             continue
         links = {match[2].strip() for match in WIKILINK.finditer(note.body)}
-        if not any(campaign.notes.get(link) and campaign.notes[link].type == "map" for link in links):
+        if not any(campaign.notes.get(link) and campaign.notes[link].type == "map" and campaign.notes[link].get("kind") == "battle" for link in links):
             gaps.append(note)
     return gaps
 
