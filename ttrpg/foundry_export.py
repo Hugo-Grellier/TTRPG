@@ -177,8 +177,7 @@ class Exporter:
             "ownership": {"default": 2 if players else -1},
             # The way back compares against these: what was exported, and the repository body it came from.
             "flags": {"ttrpg": {"id": note.id, "path": note.rel, "header": self.convert(header),
-                                "exported": body_hash(markdown), "body": body_hash(note.body),
-                                "players": players}},
+                                "exported": body_hash(markdown), "body": body_hash(body)}},
             "sort": 0,
         }
 

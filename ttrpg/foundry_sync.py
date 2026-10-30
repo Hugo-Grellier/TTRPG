@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 
 from . import vault
-from .foundry_export import Exporter
+from .foundry_export import CALLOUT, Exporter
 from .foundry_import import unpack
 from .html_md import to_markdown
 from .vault import UUID, body_hash
@@ -58,7 +58,8 @@ def pull(root, world_dir):
     for entry in unpack(Path(world_dir) / "data" / "journal"):
         for page in entry.get("pages", []):
             flags = (page.get("flags") or {}).get("ttrpg")
-            if not flags:
+            # Flags are editable in Foundry: only trust a page sitting at the ids exported for its note.
+            if not flags or exporter.pages.get(flags.get("id")) != (entry.get("_id"), page.get("_id")):
                 continue
             markdown = page_markdown(page)
             if body_hash(markdown) == flags.get("exported"):
@@ -68,7 +69,9 @@ def pull(root, world_dir):
             if note is None:
                 report["missing"].append(flags["id"])
                 continue
-            if body_hash(note.body) != flags.get("body") or (flags.get("players") and "[!secret]" in note.body):
+            has_secret = any(match[1].lower() == "secret" for match in CALLOUT.finditer(note.body))
+            players = note.get("visibility") == "players"
+            if body_hash(note.body) != flags.get("body") or (players and has_secret):
                 # Repository wins; a player page was exported without its secrets, so its text cannot replace the note.
                 report["conflicts"].append(note.rel)
                 continue
