@@ -9,6 +9,7 @@ refreshes untouched AP notes and never overwrites a modified or custom one.
 
 import json
 import re
+from collections import Counter
 import shutil
 import subprocess
 import tempfile
@@ -285,11 +286,10 @@ def import_adventure(root, adventure, module_id):
 def import_module(root, module_dir):
     module_dir = Path(module_dir)
     manifest = json.loads((module_dir / "module.json").read_text(encoding="utf-8"))
-    total = {"written": 0, "kept": 0, "seeded": 0, "maps": 0, "removed": 0, "indexed": 0}
+    total = Counter()
     for pack in manifest.get("packs", []):
         if pack.get("type") != "Adventure":
             continue
         for adventure in unpack(module_dir / pack["path"]):
-            for key, value in import_adventure(root, adventure, manifest["id"]).items():
-                total[key] += value
+            total.update(import_adventure(root, adventure, manifest["id"]))
     return total
