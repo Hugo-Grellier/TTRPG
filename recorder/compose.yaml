@@ -1,0 +1,15 @@
+# Example for the NAS: `docker compose up -d --build` in this directory, with .env filled in.
+services:
+  recorder:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      RECORDER_OUTPUT_DIR: /recordings
+      TZ: Europe/Paris # session directories are named in local time
+    # uid:gid that owns ./recordings on the NAS; recordings are private to it (0600).
+    user: "1000:1000"
+    volumes:
+      - ./recordings:/recordings
+    # SIGTERM closes the track files; the next start decodes the session.
+    stop_grace_period: 30s

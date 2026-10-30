@@ -13,26 +13,14 @@ session note and note updates are committed.
 Everyone at the table must agree to be recorded, each session (the players
 have agreed in principle; post a notice when recording starts anyway).
 
-- **Craig** (works today): `/join` in the voice channel, download the
+- **`recorder/`** (recommended; your own bot, nothing hosted by a third
+  party): joins the table's voice channel by itself when the GM joins, posts
+  the recording notice, records one track per person, stops when the channel
+  has been empty for a minute, decodes, and can start the transcript. Setup
+  in [The recorder](#the-recorder) below.
+- **Craig** (fallback): `/join` in the voice channel, download the
   multi-track FLAC zip after the session. Tracks are aligned and named like
   `1-<username>.flac`. The audio sits on Craig's servers until downloaded.
-- **LoreForge probe** (`~/dev/personal/LoreForge/experiments/discord-receive-timing-probe`,
-  your own bot, nothing hosted by a third party): records raw Opus per
-  speaker with RTP timing, up to six hours.
-  1. Create a Discord application and bot; intents `Guilds` and
-     `GuildVoiceStates`; invite it with View Channel and Connect.
-  2. In the probe directory: `pnpm install --frozen-lockfile`; fill its
-     ignored `.env` (`LOREFORGE_DISCORD_TEST_BOT_TOKEN`, guild and voice
-     channel ids, `LOREFORGE_DISCORD_TEST_PARTICIPANT_IDS` in a fixed order:
-     that order gives `speaker-001`, `speaker-002`…). Never commit the token.
-  3. `node probe.mjs capture 21600 --notice-posted-and-consented-test`,
-     Ctrl-C at the end of the session. It prints the capture directory (under
-     `/tmp`: move it before a reboot).
-  4. `node decode.mjs <capture>/events.jsonl` writes `decoded/speaker-NNN.wav`,
-     all on the capture's timeline.
-
-  Labels are anonymous by design (user ids are never written), so keep the
-  participant order fixed and map labels to names with `--names`.
 
 ## 2. Transcribe
 
@@ -48,9 +36,11 @@ Then, from the campaign:
 
 ```sh
 tools/bin/ttrpg transcribe ~/Downloads/craig-xxxx.zip --day 2026-11-06
-tools/bin/ttrpg transcribe /tmp/loreforge-discord-receive-XXXX \
-  --names speaker-001=Hugo speaker-002=Alice --day 2026-11-06
+tools/bin/ttrpg transcribe <recordings>/2026-11-06-2004 --day 2026-11-06
 ```
+
+A recorder session directory is read through its `decoded/` WAVs, named by
+Discord username; `--names alice=Alice` renames a speaker in the transcript.
 
 Each track is decoded with ffmpeg, transcribed on CPU with voice activity
 detection (silence skipped), split into remarks at pauses of one second and
@@ -79,14 +69,99 @@ each check counted once. The day defaults to the session's start date.
 Ask an agent in the campaign to debrief the session (skill `session-debrief`),
 with your own notes. Review its changes with `git diff` and commit.
 
-## Toward an automatic recorder
+## The recorder
 
-The probe already records what is needed; what it lacks is starting by
-itself. The next step, once a bot token and a test server are available: a
-small `recorder/` bot (from the probe, without its timing-qualification
-modes) that joins when the GM joins the table's voice channel, posts the
-recording notice in the text channel, stops when the channel empties, decodes,
-and runs `ttrpg transcribe`. It needs an always-on host (the NAS that runs
-Foundry is the obvious candidate). Not built yet: it cannot be tested without
-Discord, and the probe's RTP timing relies on an internal `@discordjs/voice`
-0.19.2 method that must be rechecked on every upgrade.
+`recorder/` is a small Node bot (`discord.js`, `@discordjs/voice`, built from
+the LoreForge receive-timing probe). It needs no command during a session:
+
+- When the GM (`RECORDER_GM_USER_ID`) is in the voice channel, it posts the
+  recording notice in the text channel, then joins. If the notice cannot be
+  posted it does not record.
+- It records every human in the channel, each in their own track named by
+  Discord username (bots are ignored), including people who join later.
+- When no human has been in the channel for `RECORDER_GRACE_SECONDS` (60), it
+  leaves, posts that recording stopped, decodes the tracks and runs
+  `RECORDER_POST_COMMAND` if set. If someone disconnects the bot, it stops and
+  does not come back until the GM leaves and rejoins.
+- If it is stopped or crashes mid-session, the raw tracks stay on disk and
+  are decoded at the next start (a new recording starts if the GM is still
+  there: two directories for that session).
+
+Each session is a directory under the output volume:
+
+```
+<out>/2026-11-06-2004/        start time, local (TZ)
+  recording.json              start time, server, channel
+  tracks/alice.packets        raw Opus with RTP timing, written as it arrives
+  tracks/alice.json           username and display name
+  decoded/alice.wav           16 kHz mono, every track starts at t=0
+  info.json                   recording.json + tracks and durations; marks the session finished
+```
+
+Raw Opus is at most about 30 MB per speaker-hour (less with silence),
+decoded WAV 115 MB. The files are
+private (0600) to the user that runs the bot.
+
+### Discord application (once)
+
+1. <https://discord.com/developers/applications> > New Application. Under
+   **Bot**: Reset Token, copy it into `.env` (never commit it). Leave every
+   *Privileged Gateway Intent* off (Presence, Server Members, Message
+   Content): the bot only uses `Guilds` and `GuildVoiceStates`. Turn **Public
+   Bot** off.
+2. **OAuth2 > URL Generator**: scope `bot`; permissions View Channels, Send
+   Messages, Connect. Open the URL and add the bot to the server. If the
+   channels are private, give the bot's role those three permissions on the
+   voice channel and the text channel.
+3. In Discord, User Settings > Advanced > Developer Mode on; right-click to
+   copy the ids of the server, the voice channel, the text channel (the voice
+   channel's own chat works) and the GM.
+
+### Run on the NAS
+
+```sh
+cd recorder            # a copy of this directory on the NAS
+cp .env.example .env   # fill in the token and the four ids
+mkdir recordings       # owned by the uid:gid set in compose.yaml (default 1000:1000)
+docker compose up -d --build
+docker compose logs -f # "ready as ...", then "recording to ..." when the GM joins
+```
+
+`compose.yaml` sets the output to `./recordings` (mounted at `/recordings`)
+and `TZ` for directory names. Without Docker: Node 22.12+, `npm ci`, fill
+`.env`, `npm start`.
+
+Run the tests with `npm ci --prefix recorder` once, then `make recorder-test`
+(Node's test runner, synthetic Opus; no Discord needed).
+
+### Transcribe a recording
+
+The container has only Node: it decodes, but cannot run `ttrpg transcribe`
+(Python, ffmpeg, faster-whisper). Either transcribe from your machine over
+the NAS share:
+
+```sh
+tools/bin/ttrpg transcribe /mnt/nas/recorder/recordings/2026-11-06-2004 --day 2026-11-06
+```
+
+or run the bot outside Docker on a machine with the campaign checkout and set
+the post-command in `.env` (`$1` is the session directory; single quotes keep
+it literal):
+
+```sh
+RECORDER_POST_COMMAND='cd ~/dev/personal/Campaign/campaign-kingmaker && tools/bin/ttrpg transcribe "$1" --day "$(basename "$1" | cut -c1-10)"'
+```
+
+### Limits
+
+- RTP timing is read in `VoiceReceiver.parsePacket()`, an internal method of
+  `@discordjs/voice` 0.19.2 (versions are pinned). After any upgrade, record
+  a short test session: if the method changed, the bot logs `packet without
+  RTP metadata` and the stop message says audio was not saved.
+- Discord changes voice encryption (the DAVE end-to-end protocol, transport
+  modes) on its own schedule; an outdated `@discordjs/voice` may fail to
+  connect or to decrypt. Packets that fail to decrypt are lost, not garbled.
+- Tracks are aligned by the time the first packet of each connection arrived;
+  separate speakers share no clock, so expect alignment within tens of
+  milliseconds, not samples. Not yet measured on a real session.
+- Not verified against Discord at all: written and tested without a bot token.
