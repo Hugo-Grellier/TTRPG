@@ -8,6 +8,18 @@ linked into `.claude/skills` and `.agents/skills`. If you cannot open the
 submodule (web chat), read the same files in the `TTRPG` repository:
 `skills/*/SKILL.md` and `ttrpg/schema.yaml`.
 
+## Start of work
+
+With a shell, update the tools first, then check the campaign against them:
+
+```sh
+git submodule update --init --remote tools && tools/bin/ttrpg check
+```
+
+If the update brings new errors, fix the notes (or tell the GM) and commit
+the `tools` bump with the fixes. Dependabot also opens a pull request when
+the tools move.
+
 ## Rules
 
 - The GM decides. Propose, explain, and edit what you are asked to edit; do
