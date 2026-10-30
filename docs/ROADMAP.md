@@ -17,6 +17,15 @@ Skill `campaign-distill`, run by a cloud agent on Chapter 1 and hex zones 1-2
 (Rostland, Greenbelt). GM reviews the pull request; adjust the skill, then
 run the remaining chapters.
 
+### 1c — Foundry scene tools in the MCP
+Add to a fork of foundry-vtt-mcp what the prototype needed: create a scene
+from an image or pack entry; create/update/delete embedded scene documents
+(Wall, AmbientLight, AmbientSound, Token, Note, Tile, Region) in one generic
+tool; capture the canvas as an image for visual checking. Wall proposals from
+an image come from a TTRPG command (OpenCV) and are reviewed visually before
+use. Then a `map-ready` skill: map note + encounter notes → tokens, ambience,
+pins.
+
 ### 2 — Export to Foundry journals
 Generate a module whose compendium pack holds one JournalEntry per folder and
 one page per note (Markdown → HTML, `[[id]]` → `@UUID`, GM secrets kept GM-only,
