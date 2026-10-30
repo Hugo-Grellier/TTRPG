@@ -57,6 +57,7 @@ decision still open, `> [!idea]` is a suggestion not yet adopted.
 | quest | In brief · Hook · Goal · How it unfolds · Reward · Done when · Failure · Sources | En bref · Accroche · Objectif · Déroulement · Récompense · Terminée quand · Échec · Sources |
 | item | In brief · Description · Powers · History · Where it is · Sources | En bref · Description · Pouvoirs · Histoire · Où le trouver · Sources |
 | scene | In brief · Read aloud · Situation · Stakes · Opposition · How it unfolds · Outcomes · Treasure · Sources | En bref · À lire · Situation · Enjeux · Opposition · Déroulement · Issues · Trésor · Sources |
+| handout | Show the players · Sources | À montrer aux joueurs · Sources |
 | clock | Segments (one line each: what happens when it fills) | Segments |
 | event | What happens · Consequences | Ce qui se passe · Conséquences |
 | map | Show the players · Areas · Tokens · Ambience · Sources | À montrer aux joueurs · Zones · Tokens · Ambiance · Sources |
@@ -93,6 +94,10 @@ What goes in each:
 - **Situation / Stakes / Opposition / How it unfolds / Outcomes** (scene):
   table-facing first; tactics, morale, hazards and DCs as the source gives
   them; a scene is runnable when the GM needs no other document during it.
+- **Handout**: `visibility: players`; the image and its text translated,
+  nothing the players must not see. A players note links only players
+  notes, so its sources are its own AP handout page; when to show it goes in
+  the scene, item or NPC note that links it.
 - **Segments** (clock): `segments` in frontmatter matches the number of lines.
 - **Map** notes describe a Foundry scene; the scene itself (walls, lights,
   sounds, token positions) is edited in Foundry. `stage`: `raw` (image only),
