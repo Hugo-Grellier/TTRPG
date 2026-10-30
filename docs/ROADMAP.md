@@ -44,11 +44,15 @@ Code on the web and Codex cloud clone the submodule and run the checker, and
 that the ChatGPT GitHub connector can read both repositories. Fallback if
 submodules fail: CI copies `skills/` into the campaign.
 
-### 5 — After-session pipeline
+### 5 — After-session pipeline (transcribe, flight, debrief done; automatic recorder next)
 Per-speaker Discord recording (start from the LoreForge
 `experiments/discord-receive-timing-probe`), local faster-whisper
 transcription, Foundry Flight Recorder (`ffr`) summary, GM note → proposed
-note updates as a diff.
+note updates as a diff. Done: `ttrpg transcribe`, `ttrpg flight`, skill
+`session-debrief`, setup in `docs/after-session.md`; recording uses Craig or
+the probe run by hand. Next: a recorder bot that starts and stops with the
+table's voice channel (needs a bot token, a test server and a host), then a
+first real session debriefed end to end.
 
 ### Later
 Player-facing export (only `players` notes, secrets stripped), a read-only
