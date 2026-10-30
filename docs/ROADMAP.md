@@ -17,7 +17,7 @@ Skill `campaign-distill`, run by a cloud agent on Chapter 1 and hex zones 1-2
 (Rostland, Greenbelt). GM reviews the pull request; adjust the skill, then
 run the remaining chapters.
 
-### 1c — Foundry scene tools in the MCP
+### 1c — Foundry scene tools in the MCP (tools done; `map-ready` skill next)
 Add to a fork of foundry-vtt-mcp what the prototype needed: create a scene
 from an image or pack entry; create/update/delete embedded scene documents
 (Wall, AmbientLight, AmbientSound, Token, Note, Tile, Region) in one generic
