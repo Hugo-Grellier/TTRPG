@@ -14,7 +14,7 @@ SKIP_FILES = {"README.md", "AGENTS.md", "CLAUDE.md"}
 WIKILINK = re.compile(r"(!?)\[\[(?!/)([^\]|#]+)(#[^\]|]*)?(?:\|([^\]]*))?\]\]")
 SOURCE = re.compile(r"src:([a-z0-9][a-z0-9-]*)#p(\d+)")
 UUID = re.compile(r"@UUID\[([^\]]+)\](?:\{([^}]*)\})?")
-MDLINK = re.compile(r"\]\((?!https?:|mailto:|src:|modules/|systems/|#)([^)\s]+)\)")
+MDLINK = re.compile(r"\]\((?!https?:|mailto:|src:|modules/|systems/|icons/|worlds/|#)([^)\s]+)\)")
 
 
 @dataclass
