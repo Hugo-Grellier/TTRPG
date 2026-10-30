@@ -34,9 +34,11 @@ that says something about the subject. An original note has none.
 Name items, spells, actions, conditions and creatures as the game's edition
 in the campaign language names them, keeping the Foundry link:
 `@UUID[Compendium.pf2e.equipment-srd.Item.…]{Broche de protection}`. Where
-that name is unknown, keep the source's and add `> [!question]`. A French
-campaign has the names players see in Foundry in `glossary.tsv` (pack,
-English, French; `ttrpg glossary <Data/modules/pf2-fr>`): look them up there.
+that name is unknown, keep the source's and add `> [!question]`. The names
+players see in Foundry are in `glossary.tsv` (`ttrpg glossary`: kind, Foundry
+id, English, translation, and the remaster name when the English one is
+pre-remaster), from pathfinder-fr and Archives of Nethys: look them up there,
+by the Foundry id of the linked document first.
 
 Callouts: `> [!secret]` never reaches players, `> [!question]` is a GM
 decision still open, `> [!idea]` is a suggestion not yet adopted.

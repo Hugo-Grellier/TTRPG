@@ -77,8 +77,12 @@ AP pages.
   AP pages only as sources.
 - Names of items, spells, actions, conditions and creatures: as the campaign
   language's edition names them, from `glossary.tsv` when present
-  (`grep -P "\tSleep Arrow\t" glossary.tsv`; the pack column tells a spell
-  from an item of the same name).
+  (`ttrpg glossary` builds it). Look up the id of the linked Foundry document
+  first (`grep TmQalYKNNRuEdoTh glossary.tsv`), else the English name
+  (`grep -P "\tMage Armor\t" glossary.tsv`: pre-remaster names give the
+  remaster one and its translation); the kind column tells a spell from an
+  item of the same name. Rules text and details: <https://2e.aonprd.com>
+  (English) and <https://pf2e.pathfinder-fr.org> (French).
 - PDF citations `src:id#pN` use the PDF page, the number of the file in
   `.cache/sources/<id>/`, not the printed folio.
 - Do not change `adventure/` or the stat blocks; do not mark anything played.

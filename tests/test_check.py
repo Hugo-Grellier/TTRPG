@@ -170,15 +170,17 @@ class SessionTest(unittest.TestCase):
             write(root, "capture/decoded/speaker-001.wav", "")
             self.assertEqual([path.name for path in tracks([Path(root) / "capture"], Path(root))], ["speaker-001.wav"])
 
-    def test_glossary_from_babele(self):
-        import argparse
-        from ttrpg.__main__ import cmd_glossary
-        with tempfile.TemporaryDirectory() as root:
-            pack = Path(root) / "pf2-fr" / "babele" / "vf" / "fr"
-            pack.mkdir(parents=True)
-            (pack / "pf2e.spells-srd.json").write_text(json.dumps({"entries": {"Invisibility": {"name": "Invisibilité"}, "Same": {"name": "Same"}}}))
-            cmd_glossary(argparse.Namespace(module=str(Path(root) / "pf2-fr"), mode="vf", root=root))
-            self.assertEqual((Path(root) / "glossary.tsv").read_text(encoding="utf-8").splitlines()[1:], ["pf2e.spells-srd\tInvisibility\tInvisibilité"])
+    def test_glossary_maps_legacy_names(self):
+        from ttrpg import glossary
+        spells = [{"_id": "aAbfKn8maGjJjk2W", "name": "Mystic Armor", "translations": {"fr": {"name": "Armure mystique"}}}]
+        runes = [{"_id": "r1", "name": "Invisibility", "translations": {"fr": {"name": "Invisibilité (rune)"}}}]
+        with tempfile.TemporaryDirectory() as cache:
+            for kind in glossary.DATASETS:
+                data = {"spells": spells, "equipment": runes}.get(kind, [])
+                (Path(cache) / f"{kind}.json").write_text(json.dumps(data))
+            rows = glossary.build(cache, renames=lambda: [("spell", "Mage Armor", "Mystic Armor")])
+        self.assertIn(("spells", "aAbfKn8maGjJjk2W", "Mage Armor", "Armure mystique", "Mystic Armor"), rows)
+        self.assertIn(("equipment", "r1", "Invisibility", "Invisibilité (rune)", ""), rows)
 
     def test_windows_cut_between_speech(self):
         from ttrpg.session import windows
