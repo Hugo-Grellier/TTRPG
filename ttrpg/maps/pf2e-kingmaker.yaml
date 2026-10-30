@@ -1,0 +1,26 @@
+# How the pf2e-kingmaker Adventure journals map to note types.
+# A rule matches a journal by its folder or name. Level-1 pages get `top`,
+# deeper pages get `rest`; `parent` names the field linking a deeper page to
+# the last level-1 page before it.
+rules:
+  - folder: Hex Encounters
+    top: region
+    rest: hex
+    parent: region
+  - folder: Adventure
+    top: chapter
+    rest: scene
+    parent: chapter
+  - journal: "Appendix 5: Characters"
+    top: note
+    rest: npc
+  - journal: "Appendix 2d: Quests"
+    top: note
+    rest: quest
+  - journal: Player Handouts
+    top: handout
+    rest: handout
+    visibility: players
+skip:
+  - Chapter Cover Artwork
+  - Credits

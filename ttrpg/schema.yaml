@@ -1,0 +1,68 @@
+# Note types and their frontmatter fields.
+#
+# Field kinds: str, int, date (in-game YYYY-MM-DD), day (real-world YYYY-MM-DD),
+# list, enum (with `values`), ref (one note id, `to` lists allowed types),
+# refs (list of note ids).
+#
+# A relation is declared on one side only. `inverse` names the computed view
+# on the target (shown by exports and backlinks); writing that inverse field by
+# hand is reported as an unknown field, so there is never a second copy to drift.
+
+common:
+  type: {kind: enum, required: true}
+  title: {kind: str, required: true}
+  origin: {kind: enum, values: [ap, modified, custom], default: custom}
+  visibility: {kind: enum, values: [gm, players], default: gm}
+  prep: {kind: enum, values: [draft, ready], default: draft}
+  aliases: {kind: list}
+  tags: {kind: list}
+  source: {kind: str}
+  source_hash: {kind: str}
+  foundry: {kind: str}
+
+places: &places [location, settlement, hex, region]
+
+types:
+  note: {}
+  chapter: {}
+  handout: {}
+  item: {}
+  region:
+    region: {kind: ref, to: [region], inverse: subregions}
+  hex:
+    coord: {kind: str}
+    terrain: {kind: str}
+    region: {kind: ref, to: [region], inverse: hexes}
+  settlement:
+    region: {kind: ref, to: *places, inverse: settlements}
+    leader: {kind: ref, to: [npc]}
+  location:
+    in: {kind: ref, to: *places, inverse: contains}
+  npc:
+    state: {kind: enum, values: [alive, dead, missing, unknown], default: alive}
+    died: {kind: date}
+    location: {kind: ref, to: *places, inverse: residents}
+    factions: {kind: refs, to: [faction], inverse: members}
+  faction:
+    leader: {kind: ref, to: [npc]}
+    base: {kind: ref, to: *places}
+  scene:
+    chapter: {kind: ref, to: [chapter]}
+    location: {kind: ref, to: *places, inverse: scenes}
+    level: {kind: int}
+  quest:
+    state: {kind: enum, values: [open, active, done, failed], default: open}
+    giver: {kind: ref, to: [npc, faction]}
+  event:
+    date: {kind: date, required: true}
+    participants: {kind: refs, to: [npc, faction]}
+    location: {kind: ref, to: *places}
+    played: {kind: enum, values: ["yes", "no"], default: "no"}
+  clock:
+    segments: {kind: int, required: true}
+    filled: {kind: int, default: 0}
+    owner: {kind: ref, to: [npc, faction]}
+  session:
+    day: {kind: day, required: true}
+    ingame: {kind: date}
+    present: {kind: list}

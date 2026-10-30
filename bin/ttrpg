@@ -1,0 +1,6 @@
+#!/bin/sh
+# Run the campaign tools from any directory: tools/bin/ttrpg check
+TOOLS="$(cd "$(dirname "$0")/.." && pwd)"
+PYTHON="$TOOLS/.venv/bin/python"
+[ -x "$PYTHON" ] || PYTHON=python3
+PYTHONPATH="$TOOLS${PYTHONPATH:+:$PYTHONPATH}" exec "$PYTHON" -m ttrpg "$@"

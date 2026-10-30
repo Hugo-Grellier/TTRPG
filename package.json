@@ -1,0 +1,8 @@
+{
+  "name": "ttrpg-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@foundryvtt/foundryvtt-cli": "3.0.5"
+  }
+}
