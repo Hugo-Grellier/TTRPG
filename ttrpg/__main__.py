@@ -2,9 +2,11 @@
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -14,6 +16,7 @@ from .foundry_export import export
 from .foundry_import import import_adventure, import_module
 from .foundry_sync import pull
 from .rename import rename
+from . import session
 
 TOOLS = Path(__file__).resolve().parent.parent
 
@@ -98,6 +101,39 @@ def cmd_pdf_text(args):
     return 0
 
 
+def session_dir(root, day):
+    out = Path(root) / ".cache" / "sessions" / day
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def cmd_transcribe(args):
+    out = session_dir(args.root, args.day)
+    names = dict(pair.split("=", 1) for pair in args.names)
+    files = session.tracks(args.audio, out / "audio")
+    if not files:
+        raise SystemExit("no audio tracks found")
+    config = yaml.safe_load((Path(args.root) / "campaign.yaml").read_text(encoding="utf-8")) or {}
+    run = session.whisper(args.model, args.language or config.get("language"))
+    sources = [(session.speaker(path, names), path) for path in files]
+    segments = {}
+    for who, path in sources:
+        print(f"transcribing {path.name} as {who}", flush=True)
+        segments.setdefault(who, []).extend(run(path))
+    lines = session.merge(segments)
+    (out / "transcript.md").write_text(session.transcript(lines, sources, args.model), encoding="utf-8")
+    print(f"{len(lines)} lines from {len(sources)} tracks -> {out / 'transcript.md'}")
+    return 0
+
+
+def cmd_flight(args):
+    text, day = session.flight_summary(session.flight_events(args.session, args.db, args.ffr))
+    path = session_dir(args.root, args.day or day) / "flight.md"
+    path.write_text(text, encoding="utf-8")
+    print(f"Flight Recorder summary -> {path}")
+    return 0
+
+
 def cmd_new(args):
     root = Path(args.root)
     if root.exists() and any(root.iterdir()):
@@ -161,6 +197,23 @@ def main(argv=None):
     p.add_argument("--title", default="")
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_pdf_text)
+
+    p = sub.add_parser("transcribe", help="transcribe per-speaker session tracks locally into .cache/sessions/<day>/")
+    p.add_argument("audio", nargs="+", help="audio files, a directory (Craig export, probe capture) or a Craig zip")
+    p.add_argument("--names", nargs="*", default=[], metavar="TRACK=NAME", help="e.g. speaker-001=Hugo 1-alice=Alice")
+    p.add_argument("--day", default=date.today().isoformat(), help="real-world session day (default today)")
+    p.add_argument("--language", help="default: campaign.yaml language")
+    p.add_argument("--model", default=os.environ.get("TTRPG_WHISPER_MODEL", "small"), help="faster-whisper model name or directory")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_transcribe)
+
+    p = sub.add_parser("flight", help="summarize a Foundry Flight Recorder session into .cache/sessions/<day>/")
+    p.add_argument("session", nargs="?", default="latest", help="ffr session id, prefix or latest")
+    p.add_argument("--db", help="ffr database (default $FFR_DB)")
+    p.add_argument("--ffr", default=os.environ.get("FFR", "ffr"), help="ffr command")
+    p.add_argument("--day", help="default: the session's start date")
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_flight)
 
     p = sub.add_parser("new", help="create a campaign repository")
     p.add_argument("root")

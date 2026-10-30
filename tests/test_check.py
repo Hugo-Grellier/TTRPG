@@ -152,5 +152,36 @@ class HtmlTest(unittest.TestCase):
                          "> [!note]\n> Note\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n")
 
 
+class SessionTest(unittest.TestCase):
+    def test_tracks_split_at_pauses_and_merge_by_time(self):
+        from ttrpg.session import merge, speaker, tracks, utterances
+        words = [(1.0, 1.4, " The"), (1.5, 2.0, " bridge."), (12.0, 12.5, " The"), (12.6, 13.0, " river.")]
+        alice = utterances(words)
+        self.assertEqual(alice, [(1.0, 2.0, "The bridge."), (12.0, 13.0, "The river.")])
+        self.assertEqual([who for _, _, who, _ in merge({"Alice": alice, "Bob": [(6.0, 7.0, "Fire!")]})], ["Alice", "Bob", "Alice"])
+        self.assertEqual(speaker(Path("1-alice_0.flac"), {}), "alice")
+        self.assertEqual(speaker(Path("speaker-001.wav"), {"speaker-001": "Hugo"}), "Hugo")
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "capture/tracks/speaker-001.opus-packets", "")
+            write(root, "capture/decoded/speaker-001.wav", "")
+            self.assertEqual([path.name for path in tracks([Path(root) / "capture"], Path(root))], ["speaker-001.wav"])
+
+    def test_flight_summary_counts_a_check_once(self):
+        from ttrpg.session import flight_summary
+        check = {"type": "pf2e.check", "at": "+1:00.0", "data": {"actor": {"name": "Kyra"}, "statistic": "diplomacy", "outcome": "success", "dc": 20, "roll": {"total": 24}}}
+        events = [{"type": "session.start", "at": "+0:00.0", "data": {"label": "S1"}},
+                  {"type": "scene.summary", "at": "+0:00.0", "data": {"scene": "s", "name": "Crypt"}},
+                  check, {**check, "at": "+1:00.1", "observed": True},
+                  {"type": "combat.start", "at": "+2:00.0", "data": {"combat": "c1"}},
+                  {"type": "combat.turn", "at": "+2:00.0", "combat": "c1:r1t0", "data": {"actor": {"name": "Goblin"}}},
+                  {"type": "combat.turn", "at": "+2:30.0", "combat": "c1:r1t0", "data": {"dur": 30000}},
+                  {"type": "combat.end", "at": "+5:00.0", "data": {"combat": "c1", "rounds": 2}}]
+        text, day = flight_summary({"t0": "2026-10-10T18:00:00+00:00", "events": events})
+        self.assertEqual(text.count("Kyra: diplomacy success, 24 vs DC 20"), 1)
+        self.assertIn("- +2:00.0 to +5:00.0, 2 rounds: Goblin\n", text)
+        self.assertIn("- +0:00.0 Crypt", text)
+        self.assertEqual(day[:7], "2026-10")
+
+
 if __name__ == "__main__":
     unittest.main()
