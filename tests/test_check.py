@@ -32,10 +32,10 @@ class CheckTest(unittest.TestCase):
         self.assertEqual(messages(self.root), [])
 
     def test_links_refs_and_sources(self):
-        write(self.root, "npcs/bad.md", "---\ntype: npc\ntitle: Bad\nfactions: [oleg]\n---\n[[nobody]] [x](oleg.md) [p](src:km#p99) [q](src:zz#p1) ![[gone.png]]\n")
+        write(self.root, "npcs/bad.md", "---\ntype: npc\ntitle: Bad\nfactions: [oleg]\n---\n[[nobody]] [x](oleg.md) [p](src:km#p99) [q](src:zz#p1) ![[gone.png]] [[lost.pdf|map]]\n")
         found = "\n".join(messages(self.root))
         for expected in ("'oleg' is a npc, expected faction", "broken link [[nobody]]", "relative link",
-                         "page 99 outside km", "unknown source 'zz'", "missing asset 'gone.png'"):
+                         "page 99 outside km", "unknown source 'zz'", "missing asset 'gone.png'", "missing asset 'lost.pdf'"):
             self.assertIn(expected, found)
 
     def test_schema_and_duplicates(self):

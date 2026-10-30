@@ -8,6 +8,7 @@ from . import vault
 from .vault import SCHEMA, SOURCE, UUID, WIKILINK, MDLINK, fields_for, body_hash
 
 DATE = re.compile(r"(-?\d{1,5})-(\d{2})-(\d{2})")
+ASSET = re.compile(r"\.[a-zA-Z0-9]{2,4}$")
 INDEXED = ("Actor", "Scene", "RollTable", "Item", "Macro", "Playlist")
 
 
@@ -131,8 +132,8 @@ def check_body(campaign, note, foundry_index, report):
     players = note.get("visibility") == "players"
     for match in WIKILINK.finditer(note.body):
         where = f"{note.rel}:{note.line_of(match.start())}"
-        embed, target = match[1], match[2].strip()
-        if embed and "." in target:
+        target = match[2].strip()
+        if ASSET.search(target):
             if target not in campaign.assets:
                 report.error(where, f"missing asset {target!r}")
             continue
