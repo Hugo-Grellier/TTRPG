@@ -24,8 +24,5 @@ description: Prepare the next game session from the campaign repository - what t
      the opposition with its link, and the outcomes, from the scene note.
    - Secrets the PCs may learn this session, in `> [!secret]` blocks.
 5. Do not mark anything as played. Run `tools/bin/ttrpg check`.
-6. If the GM wants it at the table: `tools/bin/ttrpg export-foundry --install
-   <Foundry Data/modules>` builds the module of journals (one entry per kind
-   of note, links to the adventure's own pages and scenes, secrets revealable
-   in Foundry). In Foundry: enable the module, then import its compendium
-   entries, keeping ids, over the previous import.
+6. If the GM wants it at the table: run the `foundry-sync` skill; the sheet
+   becomes a GM page in the world's Notes journal with the other notes.
