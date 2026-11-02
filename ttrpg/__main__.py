@@ -80,6 +80,9 @@ def cmd_foundry(args):
         print(f"clock {clock['ttrpg']['path']}: {clock['value']}/{clock['max']}")
     for clock in steps["clocks_edited"]:
         print(f"clock moved in Foundry {clock['ttrpg']['path']}: {clock['value']}/{clock['max']} (pull to keep it)")
+    for pin in steps["pins"]:
+        target = pin["data"].get("flags", {}).get("ttrpg", {}).get("path")
+        print(f"pin {pin['parent']} {pin['_id']}: " + (f"opens {target}" if target else "back to the adventure page"))
     for change in steps["explore"]:
         print(f"map {change['uuid']}: reveal {len(change['set'])} cells, hide {len(change['remove'])}")
     if steps["clocks_remove"]:

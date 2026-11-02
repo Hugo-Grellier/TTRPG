@@ -47,8 +47,12 @@ before building anything.
    per fire or lamp the text mentions, ambient sounds that fit (look in the
    module's `assets/audio-*` paths first), with `darkness: {min, max}` for
    sounds that only play at night.
-7. Pins (`Note`) on every keyed area, each linked to its journal page when the
-   campaign is exported, with a short text the GM reads at a glance.
+7. Pins (`Note`) on every keyed area, linked to the adventure's page of that
+   area (or the campaign note's page), with a short text the GM reads at a
+   glance; `ttrpg foundry apply` then points them at the campaign notes.
+   A module scene already built (walls, lights, tokens, pins) only needs
+   checking against the notes: compare its tokens with each scene note's
+   Opposition and report differences to the GM before changing either.
 
 ## 3. Check and record
 

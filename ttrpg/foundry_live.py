@@ -286,9 +286,49 @@ def explored(exporter):
     return out
 
 
+def campaign_pages(exporter):
+    """AP page uuid -> the campaign note that replaces it: `km-a23-dueling-chamber` -> `a23-dueling-chamber`,
+    the id the compile skill gives a subject with one main AP page."""
+    out = {}
+    for note in exporter.campaign.notes.values():
+        source = str(note.meta.get("source") or "")
+        if not note.rel.startswith("adventure/") or ".JournalEntryPage." not in source or "-" not in note.id:
+            continue
+        target = note.id.split("-", 1)[1]
+        if target in exporter.pages and not exporter.campaign.notes[target].rel.startswith("adventure/"):
+            out[source] = target
+    return out
+
+
+def pins(exporter, backend):
+    """Map pins of the map notes' scenes that open an AP page with a campaign note: point them at the note's
+    page, remembering the original; released (original restored) when the note no longer exists."""
+    mapping, changes = campaign_pages(exporter), []
+    for note in exporter.notes:
+        scene = str(note.get("foundry") or "")
+        if note.type != "map" or not scene.startswith("Scene."):
+            continue
+        listed = backend.sync(op="scene-notes", uuid=scene)
+        for pin in listed["notes"]:
+            flags = pin.get("flags") or {}
+            original = flags.get("original") or {"entryId": pin.get("entryId"), "pageId": pin.get("pageId")}
+            target = mapping.get(f"JournalEntry.{original['entryId']}.JournalEntryPage.{original['pageId']}")
+            if target:
+                entry, page = exporter.pages[target]
+                if (pin.get("entryId"), pin.get("pageId"), flags.get("id")) != (entry, page, target):
+                    changes.append({"documentName": "Note", "parent": scene, "_id": pin["_id"],
+                                    "data": {"entryId": entry, "pageId": page,
+                                             "flags": {"ttrpg": {"id": target, "path": exporter.campaign.notes[target].rel, "original": original}}}})
+            elif flags:
+                changes.append({"documentName": "Note", "parent": scene, "_id": pin["_id"],
+                                "data": {**original, "flags.-=ttrpg": None}, "flags": flags})
+    return changes
+
+
 def world_state(exporter, backend, world=()):
     """The date and clocks steps: what to set, and what the GM changed in Foundry since the last sync."""
-    steps = {"time": None, "time_ahead": None, "clocks": {}, "clocks_remove": [], "clocks_edited": [], "explore": []}
+    steps = {"time": None, "time_ahead": None, "clocks": {}, "clocks_remove": [], "clocks_edited": [], "explore": [],
+             "pins": pins(exporter, backend)}
     # Map exploration: only the cells the sync revealed are ever hidden again; the GM's stay.
     wanted = explored(exporter)
     scenes = set(wanted) | {d["parent"] for d in world if d.get("parent", "").startswith("Scene.")}
@@ -353,6 +393,8 @@ def sync(root, backend, apply=False, force=False):
                     done[name] += value
         if steps["time"]:
             backend.sync(op="time", worldTime=steps["time"]["worldTime"])
+        for call in batches("adopt", steps["pins"]):
+            done["updated"] += backend.sync(op="apply", **call)["updated"]
         for change in steps["explore"]:
             backend.sync(op="merge-flag", scope="world-explorer", key="gridData", **change)
         if steps["clocks"] or steps["clocks_remove"]:

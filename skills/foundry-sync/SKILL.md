@@ -35,6 +35,7 @@ Claude Code with the foundry-mcp server and open the world as GM.
 | npc with `foundry: Actor.<id>` and `owners` (player user names) or `state: dead` | the adventure actor: owners' ownership, a dead status effect; released when the note no longer asks |
 | last session `ingame`, else played events, else `campaign.yaml` `start` | the world date (Simple Calendar when active, else the pf2e world clock); never moved back once play moved it on |
 | clock `segments` and `filled` | Global Progress Clocks, private unless `visibility: players` |
+| map note with `foundry: Scene.<id>` | its pins that open an adventure page whose subject has a campaign note (`km-a23-…` → `a23-…`) open the note's page instead; the original link is kept and restored if the note goes |
 | place `discovered: "yes"` | a title-only page in the players' "discovered places" journal (the GM page stays hidden); with `map` and `cells` (`["i_j"]`, World Explorer offsets), those cells revealed |
 
 Only documents the sync created or adopted (they carry `flags.ttrpg`) are

@@ -168,6 +168,7 @@ class FakeWorld:
         self.time = 0
         self.calendar = False
         self.scenes = {}
+        self.pins = {}
 
     def sync(self, op, types=None, text=False, **calls):
         if op == "setting":
@@ -202,6 +203,18 @@ class FakeWorld:
                 del scene[key]
             scene.update(json.loads(json.dumps(calls.get("set", {}))))
             return {"changed": 1}
+        if op == "scene-notes":
+            return {"exists": calls["uuid"] in self.pins, "notes": json.loads(json.dumps(self.pins.get(calls["uuid"], [])))}
+        if op == "apply" and any(d["documentName"] == "Note" for d in calls.get("adopt", [])):
+            for change in calls["adopt"]:
+                pin = next(p for p in self.pins[change["parent"]] if p["_id"] == change["_id"])
+                data = dict(change["data"])
+                if data.pop("flags.-=ttrpg", "keep") is None:
+                    pin["flags"] = None
+                pin.update({k: v for k, v in data.items() if k != "flags"})
+                if "flags" in data:
+                    pin["flags"] = data["flags"]["ttrpg"]
+            return {"created": 0, "updated": len(calls["adopt"]), "deleted": 0, "missing": []}
         if op == "inventory":
             out = []
             for doc in self.docs.values():
@@ -349,6 +362,29 @@ class LiveSyncTest(unittest.TestCase):
             write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\nmap: region\ncells: ["3_4"]\n---\nSecret de la tour.\n')
             foundry_live.sync(root, world, apply=True)
             self.assertEqual(sorted(world.scenes["Scene.SSSSSSSSSSSSSSSS"]), ["0_0"])
+
+    def test_map_pins_open_campaign_notes(self):
+        from ttrpg import foundry_live
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "adventure/a/km-a23-duel.md", "---\ntype: note\ntitle: A23\norigin: ap\nsource: JournalEntry.AAAAAAAAAAAAAAAA.JournalEntryPage.PPPPPPPPPPPPPPPP\n---\nAP\n")
+            write(root, "scenes/a23-duel.md", "---\ntype: scene\ntitle: Salle de duel\n---\nCompilé.\n")
+            write(root, "maps/siege.md", "---\ntype: map\ntitle: Siège\nfoundry: Scene.SSSSSSSSSSSSSSSS\n---\n")
+            world = FakeWorld()
+            world.pins["Scene.SSSSSSSSSSSSSSSS"] = [
+                {"_id": "N1", "entryId": "AAAAAAAAAAAAAAAA", "pageId": "PPPPPPPPPPPPPPPP", "flags": None},
+                {"_id": "N2", "entryId": "AAAAAAAAAAAAAAAA", "pageId": "QQQQQQQQQQQQQQQQ", "flags": None}]
+            foundry_live.sync(root, world, apply=True)
+            entry, page = Exporter(load(root)).pages["a23-duel"]
+            n1, n2 = world.pins["Scene.SSSSSSSSSSSSSSSS"]
+            self.assertEqual((n1["entryId"], n1["pageId"], n2["pageId"]), (entry, page, "QQQQQQQQQQQQQQQQ"))
+            self.assertEqual(foundry_live.sync(root, world)[0]["pins"], [])
+            (Path(root) / "scenes/a23-duel.md").unlink()
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual((n1["pageId"], n1["flags"]), ("PPPPPPPPPPPPPPPP", None))
+            self.assertEqual(world.pins["Scene.SSSSSSSSSSSSSSSS"][0]["pageId"], "PPPPPPPPPPPPPPPP")
 
     def test_batches_stay_small(self):
         from ttrpg.foundry_live import BATCH, batches
