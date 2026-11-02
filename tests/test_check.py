@@ -162,10 +162,16 @@ class FakeWorld:
                     item["markdown"] = doc["data"]["text"]["markdown"]
                 out.append(item)
             return {"documents": out}
-        done = {"created": 0, "updated": 0, "deleted": 0}
-        for doc in calls.get("create", []) + calls.get("update", []):
+        done = {"created": 0, "updated": 0, "deleted": 0, "missing": []}
+        for doc in calls.get("create", []) + calls.get("adopt", []):
             self.docs[doc["_id"]] = json.loads(json.dumps(doc))
-        done["created"], done["updated"] = len(calls.get("create", [])), len(calls.get("update", []))
+        for doc in calls.get("update", []):
+            if "flags.-=ttrpg" in doc["data"]:
+                del self.docs[doc["_id"]]  # released: no longer listed
+            else:
+                self.docs[doc["_id"]] = json.loads(json.dumps(doc))
+        done["created"] = len(calls.get("create", []))
+        done["updated"] = len(calls.get("update", [])) + len(calls.get("adopt", []))
         for ref in calls.get("delete", []):
             self.docs = {k: d for k, d in self.docs.items() if k != ref["_id"] and d.get("parent") != f"{ref['documentName']}.{ref['_id']}"}
             done["deleted"] += 1
@@ -183,15 +189,15 @@ class LiveSyncTest(unittest.TestCase):
             write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nVoir [[f]].\n")
             world = FakeWorld()
             steps, done = foundry_live.sync(root, world, apply=True)
-            self.assertEqual(done, {"created": 5, "updated": 0, "deleted": 0})  # folder, 2 entries, 2 pages
+            self.assertEqual(done, {"created": 5, "updated": 0, "deleted": 0, "missing": []})  # folder, 2 entries, 2 pages
             pages = {d["_id"] for d in world.docs.values() if d["documentName"] == "JournalEntryPage"}
             self.assertEqual(pages, {page for _, page in Exporter(load(root)).pages.values()})
             steps, _ = foundry_live.sync(root, world)
-            self.assertEqual([len(steps[a]) for a in ("create", "update", "delete", "edited")], [0, 0, 0, 0])
+            self.assertEqual([len(steps[a]) for a in ("adopt", "create", "update", "release", "delete", "edited")], [0] * 6)
             write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nVoir [[f]] demain.\n")
             (Path(root) / "factions/f.md").unlink()
             steps, done = foundry_live.sync(root, world, apply=True)
-            self.assertEqual(done, {"created": 0, "updated": 1, "deleted": 1})  # the factions entry, its page with it
+            self.assertEqual(done, {"created": 0, "updated": 1, "deleted": 1, "missing": []})  # the factions entry, its page with it
             page = next(d for d in world.docs.values() if d["documentName"] == "JournalEntryPage")
             page["data"]["text"]["markdown"] += "\n\nAjouté dans Foundry."
             steps, done = foundry_live.sync(root, world, apply=True)
@@ -201,6 +207,26 @@ class LiveSyncTest(unittest.TestCase):
             self.assertIn("Ajouté dans Foundry.", (Path(root) / "npcs/n.md").read_text())
             steps, done = foundry_live.sync(root, world, apply=True)
             self.assertEqual((len(steps["edited"]), done["updated"]), (0, 1))
+
+    def test_actors_copied_adopted_and_released(self):
+        from ttrpg import foundry_live
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "npcs/ermite.md", "---\ntype: npc\ntitle: Ermite\nstats: Compendium.pf2e.pathfinder-bestiary.Actor.abc\nadjust: elite\n---\nVit seul.\n")
+            write(root, "npcs/amiri.md", "---\ntype: npc\ntitle: Amiri\nfoundry: Actor.AAAAAAAAAAAAAAAA\nowners: [Alice]\nstate: dead\n---\nBarbare.\n")
+            write(root, "npcs/oleg.md", "---\ntype: npc\ntitle: Oleg\nfoundry: Actor.BBBBBBBBBBBBBBBB\n---\nAubergiste.\n")
+            world = FakeWorld()
+            steps, done = foundry_live.sync(root, world, apply=True)
+            actors = {d["data"].get("name") or d["_id"]: d for d in steps["create"] + steps["adopt"] if d["documentName"] == "Actor"}
+            self.assertEqual(sorted(actors), ["AAAAAAAAAAAAAAAA", "Ermite"])  # Oleg: nothing to write on his actor
+            self.assertEqual((actors["Ermite"]["source"], actors["Ermite"]["adjust"]), ("Compendium.pf2e.pathfinder-bestiary.Actor.abc", "elite"))
+            self.assertEqual(actors["AAAAAAAAAAAAAAAA"]["data"]["ownership"], {"@Alice": 3})
+            dead = next(d for d in steps["create"] if d["documentName"] == "ActiveEffect")
+            self.assertEqual((dead["parent"], dead["data"]["statuses"], dead["data"]["name"]), ("Actor.AAAAAAAAAAAAAAAA", ["dead"], "Mort"))
+            write(root, "npcs/amiri.md", "---\ntype: npc\ntitle: Amiri\nfoundry: Actor.AAAAAAAAAAAAAAAA\n---\nBarbare.\n")
+            steps, _ = foundry_live.sync(root, world, apply=True)
+            self.assertEqual([d["_id"] for d in steps["release"]], ["AAAAAAAAAAAAAAAA"])
+            self.assertEqual([d["documentName"] for d in steps["delete"]], ["ActiveEffect"])
 
     def test_batches_stay_small(self):
         from ttrpg.foundry_live import BATCH, batches

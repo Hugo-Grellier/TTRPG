@@ -66,18 +66,20 @@ def cmd_foundry(args):
         print(f"{len(report['updated'])} updated, {len(report['conflicts'])} conflicts, {report['unchanged']} unchanged; review with git diff")
         return 1 if report["conflicts"] else 0
     steps, done = foundry_live.sync(args.root, backend, apply=args.action == "apply", force=args.force)
-    for action in ("create", "update", "delete"):
+    actions = ("adopt", "create", "update", "release", "delete")
+    for action in actions:
         for document in steps[action]:
-            print(f"{action} {foundry_live.label(document)}")
+            print(f"{action} {document['documentName']} {foundry_live.label(document)}")
     for document in steps["edited"]:
         print(f"edited in Foundry {foundry_live.label(document)}")
-    print(f"{len(steps['create'])} to create, {len(steps['update'])} to update, {len(steps['delete'])} to delete, "
-          f"{len(steps['edited'])} pages edited in Foundry")
+    print(", ".join(f"{len(steps[action])} to {action}" for action in actions) + f", {len(steps['edited'])} pages edited in Foundry")
     if args.action == "apply" and done is None:
         print("nothing applied: run `ttrpg foundry pull` first (or --force to overwrite the Foundry edits)")
         return 1
     if done:
         print(f"applied: {done['created']} created, {done['updated']} updated, {done['deleted']} deleted")
+        for uuid in done["missing"]:
+            print(f"not in this world: {uuid} (the note's foundry link points at an actor this world does not have)")
     return 0
 
 

@@ -30,6 +30,7 @@ types:
     level: {kind: int}
     owner: {kind: ref, to: [npc, faction], inverse: possessions}
     location: {kind: ref, to: *places, inverse: items}
+    stats: {kind: str}
   region:
     region: {kind: ref, to: [region], inverse: subregions}
   hex:
@@ -51,6 +52,9 @@ types:
     died: {kind: date}
     location: {kind: ref, to: *places, inverse: residents}
     factions: {kind: refs, to: [faction], inverse: members}
+    stats: {kind: str}
+    adjust: {kind: enum, values: [elite, weak]}
+    owners: {kind: list}
   faction:
     leader: {kind: ref, to: [npc]}
     base: {kind: ref, to: *places}
