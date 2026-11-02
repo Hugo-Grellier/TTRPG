@@ -81,6 +81,15 @@ def cmd_glossary(args):
     return 0
 
 
+def cmd_drafts(args):
+    from .drafts import drafts
+    made, skipped = drafts(args.root, args.inventory or Path(args.root) / ".cache/compile/inventory.tsv")
+    for rel in made:
+        print(f"draft {rel}")
+    print(f"{len(made)} drafts, {len(skipped)} subjects already had a note")
+    return 0
+
+
 def cmd_import_foundry(args):
     if args.json:
         stats = import_adventure(args.root, json.loads(Path(args.json).read_text(encoding="utf-8")), args.module_id)
@@ -205,6 +214,11 @@ def main(argv=None):
     p = sub.add_parser("glossary", help="write glossary.tsv: translated names of spells, items, creatures... (pathfinder-fr, Archives of Nethys)")
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_glossary)
+
+    p = sub.add_parser("drafts", help="draft a note for each subject of a compile inventory that has none")
+    p.add_argument("--root", default=".")
+    p.add_argument("--inventory", help="TSV: type, id, title, aliases, main_page, pages, tier (default .cache/compile/inventory.tsv)")
+    p.set_defaults(func=cmd_drafts)
 
     p = sub.add_parser("import-foundry", help="import a Foundry Adventure module into notes")
     p.add_argument("--root", default=".")

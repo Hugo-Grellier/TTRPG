@@ -182,6 +182,22 @@ class SessionTest(unittest.TestCase):
         self.assertIn(("spells", "aAbfKn8maGjJjk2W", "Mage Armor", "Armure mystique", "Mystic Armor"), rows)
         self.assertIn(("equipment", "r1", "Invisibility", "Invisibilité (rune)", ""), rows)
 
+    def test_drafts_only_for_missing_notes(self):
+        from ttrpg.drafts import drafts
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = tmp.name
+        write(self.root, "npcs/oleg.md", "---\ntype: npc\ntitle: Oleg\n---\n")
+        write(self.root, "adventure/km-a01.md", "---\ntype: ap\ntitle: A1\n---\n")
+        write(self.root, "inv.tsv", "type\tid\ttitle\taliases\tmain_page\tpages\ttier\n"
+              "npc\toleg\tOleg\t\t\t\t\nscene\ta01-hall\tHall\tThe Hall\tkm-a01\tkm-a01;km-zz\tmajor\n")
+        made, skipped = drafts(self.root, Path(self.root) / "inv.tsv")
+        self.assertEqual((made, skipped), (["scenes/a01-hall.md"], ["oleg"]))
+        text = (Path(self.root) / "scenes/a01-hall.md").read_text(encoding="utf-8")
+        self.assertIn("prep: draft", text)
+        self.assertIn("[[km-a01]]", text)
+        self.assertNotIn("km-zz", text)
+
     def test_windows_cut_between_speech(self):
         from ttrpg.session import windows
         speech = [{"start": 0, "end": 5}, {"start": 8, "end": 10}, {"start": 12, "end": 20}, {"start": 30, "end": 31}]

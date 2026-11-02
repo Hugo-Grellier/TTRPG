@@ -30,7 +30,10 @@ When a subject you write about has no note yet (a place, a scene, an NPC the
 scope mentions), create it: compiled if it is in the scope, otherwise a
 draft (`prep: draft`, the facts you saw, a `> [!todo]` and its AP pages) so
 links and fields (`base`, `in`, `location`) point at campaign notes, never at
-AP pages.
+AP pages. For a whole chapter, list the subjects first in
+`.cache/compile/inventory.tsv` (type, id, title, aliases, main_page, pages
+separated by `;`, tier `major` or `minor`) and run `tools/bin/ttrpg drafts`:
+it drafts every subject that has no note yet.
 
 ## For each subject
 
