@@ -109,5 +109,10 @@ What goes in each:
   link the scene notes of each zone; **Tokens** list which NPC or creature goes
   where; **Ambience** gives lighting, darkness, sounds and playlist. Places
   link their maps with `[[map-id]]` in the body or the map's `locations`.
+- **Foundry fields** (synced by `ttrpg foundry apply`): npc and item `stats`
+  is the compendium uuid a world copy is made from (npc `adjust`: `elite` or
+  `weak`); npc `owners` lists the players (Foundry user names) who control
+  it; a place's `discovered: "yes"` shows its title and pins to players, and
+  its `map` and `cells` (World Explorer offsets `"i_j"`) reveal it on that map.
 - **Events** are dated in-game (`date`); `played: "yes"` only after a session.
   Planned events take dates from `start` in `campaign.yaml`.

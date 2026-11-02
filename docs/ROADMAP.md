@@ -29,12 +29,16 @@ an image come from a TTRPG command (OpenCV) and are reviewed visually before
 use. Then a `map-ready` skill: map note + encounter notes → tokens, ambience,
 pins.
 
-### 2 — Export to Foundry journals (pack done; live update through MCP next)
+### 2 — Export to Foundry journals (pack done; live sync done)
 Generate a module whose compendium pack holds one JournalEntry per folder and
 one page per note (Markdown → HTML, `[[id]]` → `@UUID`, GM secrets kept GM-only,
 player notes with player ownership). Verify in the local Foundry
 (`foundry-local-1`, port 30001) with Kingmaker imported alongside. Then live
-edits through foundry-vtt-mcp.
+sync through foundry-vtt-mcp (`ttrpg foundry plan|apply|pull`, tool
+`sync-world`): journals, actors and items, ownership and death, date, clocks,
+discovered places. Next: deploy the fork's bridge and Global Progress Clocks
+to production (maxi-lab bundle, owner approval), map pins as managed scene
+notes from `map-ready`.
 
 ### 3 — Foundry changes back to the repository (done from world files; MCP route for remote servers next)
 Read world journals (pack or MCP), turn changed pages back into Markdown,
@@ -58,6 +62,10 @@ table's voice channel (needs a bot token, a test server and a host), then a
 first real session debriefed end to end.
 
 ### Later
+Test of how ready to play generated content is: build a world only from an
+adventure's PDF (Kingmaker or another AP) with these tools, and compare it with
+the same adventure's official Paizo Foundry module (journals, actors, scenes,
+walls, lights, encounters).
 Player-facing export (only `players` notes, secrets stripped), a read-only
 viewer if Foundry and Obsidian are not enough, French translation of imported
 AP text on demand, original-campaign starter (factions, fronts, clocks).

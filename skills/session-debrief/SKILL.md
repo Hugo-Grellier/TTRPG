@@ -72,6 +72,8 @@ Edit only what a source states, following `tools/ttrpg/schema.yaml`:
 - `clock`: `filled`, never above `segments`.
 - `event`: `played: "yes"` for planned events that happened; a new `event`
   note (dated, `played: "yes"`) for a notable unplanned one.
+- Place the PCs found: `discovered: "yes"`; on a region or hex map with
+  World Explorer, `map` and the `cells` they saw (`["i_j"]`).
 - New NPC or place met at the table: a new note, `origin: custom`, with only
   what was said; its sections from `note-types.md`, gaps as `> [!question]`.
 - An `origin: ap` note you change becomes `origin: modified`.
@@ -87,4 +89,5 @@ fact. Do not touch notes the session did not affect.
 Run `tools/bin/ttrpg check` and fix every error. Then report to the GM: each
 changed note with the evidence for each change (transcript time, `flight.md`
 line, or GM note), the open questions, and what the sources could not tell.
-The GM reviews with `git diff` and commits.
+The GM reviews with `git diff` and commits; then the world follows with the
+`foundry-sync` skill (`pull` first: clocks moved during play come back).

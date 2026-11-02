@@ -13,6 +13,7 @@ tools/bin/ttrpg pdf-text km /path/to/adventure.pdf --title "Adventure"
 tools/bin/ttrpg check
 tools/bin/ttrpg export-foundry --install ~/foundrydata/Data/modules   # journals module
 tools/bin/ttrpg pull-foundry ~/foundrydata/Data/worlds/<world>          # edits made in Foundry -> notes
+tools/bin/ttrpg foundry plan|apply|pull   # live sync of a running world through foundry-mcp (skill foundry-sync)
 ```
 
 A campaign repository holds `campaign.yaml` (system, language, calendar,
