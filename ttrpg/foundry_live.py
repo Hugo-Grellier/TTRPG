@@ -13,10 +13,12 @@ the instance Claude Code runs; the GM's browser must be connected to it.
 import hashlib
 import json
 import socket
+from datetime import datetime, timedelta
 
 from . import vault
 from .foundry_export import Exporter, foundry_id
 from .foundry_sync import new_report, pull_page
+from .check import in_game_key
 from .vault import body_hash
 
 HOST, PORT = "127.0.0.1", 31414
@@ -24,6 +26,9 @@ HOST, PORT = "127.0.0.1", 31414
 BATCH = 40_000
 TYPES = ["Folder", "JournalEntry", "JournalEntryPage", "Actor", "Item", "ActiveEffect"]
 DEAD = {"fr": "Mort", "en": "Dead"}
+CLOCKS = "global-progress-clocks.activeClocks"
+# pf2e world clock: the in-game year is the real one plus the theme's offset.
+YEAR_OFFSET = {"AR": 2700, "IC": 5200, "CE": 0}
 
 
 class Backend:
@@ -124,7 +129,9 @@ def desired(exporter):
     and the actors and items of `actors_and_items`."""
     name = exporter.config.get("name", "Campagne")
     folder = foundry_id(exporter.module_id, "folder", "journal")
-    documents = [managed("Folder", folder, {"name": name, "type": "JournalEntry", "sorting": "m"})]
+    # The folder also remembers the in-game date the sync last gave the world clock.
+    documents = [managed("Folder", folder, {"name": name, "type": "JournalEntry", "sorting": "m",
+                                            "flags": {"ttrpg": {"date": current_date(exporter.campaign)}}})]
     for entry in exporter.entries():
         pages = entry.pop("pages")
         documents.append(managed("JournalEntry", entry["_id"], {**entry, "folder": folder}))
@@ -196,11 +203,82 @@ def label(document):
     return flags.get("path") or name or f"{document['documentName']} {document['_id']}"
 
 
+def current_date(campaign):
+    """The in-game date play has reached: the last session's, else the last played event's, else the start."""
+    dates = [note.get("ingame") for note in campaign.notes.values() if note.type == "session"]
+    dates += [note.get("date") for note in campaign.notes.values() if note.type == "event" and note.get("played") == "yes"]
+    dates = [str(value) for value in dates if value]
+    return max(dates, key=in_game_key) if dates else (str(campaign.config["start"]) if campaign.config.get("start") else None)
+
+
+def world_time(date, clock, now):
+    """pf2e world time (seconds since the world's creation) for an in-game date, keeping the time of day."""
+    created = datetime.fromisoformat(clock["worldCreatedOn"].replace("Z", "+00:00"))
+    offset = YEAR_OFFSET.get(clock.get("dateTheme"))
+    if offset is None:
+        return None
+    year, month, day = (int(part) for part in date.lstrip("-").split("-"))
+    current = created + timedelta(seconds=now)
+    target = current.replace(year=year - offset, month=month, day=day)
+    return int((target - created).total_seconds())
+
+
+def clocks(exporter):
+    """Global Progress Clocks entries, one per clock note; `ttrpg.value` remembers what was pushed."""
+    out = {}
+    for note in exporter.notes:
+        if note.type != "clock":
+            continue
+        _id = foundry_id(exporter.module_id, "clock", note.id)
+        filled = int(note.get("filled") or 0)
+        out[_id] = {"id": _id, "type": "clock", "name": note.meta.get("title") or note.id, "value": filled,
+                    "max": int(note.get("segments")), "private": note.get("visibility") != "players",
+                    "ttrpg": {"id": note.id, "path": note.rel, "value": filled}}
+    return out
+
+
+def world_state(exporter, backend, world=()):
+    """The date and clocks steps: what to set, and what the GM changed in Foundry since the last sync."""
+    steps = {"time": None, "time_ahead": None, "clocks": {}, "clocks_remove": [], "clocks_edited": []}
+    date = current_date(exporter.campaign)
+    if date and exporter.config.get("system") == "pf2e":
+        clock = backend.sync(op="setting", key="pf2e.worldClock")["value"] or {}
+        now = backend.sync(op="time")["worldTime"]
+        target = world_time(date, clock, now) if clock.get("worldCreatedOn") else None
+        if target is not None:
+            created = datetime.fromisoformat(clock["worldCreatedOn"].replace("Z", "+00:00"))
+            world_day, target_day = (created + timedelta(seconds=now)).date(), (created + timedelta(seconds=target)).date()
+            pushed = next((d.get("flags", {}).get("date") for d in world if d["documentName"] == "Folder"), None)
+            pushed_day = (created + timedelta(seconds=world_time(pushed, clock, now))).date() if pushed else None
+            # Untouched since the last sync (or never synced): follow the notes. Moved on in play: only forward.
+            if target_day != world_day and (pushed_day in (None, world_day) or target_day > world_day):
+                steps["time"] = {"date": date, "worldTime": target}
+            elif target_day < world_day:
+                steps["time_ahead"] = date
+    try:
+        current = backend.sync(op="setting", key=CLOCKS)["value"] or {}
+    except SystemExit as error:
+        if "not a registered" not in str(error):
+            raise
+        return steps  # the clocks module is not enabled in this world
+    want = clocks(exporter)
+    ours = {key: value for key, value in current.items() if isinstance(value, dict) and value.get("ttrpg")}
+    edited = {key for key, value in ours.items()
+              if key in want and value.get("value") not in (value["ttrpg"].get("value"), want[key]["value"])}
+    steps["clocks_edited"] = [ours[key] for key in sorted(edited)]
+    steps["clocks"] = {key: value for key, value in want.items() if current.get(key) != value and key not in edited}
+    steps["clocks_remove"] = sorted(key for key in ours if key not in want)
+    return steps
+
+
 def sync(root, backend, apply=False, force=False):
     exporter = Exporter(vault.load(root))
     world = backend.sync(op="inventory", types=TYPES, text=True)["documents"]
     steps = plan(desired(exporter), world)
-    if apply and steps["edited"] and not force:
+    steps.update(world_state(exporter, backend, world))
+    if force:
+        steps["clocks"].update({key: clocks(exporter)[key] for key in (c["id"] for c in steps["clocks_edited"])})
+    if apply and (steps["edited"] or steps["clocks_edited"]) and not force:
         return steps, None
     done = None
     if apply:
@@ -209,6 +287,10 @@ def sync(root, backend, apply=False, force=False):
             for call in batches("update" if action == "release" else action, steps[action]):
                 for name, value in backend.sync(op="apply", **call).items():
                     done[name] += value
+        if steps["time"]:
+            backend.sync(op="time", worldTime=steps["time"]["worldTime"])
+        if steps["clocks"] or steps["clocks_remove"]:
+            backend.sync(op="merge-setting", key=CLOCKS, set=steps["clocks"], remove=steps["clocks_remove"])
     return steps, done
 
 
@@ -219,4 +301,11 @@ def pull(root, backend):
         page = {"_id": document["_id"], "flags": {"ttrpg": document.get("flags")},
                 "text": {"format": 2, "markdown": document.get("markdown", "")}}
         pull_page(exporter, document["parent"].split(".")[1], page, report)
+    for clock in world_state(exporter, backend)["clocks_edited"]:
+        note = exporter.campaign.notes.get(clock["ttrpg"]["id"])
+        if note is None:
+            continue
+        meta = dict(note.meta, filled=int(clock["value"]))
+        note.path.write_text(vault.join_frontmatter(meta, note.body), encoding="utf-8")
+        report["updated"].append(note.rel)
     return report

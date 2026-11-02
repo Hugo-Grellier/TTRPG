@@ -72,9 +72,19 @@ def cmd_foundry(args):
             print(f"{action} {document['documentName']} {foundry_live.label(document)}")
     for document in steps["edited"]:
         print(f"edited in Foundry {foundry_live.label(document)}")
+    if steps["time"]:
+        print(f"date: world clock to {steps['time']['date']}")
+    if steps["time_ahead"]:
+        print(f"date: Foundry's clock is past the notes ({steps['time_ahead']}); left as is")
+    for clock in steps["clocks"].values():
+        print(f"clock {clock['ttrpg']['path']}: {clock['value']}/{clock['max']}")
+    for clock in steps["clocks_edited"]:
+        print(f"clock moved in Foundry {clock['ttrpg']['path']}: {clock['value']}/{clock['max']} (pull to keep it)")
+    if steps["clocks_remove"]:
+        print(f"clocks to remove: {len(steps['clocks_remove'])}")
     print(", ".join(f"{len(steps[action])} to {action}" for action in actions) + f", {len(steps['edited'])} pages edited in Foundry")
     if args.action == "apply" and done is None:
-        print("nothing applied: run `ttrpg foundry pull` first (or --force to overwrite the Foundry edits)")
+        print("nothing applied: run `ttrpg foundry pull` first (or --force to overwrite what changed in Foundry)")
         return 1
     if done:
         print(f"applied: {done['created']} created, {done['updated']} updated, {done['deleted']} deleted")

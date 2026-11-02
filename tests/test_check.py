@@ -146,10 +146,25 @@ class ExportTest(unittest.TestCase):
 class FakeWorld:
     """The sync-world tool over an in-memory world."""
 
-    def __init__(self):
+    def __init__(self, settings=None):
         self.docs = {}
+        self.settings = settings or {}
+        self.time = 0
 
     def sync(self, op, types=None, text=False, **calls):
+        if op == "setting":
+            if calls["key"] not in self.settings:
+                raise SystemExit(f"foundry-mcp: Error: {calls['key']} is not a registered game setting")
+            return {"value": json.loads(json.dumps(self.settings[calls["key"]]))}
+        if op == "merge-setting":
+            value = self.settings[calls["key"]]
+            for key in calls.get("remove", []):
+                del value[key]
+            value.update(json.loads(json.dumps(calls.get("set", {}))))
+            return {"keys": len(value)}
+        if op == "time":
+            self.time = calls.get("worldTime", self.time)
+            return {"worldTime": self.time}
         if op == "inventory":
             out = []
             for doc in self.docs.values():
@@ -232,6 +247,33 @@ class LiveSyncTest(unittest.TestCase):
             self.assertEqual([d["_id"] for d in steps["release"]], ["AAAAAAAAAAAAAAAA"])
             self.assertEqual(steps["release"][0]["data"]["ownership"], {"@Bob": 0})  # access taken back
             self.assertEqual([d["documentName"] for d in steps["delete"]], ["ActiveEffect"])
+
+    def test_date_and_clocks(self):
+        from ttrpg import foundry_live
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", 'name: T\nsystem: pf2e\nlanguage: fr\nstart: "4710-02-23"\n')
+            write(root, "clocks/assaut.md", "---\ntype: clock\ntitle: Assaut\nsegments: 4\nfilled: 1\n---\n- un\n- deux\n- trois\n- quatre\n")
+            clock = {"dateTheme": "AR", "worldCreatedOn": "2026-10-30T11:28:59.647Z"}
+            world = FakeWorld({"pf2e.worldClock": clock, foundry_live.CLOCKS: {"gm": {"id": "gm", "name": "MJ", "value": 2, "max": 6}}})
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertEqual(steps["time"]["date"], "4710-02-23")
+            self.assertEqual(foundry_live.world_time("4710-02-23", clock, 0) - foundry_live.world_time("4710-02-22", clock, 0), 86400)
+            pushed = world.settings[foundry_live.CLOCKS]
+            self.assertIn("gm", pushed)  # the GM's own clock stays
+            ours = next(value for key, value in pushed.items() if key != "gm")
+            self.assertEqual((ours["value"], ours["max"], ours["private"]), (1, 4, True))
+            steps, _ = foundry_live.sync(root, world)
+            self.assertEqual((steps["time"], steps["clocks"]), (None, {}))
+            world.time += 3 * 86400  # the GM moved time on in play
+            self.assertEqual(foundry_live.sync(root, world)[0]["time_ahead"], "4710-02-23")
+            ours["value"] = 3  # and filled the clock in Foundry
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertIsNone(done)
+            self.assertEqual(len(steps["clocks_edited"]), 1)
+            self.assertEqual(foundry_live.pull(root, world)["updated"], ["clocks/assaut.md"])
+            self.assertIn("filled: 3", (Path(root) / "clocks/assaut.md").read_text())
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertEqual(world.settings[foundry_live.CLOCKS][ours["id"]]["ttrpg"]["value"], 3)
 
     def test_batches_stay_small(self):
         from ttrpg.foundry_live import BATCH, batches
