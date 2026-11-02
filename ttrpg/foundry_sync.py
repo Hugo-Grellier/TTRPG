@@ -9,10 +9,11 @@ reported as a conflict and left alone.
 """
 
 import re
+from html import unescape
 from pathlib import Path
 
 from . import vault
-from .foundry_export import CALLOUT, Exporter
+from .foundry_export import CALLOUT, Exporter, page_hash
 from .foundry_import import unpack
 from .html_md import to_markdown
 from .vault import UUID, body_hash
@@ -44,6 +45,28 @@ def reverse_links(text, exporter):
     return re.sub(r"(?<!!)\[([^\]]*)\]\(" + prefix + r"([^)]+)\)", r"[[\2|\1]]", text)
 
 
+def from_foundry(text, exporter):
+    """Undo foundry_markdown: HTML callouts back to `> [!kind] title`, cited spans back to src: links."""
+    def quote(kind, own, inner):
+        lines = to_markdown(inner).strip().split("\n")
+        return f"> [!{kind}]{' ' + own if own else ''}\n" + "\n".join(f"> {line}" if line else ">" for line in lines)
+
+    def block(match):
+        tag, kind, own, inner = match["tag"], match["kind"] or "secret", unescape(match["own"] or ""), match["inner"]
+        label = "" if tag == "section" else exporter.label.get(kind, kind.capitalize())
+        if label or own:
+            inner = re.sub(r"^\s*<p><strong>[^<]*</strong></p>", "", inner, count=1)
+        return quote(kind, own, inner)
+
+    # Citations first: inside a callout, the HTML-to-Markdown step would flatten them to text.
+    text = re.sub(r'<span data-src="([^"#]+)#p(\d+)">(.*?) \(.*?, p\. \d+\)</span>', r"[\3](src:\1#p\2)", text)
+    text = re.sub(r'<(?P<tag>section) class="secret" id="secret-\d+"(?: data-title="(?P<own>[^"]*)")?>(?P<kind>)(?P<inner>.*?)</section>'
+                  r'|<(?P<tag2>blockquote) class="callout-(?P<kind2>\w+)"(?: data-title="(?P<own2>[^"]*)")?>(?P<inner2>.*?)</blockquote>',
+                  lambda m: block({"tag": m["tag"] or m["tag2"], "kind": m["kind"] or m["kind2"], "own": m["own"] or m["own2"],
+                                   "inner": m["inner"] if m["tag"] else m["inner2"]}), text, flags=re.S)
+    return re.sub(r"\n{3,}", "\n\n", text)
+
+
 def page_markdown(page):
     text = page.get("text") or {}
     if text.get("format") == 2 and text.get("markdown") is not None:
@@ -59,7 +82,7 @@ def pull_page(exporter, entry_id, page, report):
     if not flags or exporter.pages.get(flags.get("id")) != (entry_id, page.get("_id")):
         return
     markdown = page_markdown(page)
-    if body_hash(markdown) == flags.get("exported"):
+    if page_hash(markdown) == flags.get("exported"):
         report["unchanged"] += 1
         return
     note = campaign.notes.get(flags["id"])
@@ -76,7 +99,7 @@ def pull_page(exporter, entry_id, page, report):
     if header and markdown.startswith(header):
         markdown = markdown[len(header):]
     lead = note.body[: len(note.body) - len(note.body.lstrip("\n"))]
-    body = lead + reverse_links(markdown.strip(), exporter) + "\n"
+    body = lead + reverse_links(from_foundry(markdown, exporter).strip(), exporter) + "\n"
     meta = dict(note.meta)
     if meta.get("origin") == "ap" and meta.get("source_hash") and body_hash(body) != meta["source_hash"]:
         meta["origin"] = "modified"

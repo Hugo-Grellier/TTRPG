@@ -16,10 +16,9 @@ import socket
 from datetime import datetime, timedelta
 
 from . import vault
-from .foundry_export import Exporter, foundry_id
+from .foundry_export import Exporter, foundry_id, page_hash
 from .foundry_sync import new_report, pull_page
 from .check import in_game_key
-from .vault import body_hash
 
 HOST, PORT = "127.0.0.1", 31414
 # Bytes per apply call: the bridge's WebRTC channel takes 64 KB a message and each query 10 s.
@@ -171,7 +170,7 @@ def plan(documents, world):
     for k, document in have.items():
         if k[0] != "JournalEntryPage" or "markdown" not in document:
             continue
-        current = body_hash(document["markdown"])
+        current = page_hash(document["markdown"])
         target = want.get(k, {}).get("data", {}).get("flags", {}).get("ttrpg", {}).get("exported")
         if current != (document.get("flags") or {}).get("exported") and current != target:
             edited.append(document)
@@ -337,6 +336,11 @@ def sync(root, backend, apply=False, force=False):
     steps = plan(desired(exporter), world)
     steps.update(world_state(exporter, backend, world))
     if force:
+        # Overwrite what changed in Foundry with the notes, even where the notes did not change.
+        want = {key(document): document for document in desired(exporter)}
+        queued = {key(document) for document in steps["update"]}
+        steps["update"] += [want[key(document)] for document in steps["edited"]
+                            if key(document) in want and key(document) not in queued]
         steps["clocks"].update({key: clocks(exporter)[key] for key in (c["id"] for c in steps["clocks_edited"])})
     if apply and (steps["edited"] or steps["clocks_edited"]) and not force:
         return steps, None

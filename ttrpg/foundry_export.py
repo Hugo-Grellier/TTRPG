@@ -12,6 +12,7 @@ lets changes made in Foundry come back to the repository.
 import hashlib
 import json
 import re
+from html import escape
 import shutil
 import string
 import subprocess
@@ -66,6 +67,11 @@ def foundry_id(*parts):
     """A stable 16-character Foundry id."""
     number = int.from_bytes(hashlib.sha256(":".join(parts).encode()).digest(), "big")
     return "".join(ALPHABET[(number >> (6 * i)) % len(ALPHABET)] for i in range(16))
+
+
+def page_hash(markdown):
+    """Hash of a page's Markdown, blind to blank-line runs (Foundry's editor and appends vary them)."""
+    return body_hash(re.sub(r"\n{3,}", "\n\n", markdown))
 
 
 def exported(note):
@@ -153,18 +159,35 @@ class Exporter:
     def field(self, name):
         return self.label.get("fields", {}).get(name, name)
 
-    def html(self, markdown):
-        """Render Markdown to HTML, turning callouts into secrets and labelled blockquotes."""
+    def callouts(self, markdown):
+        """Callouts as HTML blocks: secrets as Foundry secrets, others as labelled blockquotes. The
+        callout's own title (`> [!question] Title`) is kept in data-title for the way back."""
         secret = iter(range(1, 10_000))
 
         def callout(match):
             kind, inner = match[1].lower(), re.sub(r"^> ?", "", match[2], flags=re.M)
-            body = self.markdown.render(inner)
+            own = match[0].split("\n", 1)[0].split("]", 1)[1].strip()
+            body = self.markdown.render(inner).strip()
+            attr = f' data-title="{escape(own)}"' if own else ""
             if kind == "secret":
-                return f'<section class="secret" id="secret-{next(secret)}">{body}</section>\n\n'
-            title = self.label.get(kind, kind.capitalize())
-            return f'<blockquote class="callout-{kind}">' + (f"<p><strong>{title}</strong></p>" if title else "") + f"{body}</blockquote>\n\n"
-        return self.markdown.render(CALLOUT.sub(callout, self.cite(markdown)))
+                heading = f"<p><strong>{escape(own)}</strong></p>" if own else ""
+                return f'<section class="secret" id="secret-{next(secret)}"{attr}>{heading}{body}</section>\n\n'
+            label = self.label.get(kind, kind.capitalize())
+            title = ": ".join(part for part in (label, escape(own)) if part)
+            return f'<blockquote class="callout-{kind}"{attr}>' + (f"<p><strong>{title}</strong></p>" if title else "") + f"{body}</blockquote>\n\n"
+        return CALLOUT.sub(callout, markdown)
+
+    def foundry_markdown(self, markdown):
+        """The page Markdown Foundry stores: it renders the page's HTML from it with its own converter,
+        which knows neither callouts nor src: links, so those go in as HTML (foundry_sync reverses them)."""
+        sources = self.config.get("sources") or {}
+        cited = re.sub(r"\[([^\]]*)\]\((" + SOURCE.pattern + r")\)",
+                       lambda m: f'<span data-src="{m[3]}#p{m[4]}">{m[1]} ({sources.get(m[3], {}).get("title", m[3])}, p. {m[4]})</span>', markdown)
+        return self.callouts(cited)
+
+    def html(self, markdown):
+        """Render Markdown to HTML, turning callouts into secrets and labelled blockquotes."""
+        return self.markdown.render(self.callouts(self.cite(markdown)))
 
     def page(self, note):
         entry, page = self.pages[note.id]
@@ -174,17 +197,17 @@ class Exporter:
         if players:
             # Clients receive a page's raw text: a page players can read carries no secrets.
             body = CALLOUT.sub(lambda m: "" if m[1].lower() == "secret" else m[0], body)
-        markdown = self.convert((header + "\n\n" if header else "") + body)
+        markdown = self.foundry_markdown(self.convert((header + "\n\n" if header else "") + body))
         return {
             "_id": page, "_key": f"!journal.pages!{entry}.{page}", "name": note.meta.get("title") or note.id,
             "type": "text", "title": {"show": True, "level": 1},
-            "text": {"format": 2, "markdown": markdown, "content": self.html(markdown)},
+            "text": {"format": 2, "markdown": markdown, "content": self.markdown.render(markdown)},
             # A GM page is explicitly none: inheriting would give it the entry's level, limited as soon as
             # one page of the entry is shown to players (and clients receive the text of what they can see).
             "ownership": {"default": 2 if players else 0},
             # The way back compares against these: what was exported, and the repository body it came from.
             "flags": {"ttrpg": {"id": note.id, "path": note.rel, "header": self.convert(header),
-                                "exported": body_hash(markdown), "body": body_hash(body)}},
+                                "exported": page_hash(markdown), "body": body_hash(body)}},
             "sort": 0,
         }
 
@@ -216,7 +239,7 @@ class Exporter:
         pages = [{"_id": foundry_id(self.module_id, "discovered", note.id), "_key": f"!journal.pages!{entry}.{foundry_id(self.module_id, 'discovered', note.id)}",
                   "name": note.meta.get("title") or note.id, "type": "text", "title": {"show": True, "level": 1},
                   "text": {"format": 2, "markdown": "", "content": ""}, "ownership": {"default": 2}, "sort": (index + 1) * 100,
-                  "flags": {"ttrpg": {"discovered": note.id, "path": note.rel, "exported": body_hash("")}}}
+                  "flags": {"ttrpg": {"discovered": note.id, "path": note.rel, "exported": page_hash("")}}}
                  for index, note in enumerate(notes)]
         return {"_id": entry, "_key": f"!journal!{entry}", "name": self.label["discovered"], "pages": pages,
                 "ownership": {"default": 2}, "sort": (len(LABELS["en"]) + 1) * 100,

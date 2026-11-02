@@ -120,7 +120,7 @@ class ExportTest(unittest.TestCase):
             faction = exporter.pages["f"]
             self.assertIn(f"@UUID[JournalEntry.{faction[0]}.JournalEntryPage.{faction[1]}]{{les Lames}}", oleg["markdown"])
             self.assertIn("@UUID[JournalEntry.J.JournalEntryPage.P]{Page}", oleg["markdown"])
-            self.assertIn("[p. 3](src:km#p3)", oleg["markdown"])
+            self.assertIn('<span data-src="km#p3">p. 3 (KM, p. 3)</span>', oleg["markdown"])
             self.assertIn("p. 3 (KM, p. 3)", oleg["content"])
             self.assertIn('<section class="secret" id="secret-1"><p>Il ment.</p>', oleg["content"])
             self.assertIn("**Membres** @UUID[", entries["Factions"]["pages"][0]["text"]["markdown"])
@@ -141,6 +141,22 @@ class ExportTest(unittest.TestCase):
             write(root, "x.png", "png")
             exporter = Exporter(load(root))
             self.assertEqual(reverse_links(exporter.convert(body), exporter), body)
+
+    def test_page_markdown_carries_callouts_and_citations_as_html(self):
+        # Foundry renders a Markdown page's HTML itself, ignoring ours: callouts and citations must be in the Markdown.
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.foundry_sync import from_foundry
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nsources:\n  km: {title: KM (EN), pages: 9}\n")
+            body = "Voir [p. 3](src:km#p3).\n\n> [!secret]\n> Il **ment** ([p. 4](src:km#p4)).\n\n> [!question] Palier du cadeau\n> À trancher."
+            write(root, "npcs/n.md", f"---\ntype: npc\ntitle: Oleg\n---\n{body}\n")
+            exporter = Exporter(load(root))
+            sent = exporter.foundry_markdown(exporter.convert(body))
+            self.assertIn('<section class="secret" id="secret-1"><p>Il <strong>ment</strong> (<span data-src="km#p4">p. 4 (KM (EN), p. 4)</span>).</p></section>', sent)
+            self.assertIn('data-title="Palier du cadeau"><p><strong>Question : Palier du cadeau</strong></p>'.replace(" : ", ": "), sent)
+            self.assertIn('<span data-src="km#p3">p. 3 (KM (EN), p. 3)</span>', sent)
+            self.assertEqual(from_foundry(sent, exporter).strip(), body)
 
 
 class FakeWorld:
