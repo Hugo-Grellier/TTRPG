@@ -150,6 +150,8 @@ class FakeWorld:
         self.docs = {}
         self.settings = settings or {}
         self.time = 0
+        self.calendar = False
+        self.scenes = {}
 
     def sync(self, op, types=None, text=False, **calls):
         if op == "setting":
@@ -165,6 +167,25 @@ class FakeWorld:
         if op == "time":
             self.time = calls.get("worldTime", self.time)
             return {"worldTime": self.time}
+        if op == "calendar":
+            if not self.calendar:
+                return {"active": False}
+            # A toy calendar: 12 months of 31 days, world time 0 = year 0.
+            days = self.time // 86400
+            out = {"active": True, "current": {"year": days // 372, "month": days % 372 // 31, "day": days % 31}}
+            if calls.get("date"):
+                d = calls["date"]
+                out["timestamp"] = (d["year"] * 372 + d["month"] * 31 + d["day"]) * 86400
+            return out
+        if op == "flag":
+            scene = self.scenes.get(calls["uuid"])
+            return {"exists": scene is not None, "value": json.loads(json.dumps(scene)) if scene is not None else None}
+        if op == "merge-flag":
+            scene = self.scenes[calls["uuid"]]
+            for key in calls.get("remove", []):
+                del scene[key]
+            scene.update(json.loads(json.dumps(calls.get("set", {}))))
+            return {"changed": 1}
         if op == "inventory":
             out = []
             for doc in self.docs.values():
@@ -274,6 +295,42 @@ class LiveSyncTest(unittest.TestCase):
             self.assertIn("filled: 3", (Path(root) / "clocks/assaut.md").read_text())
             steps, done = foundry_live.sync(root, world, apply=True)
             self.assertEqual(world.settings[foundry_live.CLOCKS][ours["id"]]["ttrpg"]["value"], 3)
+
+    def test_date_through_simple_calendar(self):
+        from ttrpg import foundry_live
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", 'name: T\nsystem: pf2e\nlanguage: fr\nstart: "4710-02-23"\n')
+            world = FakeWorld()
+            world.calendar = True
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual(world.time, (4710 * 372 + 31 + 22) * 86400)
+            write(root, "sessions/s1.md", '---\ntype: session\ntitle: S1\nday: "2026-11-01"\ningame: "4710-02-25"\n---\nJouée.\n')
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual(world.time, (4710 * 372 + 31 + 24) * 86400)
+
+    def test_discovered_places(self):
+        from ttrpg import foundry_live
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "maps/region.md", "---\ntype: map\ntitle: Région\nfoundry: Scene.SSSSSSSSSSSSSSSS\n---\n")
+            write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\ndiscovered: "yes"\nmap: region\ncells: [3_4]\n---\nSecret de la tour.\n')
+            self.assertIn("must be a quoted grid offset", "\n".join(messages(root)))  # YAML reads 3_4 as 34
+            write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\ndiscovered: "yes"\nmap: region\ncells: ["3_4"]\n---\nSecret de la tour.\n')
+            self.assertEqual(messages(root), [])
+            page = next(p for e in Exporter(load(root)).entries() for p in e["pages"] if p["flags"]["ttrpg"]["id"] == "tour")
+            self.assertEqual(page["ownership"], {"default": 1})
+            write(root, "places/autre.md", "---\ntype: hex\ntitle: Autre\n---\nMJ.\n")
+            other = next(p for e in Exporter(load(root)).entries() for p in e["pages"] if p["flags"]["ttrpg"]["id"] == "autre")
+            self.assertEqual(other["ownership"], {"default": 0})  # not limited through its entry
+            world = FakeWorld()
+            world.scenes["Scene.SSSSSSSSSSSSSSSS"] = {"0_0": {"offset": {"i": 0, "j": 0}, "reveal": True}}  # revealed by the GM
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual(sorted(world.scenes["Scene.SSSSSSSSSSSSSSSS"]), ["0_0", "3_4"])
+            write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\nmap: region\ncells: ["3_4"]\n---\nSecret de la tour.\n')
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual(sorted(world.scenes["Scene.SSSSSSSSSSSSSSSS"]), ["0_0"])
 
     def test_batches_stay_small(self):
         from ttrpg.foundry_live import BATCH, batches

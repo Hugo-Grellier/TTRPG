@@ -80,6 +80,8 @@ def cmd_foundry(args):
         print(f"clock {clock['ttrpg']['path']}: {clock['value']}/{clock['max']}")
     for clock in steps["clocks_edited"]:
         print(f"clock moved in Foundry {clock['ttrpg']['path']}: {clock['value']}/{clock['max']} (pull to keep it)")
+    for change in steps["explore"]:
+        print(f"map {change['uuid']}: reveal {len(change['set'])} cells, hide {len(change['remove'])}")
     if steps["clocks_remove"]:
         print(f"clocks to remove: {len(steps['clocks_remove'])}")
     print(", ".join(f"{len(steps[action])} to {action}" for action in actions) + f", {len(steps['edited'])} pages edited in Foundry")

@@ -125,6 +125,9 @@ def check_fields(campaign, note, report):
     if note_type == "clock" and isinstance(note.get("filled"), int) and isinstance(note.get("segments"), int):
         if not 0 <= note.get("filled") <= note.get("segments"):
             report.error(where, "filled must be between 0 and segments")
+    for cell in note.get("cells") or [] if isinstance(note.get("cells"), list) else []:
+        if not (isinstance(cell, str) and re.fullmatch(r"-?\d+_-?\d+", cell)):
+            report.error(where, f"cells: {cell!r} must be a quoted grid offset \"i_j\" (World Explorer's)")
     if note_type == "npc" and note.get("died") and note.get("state") != "dead":
         report.error(where, "died is set but state is not dead")
 

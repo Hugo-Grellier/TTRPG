@@ -237,24 +237,84 @@ def clocks(exporter):
     return out
 
 
-def world_state(exporter, backend, world=()):
-    """The date and clocks steps: what to set, and what the GM changed in Foundry since the last sync."""
-    steps = {"time": None, "time_ahead": None, "clocks": {}, "clocks_remove": [], "clocks_edited": []}
-    date = current_date(exporter.campaign)
-    if date and exporter.config.get("system") == "pf2e":
+def parse_date(date):
+    year, month, day = (int(part) for part in date.lstrip("-").split("-"))
+    return (-year if date.startswith("-") else year, month, day)
+
+
+def date_step(date, backend, pushed):
+    """(world time to set, or None; True when Foundry's date is past the notes').
+
+    The notes' date wins while Foundry's still shows what the last sync set (or nothing was
+    synced yet); once the GM has moved time on in play, the sync only ever moves it forward.
+    Simple Calendar converts dates when it is active, else the pf2e world clock does.
+    """
+    year, month, day = parse_date(date)
+    calendar = backend.sync(op="calendar", date={"year": year, "month": month - 1, "day": day - 1})
+    if calendar.get("active"):
+        current = calendar["current"]
+        world = (current["year"], current["month"] + 1, current["day"] + 1)
+        target, worldtime = (year, month, day), calendar["timestamp"]
+    else:
         clock = backend.sync(op="setting", key="pf2e.worldClock")["value"] or {}
         now = backend.sync(op="time")["worldTime"]
-        target = world_time(date, clock, now) if clock.get("worldCreatedOn") else None
-        if target is not None:
-            created = datetime.fromisoformat(clock["worldCreatedOn"].replace("Z", "+00:00"))
-            world_day, target_day = (created + timedelta(seconds=now)).date(), (created + timedelta(seconds=target)).date()
-            pushed = next((d.get("flags", {}).get("date") for d in world if d["documentName"] == "Folder"), None)
-            pushed_day = (created + timedelta(seconds=world_time(pushed, clock, now))).date() if pushed else None
-            # Untouched since the last sync (or never synced): follow the notes. Moved on in play: only forward.
-            if target_day != world_day and (pushed_day in (None, world_day) or target_day > world_day):
-                steps["time"] = {"date": date, "worldTime": target}
-            elif target_day < world_day:
-                steps["time_ahead"] = date
+        worldtime = world_time(date, clock, now) if clock.get("worldCreatedOn") else None
+        if worldtime is None:
+            return None, False
+        created = datetime.fromisoformat(clock["worldCreatedOn"].replace("Z", "+00:00"))
+        offset = YEAR_OFFSET[clock.get("dateTheme")]
+        shown = (created + timedelta(seconds=now)).date()
+        world, target = (shown.year + offset, shown.month, shown.day), (year, month, day)
+    if target != world and (pushed in (None, world) or target > world):
+        return worldtime, False
+    return None, target < world
+
+
+def explored(exporter):
+    """World Explorer cells to reveal, per map scene: those of the places the PCs discovered."""
+    out = {}
+    for note in exporter.notes:
+        if note.get("discovered") != "yes" or not note.get("map") or not note.get("cells"):
+            continue
+        scene = str(exporter.campaign.notes[note.get("map")].get("foundry") or "") if note.get("map") in exporter.campaign.notes else ""
+        if not scene.startswith("Scene."):
+            continue
+        for cell in note.get("cells"):
+            if not isinstance(cell, str) or cell.count("_") != 1:
+                continue  # the checker reports it
+            i, j = (int(part) for part in cell.split("_"))
+            out.setdefault(scene, {})[f"{i}_{j}"] = {"offset": {"i": i, "j": j}, "reveal": True, "ttrpg": {"id": note.id}}
+    return out
+
+
+def world_state(exporter, backend, world=()):
+    """The date and clocks steps: what to set, and what the GM changed in Foundry since the last sync."""
+    steps = {"time": None, "time_ahead": None, "clocks": {}, "clocks_remove": [], "clocks_edited": [], "explore": []}
+    # Map exploration: only the cells the sync revealed are ever hidden again; the GM's stay.
+    wanted = explored(exporter)
+    scenes = set(wanted) | {d["parent"] for d in world if d.get("parent", "").startswith("Scene.")}
+    for note in exporter.notes:
+        if note.type == "map" and str(note.get("foundry") or "").startswith("Scene."):
+            scenes.add(note.get("foundry"))
+    for scene in sorted(scenes):
+        current = backend.sync(op="flag", uuid=scene, scope="world-explorer", key="gridData")
+        if not current["exists"]:
+            continue
+        cells = current["value"] or {}
+        want = wanted.get(scene, {})
+        ours = {key for key, value in cells.items() if isinstance(value, dict) and value.get("ttrpg")}
+        change = {key: value for key, value in want.items() if cells.get(key) != value}
+        remove = sorted(ours - set(want))
+        if change or remove:
+            steps["explore"].append({"uuid": scene, "set": change, "remove": remove})
+    date = current_date(exporter.campaign)
+    if date:
+        pushed = next((d.get("flags", {}).get("date") for d in world if d["documentName"] == "Folder"), None)
+        worldtime, ahead = date_step(date, backend, parse_date(pushed) if pushed else None)
+        if worldtime is not None:
+            steps["time"] = {"date": date, "worldTime": worldtime}
+        if ahead:
+            steps["time_ahead"] = date
     try:
         current = backend.sync(op="setting", key=CLOCKS)["value"] or {}
     except SystemExit as error:
@@ -289,6 +349,8 @@ def sync(root, backend, apply=False, force=False):
                     done[name] += value
         if steps["time"]:
             backend.sync(op="time", worldTime=steps["time"]["worldTime"])
+        for change in steps["explore"]:
+            backend.sync(op="merge-flag", scope="world-explorer", key="gridData", **change)
         if steps["clocks"] or steps["clocks_remove"]:
             backend.sync(op="merge-setting", key=CLOCKS, set=steps["clocks"], remove=steps["clocks_remove"])
     return steps, done

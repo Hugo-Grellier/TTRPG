@@ -33,18 +33,30 @@ types:
     stats: {kind: str}
   region:
     region: {kind: ref, to: [region], inverse: subregions}
+    discovered: {kind: enum, values: ["yes", "no"], default: "no"}
+    map: {kind: ref, to: [map]}
+    cells: {kind: list}
   hex:
     coord: {kind: str}
     terrain: {kind: str}
     region: {kind: ref, to: [region], inverse: hexes}
+    discovered: {kind: enum, values: ["yes", "no"], default: "no"}
+    map: {kind: ref, to: [map]}
+    cells: {kind: list}
   settlement:
     region: {kind: ref, to: *places, inverse: settlements}
     leader: {kind: ref, to: [npc]}
     level: {kind: int}
     population: {kind: int}
     government: {kind: str}
+    discovered: {kind: enum, values: ["yes", "no"], default: "no"}
+    map: {kind: ref, to: [map]}
+    cells: {kind: list}
   location:
     in: {kind: ref, to: *places, inverse: contains}
+    discovered: {kind: enum, values: ["yes", "no"], default: "no"}
+    map: {kind: ref, to: [map]}
+    cells: {kind: list}
   npc:
     state: {kind: enum, values: [alive, dead, missing, unknown], default: alive}
     level: {kind: int}

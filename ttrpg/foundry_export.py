@@ -179,7 +179,9 @@ class Exporter:
             "_id": page, "_key": f"!journal.pages!{entry}.{page}", "name": note.meta.get("title") or note.id,
             "type": "text", "title": {"show": True, "level": 1},
             "text": {"format": 2, "markdown": markdown, "content": self.html(markdown)},
-            "ownership": {"default": 2 if players else -1},
+            # A place the PCs discovered: players see its title and map pins, not its text. A GM page is
+            # explicitly none: inheriting would give it the entry's level, limited as soon as one page is shown.
+            "ownership": {"default": 2 if players else 1 if note.get("discovered") == "yes" else 0},
             # The way back compares against these: what was exported, and the repository body it came from.
             "flags": {"ttrpg": {"id": note.id, "path": note.rel, "header": self.convert(header),
                                 "exported": body_hash(markdown), "body": body_hash(body)}},
@@ -198,7 +200,7 @@ class Exporter:
                 page["sort"] = (index + 1) * 100
             yield {
                 "_id": entry, "_key": f"!journal!{entry}", "name": self.label[category], "pages": pages,
-                "ownership": {"default": 1 if any(page["ownership"]["default"] == 2 for page in pages) else 0},
+                "ownership": {"default": 1 if any(page["ownership"]["default"] >= 1 for page in pages) else 0},
                 "sort": (order + 1) * 100, "flags": {"ttrpg": {"category": category}}, "folder": None,
             }
 
