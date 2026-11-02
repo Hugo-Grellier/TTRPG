@@ -70,7 +70,9 @@ it drafts every subject that has no note yet.
   fact: `> [!question]` for what the GM must decide, `> [!idea]` for a
   suggestion. Where pages contradict each other, give both, cited, in a
   `> [!question]`, and never state either version as fact elsewhere in the
-  note, In brief included.
+  note, In brief and a scene's mechanics included (Foundry and the PDF often
+  differ on a DC or a threshold: write both values where the number is used,
+  e.g. "Influence 6 (PDF) ou 8 (Foundry)").
 - A name with no official translation in `glossary.tsv` keeps the source's
   spelling: never invent a French name for a proper name, a creature or a
   game term (*Old Sharptooth* stays *Old Sharptooth*). Names of documents
@@ -107,7 +109,8 @@ it drafts every subject that has no note yet.
   map, an index order) are written as such ("probablement la zone 06"), never
   as if the text gave them.
 - PDF citations `src:id#pN` use the PDF page, the number of the file in
-  `.cache/sources/<id>/`, not the printed folio.
+  `.cache/sources/<id>/` unpadded (`p032.txt` → `#p32`), not the printed
+  folio.
 - Do not change `adventure/` or the stat blocks; do not mark anything played.
 
 ## Finish

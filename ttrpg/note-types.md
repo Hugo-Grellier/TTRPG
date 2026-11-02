@@ -21,9 +21,10 @@ column for a new language), identically in every note, in this order. Leave
 out a section the sources say nothing about; in an original note, write the
 gap as a `> [!question]` instead. Facts that fit a frontmatter field (level,
 ancestry, location, factions...) go there, not only in prose. Fields hold the
-current state: `location` is where the subject is now in play (the
-adventure's starting point before play); its moves over the campaign go in
-In the campaign.
+current state: before play, the state when the adventure begins (where the
+NPC is in chapter 1, the factions they belong to then); moves and later
+allegiances go in In the campaign. `location` is a place note: for a room or
+keyed area, the place that contains it.
 
 Each fact lives in the note of its subject; other notes say in one line what
 it means for them and link it. A scene's read-aloud text, mechanics, DCs,
@@ -33,13 +34,14 @@ faction's members keep their own story in their notes.
 
 Every paragraph or list item ends with the sources it comes from,
 `([[ap-page]])` or `([p. N](src:id#pN))`, N being the PDF page (what a PDF
-viewer opens, not the printed folio); the Sources section lists every page
+viewer opens, not the printed folio), unpadded (`#p32`); the Sources section lists every page
 that says something about the subject. An original note has none.
 
 Name items, spells, actions, conditions and creatures as the game's edition
 in the campaign language names them, keeping the Foundry link:
-`@UUID[Compendium.pf2e.equipment-srd.Item.…]{Broche de protection}`. Where
-that name is unknown, keep the source's and add `> [!question]`. The names
+`@UUID[Compendium.pf2e.equipment-srd.Item.…]{Broche de défense}`. Where
+that name is unknown, keep the source's (no question needed); never drop the
+thing or invent a name. The names
 players see in Foundry are in `glossary.tsv` (`ttrpg glossary`: kind, Foundry
 id, English, translation, and the remaster name when the English one is
 pre-remaster), from pathfinder-fr and Archives of Nethys: look them up there,
