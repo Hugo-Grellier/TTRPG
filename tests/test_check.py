@@ -319,10 +319,12 @@ class LiveSyncTest(unittest.TestCase):
             self.assertIn("must be a quoted grid offset", "\n".join(messages(root)))  # YAML reads 3_4 as 34
             write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\ndiscovered: "yes"\nmap: region\ncells: ["3_4"]\n---\nSecret de la tour.\n')
             self.assertEqual(messages(root), [])
-            page = next(p for e in Exporter(load(root)).entries() for p in e["pages"] if p["flags"]["ttrpg"]["id"] == "tour")
-            self.assertEqual(page["ownership"], {"default": 1})
+            entries = {e["name"]: e for e in Exporter(load(root)).entries()}
+            self.assertEqual(entries["Lieux"]["pages"][0]["ownership"], {"default": 0})  # the GM text stays hidden
+            stub = entries["Lieux découverts"]["pages"][0]
+            self.assertEqual((stub["name"], stub["text"]["markdown"], stub["ownership"]), ("Tour", "", {"default": 2}))
             write(root, "places/autre.md", "---\ntype: hex\ntitle: Autre\n---\nMJ.\n")
-            other = next(p for e in Exporter(load(root)).entries() for p in e["pages"] if p["flags"]["ttrpg"]["id"] == "autre")
+            other = next(p for e in Exporter(load(root)).entries() for p in e["pages"] if p["flags"]["ttrpg"].get("id") == "autre")
             self.assertEqual(other["ownership"], {"default": 0})  # not limited through its entry
             world = FakeWorld()
             world.scenes["Scene.SSSSSSSSSSSSSSSS"] = {"0_0": {"offset": {"i": 0, "j": 0}, "reveal": True}}  # revealed by the GM

@@ -112,7 +112,7 @@ What goes in each:
 - **Foundry fields** (synced by `ttrpg foundry apply`): npc and item `stats`
   is the compendium uuid a world copy is made from (npc `adjust`: `elite` or
   `weak`); npc `owners` lists the players (Foundry user names) who control
-  it; a place's `discovered: "yes"` shows its title and pins to players, and
+  it; a place's `discovered: "yes"` gives players a page with its title only, and
   its `map` and `cells` (World Explorer offsets `"i_j"`) reveal it on that map.
 - **Events** are dated in-game (`date`); `played: "yes"` only after a session.
   Planned events take dates from `start` in `campaign.yaml`.

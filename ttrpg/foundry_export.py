@@ -30,7 +30,7 @@ CATEGORIES = {
     "session": "sessions", "handout": "handouts", "item": "items", "chapter": "chapters", "note": "notes",
 }
 LABELS = {
-    "fr": {"npcs": "PNJ", "factions": "Factions", "places": "Lieux", "quests": "Quêtes", "clocks": "Horloges",
+    "fr": {"npcs": "PNJ", "factions": "Factions", "places": "Lieux", "discovered": "Lieux découverts", "quests": "Quêtes", "clocks": "Horloges",
            "events": "Chronologie", "maps": "Cartes", "scenes": "Scènes", "sessions": "Séances",
            "handouts": "Aides de jeu", "items": "Objets", "chapters": "Chapitres", "notes": "Notes",
            "secret": "Secret", "question": "Question", "idea": "Idée", "note": "Note", "info": "Info",
@@ -50,7 +50,7 @@ LABELS = {
                       "open": "ouverte", "active": "en cours", "done": "terminée", "failed": "échouée",
                       "yes": "oui", "no": "non", "raw": "image seule", "walled": "murée", "lit": "éclairée",
                       "ready": "prête", "battle": "combat", "overview": "vue d'ensemble"}},
-    "en": {"npcs": "NPCs", "factions": "Factions", "places": "Places", "quests": "Quests", "clocks": "Clocks",
+    "en": {"npcs": "NPCs", "factions": "Factions", "places": "Places", "discovered": "Discovered places", "quests": "Quests", "clocks": "Clocks",
            "events": "Timeline", "maps": "Maps", "scenes": "Scenes", "sessions": "Sessions",
            "handouts": "Handouts", "items": "Items", "chapters": "Chapters", "notes": "Notes",
            "secret": "Secret", "question": "Question", "idea": "Idea", "note": "Note", "info": "Info",
@@ -179,9 +179,9 @@ class Exporter:
             "_id": page, "_key": f"!journal.pages!{entry}.{page}", "name": note.meta.get("title") or note.id,
             "type": "text", "title": {"show": True, "level": 1},
             "text": {"format": 2, "markdown": markdown, "content": self.html(markdown)},
-            # A place the PCs discovered: players see its title and map pins, not its text. A GM page is
-            # explicitly none: inheriting would give it the entry's level, limited as soon as one page is shown.
-            "ownership": {"default": 2 if players else 1 if note.get("discovered") == "yes" else 0},
+            # A GM page is explicitly none: inheriting would give it the entry's level, limited as soon as
+            # one page of the entry is shown to players (and clients receive the text of what they can see).
+            "ownership": {"default": 2 if players else 0},
             # The way back compares against these: what was exported, and the repository body it came from.
             "flags": {"ttrpg": {"id": note.id, "path": note.rel, "header": self.convert(header),
                                 "exported": body_hash(markdown), "body": body_hash(body)}},
@@ -203,6 +203,24 @@ class Exporter:
                 "ownership": {"default": 1 if any(page["ownership"]["default"] >= 1 for page in pages) else 0},
                 "sort": (order + 1) * 100, "flags": {"ttrpg": {"category": category}}, "folder": None,
             }
+        if self.discovered():
+            yield self.discovered()
+
+    def discovered(self):
+        """A players page per place the PCs discovered: its title only, the GM page stays hidden."""
+        notes = sorted((note for note in self.notes if note.get("discovered") == "yes" and note.get("visibility") != "players"),
+                       key=lambda note: str(note.meta.get("title") or note.id).lower())
+        if not notes:
+            return None
+        entry = foundry_id(self.module_id, "entry", "discovered")
+        pages = [{"_id": foundry_id(self.module_id, "discovered", note.id), "_key": f"!journal.pages!{entry}.{foundry_id(self.module_id, 'discovered', note.id)}",
+                  "name": note.meta.get("title") or note.id, "type": "text", "title": {"show": True, "level": 1},
+                  "text": {"format": 2, "markdown": "", "content": ""}, "ownership": {"default": 2}, "sort": (index + 1) * 100,
+                  "flags": {"ttrpg": {"discovered": note.id, "path": note.rel, "exported": body_hash("")}}}
+                 for index, note in enumerate(notes)]
+        return {"_id": entry, "_key": f"!journal!{entry}", "name": self.label["discovered"], "pages": pages,
+                "ownership": {"default": 2}, "sort": (len(LABELS["en"]) + 1) * 100,
+                "flags": {"ttrpg": {"category": "discovered"}}, "folder": None}
 
     def write(self, out):
         out = Path(out)
