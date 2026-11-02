@@ -143,6 +143,74 @@ class ExportTest(unittest.TestCase):
             self.assertEqual(reverse_links(exporter.convert(body), exporter), body)
 
 
+class FakeWorld:
+    """The sync-world tool over an in-memory world."""
+
+    def __init__(self):
+        self.docs = {}
+
+    def sync(self, op, types=None, text=False, **calls):
+        if op == "inventory":
+            out = []
+            for doc in self.docs.values():
+                if types and doc["documentName"] not in types:
+                    continue
+                item = {"documentName": doc["documentName"], "_id": doc["_id"], "flags": doc["data"]["flags"]["ttrpg"]}
+                if doc.get("parent"):
+                    item["parent"] = doc["parent"]
+                if text and doc["documentName"] == "JournalEntryPage":
+                    item["markdown"] = doc["data"]["text"]["markdown"]
+                out.append(item)
+            return {"documents": out}
+        done = {"created": 0, "updated": 0, "deleted": 0}
+        for doc in calls.get("create", []) + calls.get("update", []):
+            self.docs[doc["_id"]] = json.loads(json.dumps(doc))
+        done["created"], done["updated"] = len(calls.get("create", [])), len(calls.get("update", []))
+        for ref in calls.get("delete", []):
+            self.docs = {k: d for k, d in self.docs.items() if k != ref["_id"] and d.get("parent") != f"{ref['documentName']}.{ref['_id']}"}
+            done["deleted"] += 1
+        return done
+
+
+class LiveSyncTest(unittest.TestCase):
+    def test_plan_apply_edit_and_pull(self):
+        from ttrpg import foundry_live
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "factions/f.md", "---\ntype: faction\ntitle: Lames\n---\nBut.\n")
+            write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nVoir [[f]].\n")
+            world = FakeWorld()
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertEqual(done, {"created": 5, "updated": 0, "deleted": 0})  # folder, 2 entries, 2 pages
+            pages = {d["_id"] for d in world.docs.values() if d["documentName"] == "JournalEntryPage"}
+            self.assertEqual(pages, {page for _, page in Exporter(load(root)).pages.values()})
+            steps, _ = foundry_live.sync(root, world)
+            self.assertEqual([len(steps[a]) for a in ("create", "update", "delete", "edited")], [0, 0, 0, 0])
+            write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nVoir [[f]] demain.\n")
+            (Path(root) / "factions/f.md").unlink()
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertEqual(done, {"created": 0, "updated": 1, "deleted": 1})  # the factions entry, its page with it
+            page = next(d for d in world.docs.values() if d["documentName"] == "JournalEntryPage")
+            page["data"]["text"]["markdown"] += "\n\nAjouté dans Foundry."
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertIsNone(done)
+            self.assertEqual(len(steps["edited"]), 1)
+            self.assertEqual(foundry_live.pull(root, world)["updated"], ["npcs/n.md"])
+            self.assertIn("Ajouté dans Foundry.", (Path(root) / "npcs/n.md").read_text())
+            steps, done = foundry_live.sync(root, world, apply=True)
+            self.assertEqual((len(steps["edited"]), done["updated"]), (0, 1))
+
+    def test_batches_stay_small(self):
+        from ttrpg.foundry_live import BATCH, batches
+        docs = [{"documentName": "JournalEntryPage", "_id": str(i), "data": {"text": "x" * 10_000}} for i in range(10)]
+        calls = list(batches("create", docs))
+        self.assertGreater(len(calls), 2)
+        self.assertTrue(all(len(json.dumps(call)) < BATCH + 11_000 for call in calls))
+        self.assertEqual(sum(len(call["create"]) for call in calls), 10)
+
+
 class HtmlTest(unittest.TestCase):
     def test_foundry_html(self):
         html = ('<h2>Feast</h2><p>See @UUID[Actor.x]{Oleg} and <strong>run</strong>.</p>'

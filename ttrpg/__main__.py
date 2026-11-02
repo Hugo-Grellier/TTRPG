@@ -54,6 +54,33 @@ def cmd_pull_foundry(args):
     return 1 if report["conflicts"] else 0
 
 
+def cmd_foundry(args):
+    from . import foundry_live
+    backend = foundry_live.Backend(args.host, args.port)
+    if args.action == "pull":
+        report = foundry_live.pull(args.root, backend)
+        for rel in report["updated"]:
+            print(f"updated {rel}")
+        for rel in report["conflicts"]:
+            print(f"conflict {rel}: changed in the repository and in Foundry; repository kept")
+        print(f"{len(report['updated'])} updated, {len(report['conflicts'])} conflicts, {report['unchanged']} unchanged; review with git diff")
+        return 1 if report["conflicts"] else 0
+    steps, done = foundry_live.sync(args.root, backend, apply=args.action == "apply", force=args.force)
+    for action in ("create", "update", "delete"):
+        for document in steps[action]:
+            print(f"{action} {foundry_live.label(document)}")
+    for document in steps["edited"]:
+        print(f"edited in Foundry {foundry_live.label(document)}")
+    print(f"{len(steps['create'])} to create, {len(steps['update'])} to update, {len(steps['delete'])} to delete, "
+          f"{len(steps['edited'])} pages edited in Foundry")
+    if args.action == "apply" and done is None:
+        print("nothing applied: run `ttrpg foundry pull` first (or --force to overwrite the Foundry edits)")
+        return 1
+    if done:
+        print(f"applied: {done['created']} created, {done['updated']} updated, {done['deleted']} deleted")
+    return 0
+
+
 def cmd_rename(args):
     changed = rename(args.root, args.old, args.new)
     print(f"{args.old} -> {args.new}; links updated in {changed} notes")
@@ -200,6 +227,14 @@ def main(argv=None):
     p.add_argument("world", help="Foundry world directory (Data/worlds/<id>)")
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_pull_foundry)
+
+    p = sub.add_parser("foundry", help="bring a running Foundry world up to date with the notes (through foundry-mcp)")
+    p.add_argument("action", choices=["plan", "apply", "pull"])
+    p.add_argument("--root", default=".")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=31414, help="foundry-mcp backend control port")
+    p.add_argument("--force", action="store_true", help="apply even over pages edited in Foundry")
+    p.set_defaults(func=cmd_foundry)
 
     p = sub.add_parser("rename", help="rename a note and update every link to it")
     p.add_argument("old")

@@ -51,38 +51,47 @@ def page_markdown(page):
     return to_markdown(text.get("content") or "")
 
 
+def pull_page(exporter, entry_id, page, report):
+    """Write one exported page edited in Foundry back into its note; record the outcome in report."""
+    campaign = exporter.campaign
+    flags = (page.get("flags") or {}).get("ttrpg")
+    # Flags are editable in Foundry: only trust a page sitting at the ids exported for its note.
+    if not flags or exporter.pages.get(flags.get("id")) != (entry_id, page.get("_id")):
+        return
+    markdown = page_markdown(page)
+    if body_hash(markdown) == flags.get("exported"):
+        report["unchanged"] += 1
+        return
+    note = campaign.notes.get(flags["id"])
+    if note is None:
+        report["missing"].append(flags["id"])
+        return
+    has_secret = any(match[1].lower() == "secret" for match in CALLOUT.finditer(note.body))
+    players = note.get("visibility") == "players"
+    if body_hash(note.body) != flags.get("body") or (players and has_secret):
+        # Repository wins; a player page was exported without its secrets, so its text cannot replace the note.
+        report["conflicts"].append(note.rel)
+        return
+    header = flags.get("header") or ""
+    if header and markdown.startswith(header):
+        markdown = markdown[len(header):]
+    lead = note.body[: len(note.body) - len(note.body.lstrip("\n"))]
+    body = lead + reverse_links(markdown.strip(), exporter) + "\n"
+    meta = dict(note.meta)
+    if meta.get("origin") == "ap" and meta.get("source_hash") and body_hash(body) != meta["source_hash"]:
+        meta["origin"] = "modified"
+    note.path.write_text(vault.join_frontmatter(meta, body), encoding="utf-8")
+    report["updated"].append(note.rel)
+
+
+def new_report():
+    return {"updated": [], "conflicts": [], "unchanged": 0, "missing": []}
+
+
 def pull(root, world_dir):
-    campaign = vault.load(root)
-    exporter = Exporter(campaign)
-    report = {"updated": [], "conflicts": [], "unchanged": 0, "missing": []}
+    exporter = Exporter(vault.load(root))
+    report = new_report()
     for entry in unpack(Path(world_dir) / "data" / "journal"):
         for page in entry.get("pages", []):
-            flags = (page.get("flags") or {}).get("ttrpg")
-            # Flags are editable in Foundry: only trust a page sitting at the ids exported for its note.
-            if not flags or exporter.pages.get(flags.get("id")) != (entry.get("_id"), page.get("_id")):
-                continue
-            markdown = page_markdown(page)
-            if body_hash(markdown) == flags.get("exported"):
-                report["unchanged"] += 1
-                continue
-            note = campaign.notes.get(flags["id"])
-            if note is None:
-                report["missing"].append(flags["id"])
-                continue
-            has_secret = any(match[1].lower() == "secret" for match in CALLOUT.finditer(note.body))
-            players = note.get("visibility") == "players"
-            if body_hash(note.body) != flags.get("body") or (players and has_secret):
-                # Repository wins; a player page was exported without its secrets, so its text cannot replace the note.
-                report["conflicts"].append(note.rel)
-                continue
-            header = flags.get("header") or ""
-            if header and markdown.startswith(header):
-                markdown = markdown[len(header):]
-            lead = note.body[: len(note.body) - len(note.body.lstrip("\n"))]
-            body = lead + reverse_links(markdown.strip(), exporter) + "\n"
-            meta = dict(note.meta)
-            if meta.get("origin") == "ap" and meta.get("source_hash") and body_hash(body) != meta["source_hash"]:
-                meta["origin"] = "modified"
-            note.path.write_text(vault.join_frontmatter(meta, body), encoding="utf-8")
-            report["updated"].append(note.rel)
+            pull_page(exporter, entry.get("_id"), page, report)
     return report
