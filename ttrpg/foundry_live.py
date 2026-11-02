@@ -86,6 +86,7 @@ def actors_and_items(exporter):
         title = note.meta.get("title") or note.id
         flags = {"id": note.id, "path": note.rel}
         owners = {f"@{name}": 3 for name in note.get("owners") or []}
+        flags["owners"] = sorted(note.get("owners") or [])
         stats, foundry = note.get("stats"), str(note.get("foundry") or "")
         if stats:
             name = "Actor" if note.type == "npc" else "Item"
@@ -113,7 +114,7 @@ def actors_and_items(exporter):
         if note.type == "npc" and note.get("state") == "dead":
             dead = DEAD.get(exporter.config.get("language"), DEAD["en"])
             documents.append(managed("ActiveEffect", foundry_id(exporter.module_id, "dead", note.id),
-                                     {"name": dead, "img": "icons/svg/skull.svg", "statuses": ["dead"], "flags": {"ttrpg": flags}},
+                                     {"name": dead, "img": "icons/svg/skull.svg", "statuses": ["dead"], "flags": {"ttrpg": {"id": note.id, "path": note.rel}}},
                                      f"Actor.{documents[-1]['_id']}"))
     return documents
 
@@ -148,6 +149,14 @@ def plan(documents, world):
     release = [{"documentName": k[0], "_id": k[1], "data": {"flags.-=ttrpg": None}, "flags": have[k]["flags"]} for k in gone
                if (have[k].get("flags") or {}).get("adopted")]
     gone -= {key(document) for document in release}
+    # Ownership the sync granted and the notes no longer give is taken back (level 0).
+    for document in update + release:
+        if document["documentName"] not in ("Actor", "Item"):
+            continue
+        before = set((have[key(document)].get("flags") or {}).get("owners") or [])
+        now = set(((document.get("data") or {}).get("flags") or {}).get("ttrpg", {}).get("owners") or [])
+        if before - now:
+            document["data"]["ownership"] = {**document["data"].get("ownership", {}), **{f"@{name}": 0 for name in sorted(before - now)}}
     # Deleting an entry deletes its pages.
     delete = [{k: v for k, v in document.items() if k != "markdown"} for k, document in have.items()
               if k in gone and not (document.get("parent") and tuple(document["parent"].split(".")) in gone)]

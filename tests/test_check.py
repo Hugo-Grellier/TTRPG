@@ -223,9 +223,14 @@ class LiveSyncTest(unittest.TestCase):
             self.assertEqual(actors["AAAAAAAAAAAAAAAA"]["data"]["ownership"], {"@Alice": 3})
             dead = next(d for d in steps["create"] if d["documentName"] == "ActiveEffect")
             self.assertEqual((dead["parent"], dead["data"]["statuses"], dead["data"]["name"]), ("Actor.AAAAAAAAAAAAAAAA", ["dead"], "Mort"))
+            write(root, "npcs/amiri.md", "---\ntype: npc\ntitle: Amiri\nfoundry: Actor.AAAAAAAAAAAAAAAA\nowners: [Bob]\nstate: dead\n---\nBarbare.\n")
+            steps, _ = foundry_live.sync(root, world, apply=True)
+            amiri = next(d for d in steps["update"] if d["documentName"] == "Actor")
+            self.assertEqual(amiri["data"]["ownership"], {"@Bob": 3, "@Alice": 0})
             write(root, "npcs/amiri.md", "---\ntype: npc\ntitle: Amiri\nfoundry: Actor.AAAAAAAAAAAAAAAA\n---\nBarbare.\n")
             steps, _ = foundry_live.sync(root, world, apply=True)
             self.assertEqual([d["_id"] for d in steps["release"]], ["AAAAAAAAAAAAAAAA"])
+            self.assertEqual(steps["release"][0]["data"]["ownership"], {"@Bob": 0})  # access taken back
             self.assertEqual([d["documentName"] for d in steps["delete"]], ["ActiveEffect"])
 
     def test_batches_stay_small(self):
