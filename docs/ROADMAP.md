@@ -65,7 +65,7 @@ first real session debriefed end to end.
 The tools know two modes: import an adventure and compile it, or invent a
 small sandbox from an interview. A long original campaign set in Golarion
 needs a third: original material grounded in canon spread over many books.
-Measured against an earlier "campaign bible V0.1" prompt (Westerhold,
+Measured against an earlier "campaign dossier V0.1" prompt (Westerhold,
 Absalom, Kortos, Dahak; November 3, 2026): notes, factions, clocks, secrets,
 check and sync hold the result; research, provenance, PCs, reputation and
 scale are missing. Needed by any large campaign, AP or not. The owner has
@@ -104,7 +104,7 @@ Lost Omens, APs, Society, adventures).
   Kingmaker compile, a quality checklist (open structure, independent arcs,
   canon cited, geography and travel times, five-PC encounters), report from
   `ttrpg questions`.
-- **Verify:** the bible prompt run on a scratch campaign, then compared with
+- **Verify:** the dossier prompt run on a scratch campaign, then compared with
   this list.
 - **Later:** a hex grid over any region map (Kortos has no module hex map),
   once a sandbox reaches hexploration in play; French names of lore places
