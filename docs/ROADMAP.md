@@ -61,6 +61,55 @@ the probe run by hand. Next: a recorder bot that starts and stops with the
 table's voice channel (needs a bot token, a test server and a host), then a
 first real session debriefed end to end.
 
+### 6 — Large original campaigns grounded in the published setting
+The tools know two modes: import an adventure and compile it, or invent a
+small sandbox from an interview. A long original campaign set in Golarion
+needs a third: original material grounded in canon spread over many books.
+Measured against an earlier "campaign bible V0.1" prompt (Westerhold,
+Absalom, Kortos, Dahak; November 3, 2026): notes, factions, clocks, secrets,
+check and sync hold the result; research, provenance, PCs, reputation and
+scale are missing. Needed by any large campaign, AP or not. The owner has
+the official PDFs (518 files, `~/Downloads/manual/Pathfinder 2e/`: rulebooks,
+Lost Omens, APs, Society, adventures).
+
+- **6a Shared source library.** `ttrpg library index <dir>` extracts every
+  PDF once (pdftotext, per page) into a library outside campaigns
+  (`~/.cache/ttrpg/library/<id>/pNNN.txt` + `catalog.yaml`: id, title, path,
+  pages, category, edition legacy/remaster, language). `ttrpg library search
+  <regex>` returns book, page and line. `ttrpg source add <id>` declares a
+  book in `campaign.yaml` from the catalog (CI has no library, so the
+  declaration stays in the campaign). `pdf-text` becomes the one-book case.
+  Page images on demand (pdftoppm) for maps. Rules lookups and URLs through
+  the Archives of Nethys index the glossary already uses.
+- **6b Provenance per paragraph.** A cited paragraph is canon; `> [!adaptation]`
+  changes canon for this campaign and cites what it changes; `> [!verify]` is
+  unverified (community wiki only, memory); an uncited paragraph in a custom
+  note is original. Custom notes may cite. The export labels them.
+- **6c `ttrpg questions`.** Open `[!question]`, `[!idea]`, `[!verify]` across
+  the campaign, by note; every skill's report and the GM's to-do list use it.
+- **6d Schema for long campaigns.** `pc` type (player, ties to NPCs and
+  factions, ambitions, secrets, arc hooks; filled after session zero);
+  party reputation per faction (GM Core Reputation); renown; `party` size and
+  level in `campaign.yaml` for encounter budgets; a home base's improvements;
+  mysteries with their clues (where each can be found, when it was found,
+  marked by `session-debrief`); `chapter` sections for sandbox arcs.
+- **6e Skill `lore-research`.** A subject (a district, a deity, a faction)
+  gathered from the whole library, remaster first, books that disagree
+  shown side by side in `[!question]`, written as a canon note per
+  `note-types.md`. Same rules as `campaign-compile`, over the library
+  instead of `adventure/`.
+- **6f Large-campaign workflow.** `campaign-create` for a large pitch:
+  research inventory from the library, a decisions note comparing options
+  with a recommendation, drafts (`ttrpg drafts`), agent waves as for the
+  Kingmaker compile, a quality checklist (open structure, independent arcs,
+  canon cited, geography and travel times, five-PC encounters), report from
+  `ttrpg questions`.
+- **Verify:** the bible prompt run on a scratch campaign, then compared with
+  this list.
+- **Later:** a hex grid over any region map (Kortos has no module hex map),
+  once a sandbox reaches hexploration in play; French names of lore places
+  and organizations when no French edition is in the library.
+
 ### Later
 Test of how ready to play generated content is: build a world only from an
 adventure's PDF (Kingmaker or another AP) with these tools, and compare it with
