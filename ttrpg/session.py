@@ -73,6 +73,9 @@ def clock(seconds):
 
 
 def whisper(model, language):
+    # CTranslate2's default allocator (cuda_malloc_async) corrupts memory on the GTX 1080: illegal memory
+    # access with beam search, hangs that need a host reboot (CTranslate2 #2012, #2090). cub_caching runs clean.
+    os.environ.setdefault("CT2_CUDA_ALLOCATOR", "cub_caching")
     try:
         import numpy
         from faster_whisper import WhisperModel
