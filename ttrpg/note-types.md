@@ -160,7 +160,8 @@ What goes in each:
   its `map` and `cells` (World Explorer offsets `"i_j"`) reveal it on that map.
 - **Party**: `party` in `campaign.yaml` is the number of player characters
   and session `level` the party level at that session; encounters are built
-  for both (GM Core encounter budget adjusted per character).
+  for both (GM Core encounter budget adjusted per character): `ttrpg
+  creatures` gives the budgets, each creature's XP and its compendium link.
 - **Events** are dated in-game (`date`). Before `start` in `campaign.yaml`:
   the setting's past, cited canon (or the campaign's own invented history,
   uncited), never played. From `start` on: `played: "no"` is planned (dates

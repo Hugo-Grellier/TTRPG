@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -217,6 +218,45 @@ def cmd_aon(args):
     return 0
 
 
+def cmd_creatures(args):
+    from . import creatures, vault
+    index = library.location().parent / "creatures.json"
+    if args.index:
+        rows = creatures.build(args.index, index)
+        print(f"{len(rows)} creatures and hazards in {index}")
+        return 0
+    if not index.is_file():
+        print(f"no creature index at {index}: run `ttrpg creatures --index <Foundry Data/systems/pf2e>`", file=sys.stderr)
+        return 1
+    campaign = vault.load(args.root) if (Path(args.root) / "campaign.yaml").is_file() else None
+    party = args.party or (campaign and campaign.config.get("party")) or 4
+    party_level = args.party_level
+    if party_level is None and campaign:
+        sessions = sorted((str(n.get("day")), n.get("level")) for n in campaign.notes.values() if n.type == "session" and n.get("level"))
+        party_level = sessions[-1][1] if sessions else None
+    levels = None
+    if args.level:
+        bounds = re.fullmatch(r"(-?\d+)(?:-(-?\d+))?", args.level)
+        if not bounds:
+            print("--level takes a level or a range, e.g. 3, 1-5, -1-2", file=sys.stderr)
+            return 2
+        levels = range(int(bounds[1]), int(bounds[2] or bounds[1]) + 1)
+    elif party_level is not None:
+        levels = range(party_level - 4, party_level + 5)
+    if party_level is not None:
+        budgets = ", ".join(f"{threat} {creatures.budget(party, threat)}" for threat in creatures.THREATS)
+        print(f"party of {party} at level {party_level}: {budgets} XP (GM Core p. 75)")
+    names = creatures.translations(Path(args.root) / "glossary.tsv")
+    rows = creatures.find(json.loads(index.read_text(encoding="utf-8"))["creatures"], levels, args.trait, args.name, args.rarity, args.pack, args.hazards)
+    for row in rows[:args.limit]:
+        cost = creatures.xp(row["level"], party_level) if party_level is not None and not args.hazards else None
+        name = row["name"] + (f" ({names[row['id']]})" if names.get(row["id"]) and names[row["id"]] != row["name"] else "")
+        print(f"{row['level']}\t{cost if cost is not None else ''}\t{name}\t{row['rarity']}\t{', '.join(row['traits'])}\t@UUID[{row['uuid']}]")
+    if len(rows) > args.limit:
+        print(f"... {len(rows)} matches: narrow with --trait, --name or --level", file=sys.stderr)
+    return 0
+
+
 def cmd_source_add(args):
     lib = Path(args.library) if args.library else library.location()
     if args.alias and len(args.books) > 1:
@@ -377,6 +417,20 @@ def main(argv=None):
     p.add_argument("--category", help="e.g. deity, creature, spell, rules, organization")
     p.add_argument("--limit", type=int, default=10)
     p.set_defaults(func=cmd_aon)
+
+    p = sub.add_parser("creatures", help="creatures by level and trait with their XP for the party and compendium link")
+    p.add_argument("--index", metavar="PF2E_SYSTEM_DIR", help="build the index from a Foundry pf2e system directory (once)")
+    p.add_argument("--level", help="level or range, e.g. 3 or 1-5 (default: party level -4 to +4)")
+    p.add_argument("--trait", action="append", default=[], help="required trait (repeatable), e.g. undead")
+    p.add_argument("--name", help="part of the name")
+    p.add_argument("--rarity", choices=["common", "uncommon", "rare", "unique"])
+    p.add_argument("--pack", action="append", default=[], help="part of the compendium name, e.g. monster-core")
+    p.add_argument("--hazards", action="store_true", help="hazards instead of creatures (no XP computed)")
+    p.add_argument("--party", type=int, help="number of PCs (default campaign.yaml party, else 4)")
+    p.add_argument("--party-level", type=int, help="default: the latest session's level")
+    p.add_argument("--limit", type=int, default=60)
+    p.add_argument("--root", default=".")
+    p.set_defaults(func=cmd_creatures)
 
     p = sub.add_parser("source", help="declare library books as sources of the campaign (cite as src:<id>#p<N>)")
     p.add_argument("action", choices=["add"])

@@ -560,3 +560,18 @@ class LibraryTest(unittest.TestCase):
         self.assertEqual(messages(self.campaign), [])
         write(self.campaign, "events/war.md", '---\ntype: event\ntitle: War\ndate: "4719-05-01"\nplayed: "yes"\n---\nPast.\n')
         self.assertEqual(messages(self.campaign), ["played on 4719-05-01, before the campaign starts (4725-01-01): events before start are the setting's past"])
+
+    def test_creatures_budget_and_filters(self):
+        from ttrpg import creatures
+        self.assertEqual([creatures.budget(5, t) for t in creatures.THREATS], [50, 80, 100, 150, 200])
+        self.assertEqual((creatures.xp(1, 3), creatures.xp(8, 3)), (20, None))
+        write(self.books, "pf2e/system.json", json.dumps({"id": "pf2e", "packs": [
+            {"name": "bestiary", "type": "Actor", "path": "packs/bestiary"}, {"name": "iconics", "type": "Actor", "path": "packs/iconics"}]}))
+        docs = [{"_id": "a1", "name": "Ghoul", "type": "npc", "system": {"details": {"level": {"value": 1}}, "traits": {"value": ["undead"], "rarity": "common"}}},
+                {"_id": "a2", "name": "Wolf", "type": "npc", "system": {"details": {"level": {"value": 1}}, "traits": {"value": ["animal"]}}},
+                {"_id": "a3", "name": "Pit", "type": "hazard", "system": {"details": {"level": {"value": 0}}, "traits": {"value": ["trap"]}}},
+                {"_id": "a4", "name": "Hero", "type": "character"}]
+        rows = creatures.build(self.books / "pf2e", self.lib / "creatures.json", log=lambda _: None, unpack=lambda path: docs)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual([r["uuid"] for r in creatures.find(rows, range(0, 3), ["Undead"])], ["Compendium.pf2e.bestiary.Actor.a1"])
+        self.assertEqual([r["name"] for r in creatures.find(rows, hazards=True)], ["Pit"])

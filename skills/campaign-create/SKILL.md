@@ -83,7 +83,9 @@ blocks the work. Then:
 
 Notes follow `tools/ttrpg/schema.yaml` (fields) and `tools/ttrpg/note-types.md`
 (sections). Statistics are Foundry compendium links (`@UUID[Compendium...]`)
-chosen by level, never invented stat blocks.
+chosen by level, never invented stat blocks: `tools/bin/ttrpg creatures
+--party-level N --trait <trait>` lists them with their XP for the party and
+their `@UUID[...]`.
 
 ## Rules
 

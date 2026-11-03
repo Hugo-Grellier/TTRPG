@@ -25,6 +25,8 @@ description: Prepare the next game session from the campaign repository - what t
      Encounters fit the party: `party` in `campaign.yaml` and the last
      session's `level` (GM Core XP budget, adjusted per character beyond
      four); say when a scene's encounter was built for another size.
+     `tools/bin/ttrpg creatures --trait <trait>` prints the budgets and each
+     creature's XP and compendium link; `--name` finds one creature.
    - **Arcs and mysteries**: PC arc hooks and mystery clues this session
      can bring in, each linking its `pc` or `mystery` note.
    - Secrets the PCs may learn this session, in `> [!secret]` blocks.

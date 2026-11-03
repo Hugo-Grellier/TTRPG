@@ -120,7 +120,7 @@ Lost Omens, APs, Society, adventures).
   - *Library for remote agents.* Cloud agents (Codex, Claude on the web) have
     no PDFs: a way to reach the text (a private host, or committed excerpts
     of what a campaign cites).
-  - *Encounters.* Survey existing PF2e encounter builders before writing
+  - *Encounters (done).* Survey existing PF2e encounter builders before writing
     one; then a tool that finds creatures by level and trait offline and
     budgets XP for `party` characters at a level.
   - *Standing.* Structure what reputation does not hold: renown, wealth,

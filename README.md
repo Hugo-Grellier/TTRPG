@@ -14,6 +14,8 @@ tools/bin/ttrpg library index ~/pdfs/Pathfinder         # once: every PDF the GM
 tools/bin/ttrpg library search "Westerhold" --pages     # which books and pages mention it
 tools/bin/ttrpg source add absalom-city-of-lost-omens   # declare a book; cite as src:<id>#p<N>
 tools/bin/ttrpg aon Dahak                               # Archives of Nethys: book, page, URL, legacy/remaster
+tools/bin/ttrpg creatures --index ~/foundrydata/Data/systems/pf2e   # once: index of the system's bestiaries
+tools/bin/ttrpg creatures --party-level 2 --trait undead  # creatures, their XP for the party, compendium links
 tools/bin/ttrpg check
 tools/bin/ttrpg export-foundry --install ~/foundrydata/Data/modules   # journals module
 tools/bin/ttrpg pull-foundry ~/foundrydata/Data/worlds/<world>          # edits made in Foundry -> notes
