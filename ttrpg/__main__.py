@@ -16,7 +16,7 @@ from .foundry_export import export
 from .foundry_import import import_adventure, import_module
 from .foundry_sync import pull
 from .rename import rename
-from . import session
+from . import library, session
 
 TOOLS = Path(__file__).resolve().parent.parent
 
@@ -146,20 +146,72 @@ def cmd_import_foundry(args):
 
 def cmd_pdf_text(args):
     """Extract a PDF page by page into .cache/sources/<id>/ (ignored by Git) for local agents."""
-    out = Path(args.root) / ".cache" / "sources" / args.source
-    out.mkdir(parents=True, exist_ok=True)
-    text = subprocess.run(["pdftotext", "-enc", "UTF-8", args.pdf, "-"], capture_output=True, check=True).stdout.decode("utf-8", "replace")
-    pages = text.split("\f")
-    if pages and not pages[-1].strip():
-        pages.pop()
-    for number, page in enumerate(pages, 1):
-        (out / f"p{number:03}.txt").write_text(page, encoding="utf-8")
+    pages = library.extract(args.pdf, Path(args.root) / ".cache" / "sources" / args.source)
     config_path = Path(args.root) / "campaign.yaml"
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     config.setdefault("sources", {}).setdefault(args.source, {})
-    config["sources"][args.source].update({"title": args.title or Path(args.pdf).stem, "pages": len(pages)})
+    config["sources"][args.source].update({"title": args.title or Path(args.pdf).stem, "pages": pages})
     config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
-    print(f"{len(pages)} pages in {out}; cite as src:{args.source}#p<N>")
+    print(f"{pages} pages in .cache/sources/{args.source}; cite as src:{args.source}#p<N>")
+    return 0
+
+
+def cmd_library(args):
+    lib = Path(args.library) if args.library else library.location()
+    if args.action == "index":
+        if not args.args:
+            print("ttrpg library index <directory>...", file=sys.stderr)
+            return 2
+        library.index(lib, args.args)
+    elif args.action == "list":
+        for book, entry in library.load(lib).items():
+            line = f"{book}\t{entry.get('pages', '?')}\t{entry['title']}"
+            if all(word.lower() in f"{line} {entry['path']}".lower() for word in args.args):
+                print(line)
+    elif args.action == "search":
+        if not args.args:
+            print("ttrpg library search <regex> [--book id-part]", file=sys.stderr)
+            return 2
+        hits = library.search(lib, " ".join(args.args), args.book, not args.case)
+        if args.pages:
+            found = {}
+            for book, page, _ in hits:
+                found.setdefault(book, []).append(page)
+            titles = library.load(lib)
+            for book, pages in found.items():
+                pages = sorted(set(pages))
+                print(f"{book}\t{len(pages)}\t{titles[book]['title']}\t" + " ".join(f"p{n}" for n in pages))
+        else:
+            for count, (book, page, line) in enumerate(hits):
+                if count == args.limit:
+                    print(f"... more than {args.limit} lines: narrow with --book or --pages", file=sys.stderr)
+                    break
+                print(f"{book}#p{page}: {line[:200]}")
+    elif args.action == "page":
+        if len(args.args) != 2:
+            print("ttrpg library page <id> <page>", file=sys.stderr)
+            return 2
+        print(library.render_page(lib, args.args[0], int(args.args[1]), args.dpi))
+    return 0
+
+
+def cmd_aon(args):
+    for name, category, sources, url, summary, edition in library.aon(" ".join(args.query), args.category, args.limit):
+        print(f"{name} [{category}{', ' + edition if edition else ''}] {sources}\n  {url}" + (f"\n  {summary[:300]}" if summary else ""))
+    return 0
+
+
+def cmd_source_add(args):
+    lib = Path(args.library) if args.library else library.location()
+    if args.alias and len(args.books) > 1:
+        print("--as takes a single book", file=sys.stderr)
+        return 2
+    for book in args.books:
+        try:
+            print(library.declare(args.root, lib, book, args.alias))
+        except KeyError:
+            print(f"{book}: not in the library ({lib}); see `ttrpg library list`", file=sys.stderr)
+            return 1
     return 0
 
 
@@ -286,6 +338,31 @@ def main(argv=None):
     p.add_argument("--title", default="")
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_pdf_text)
+
+    p = sub.add_parser("library", help="the GM's PDF library shared by every campaign: index, list, search, page image")
+    p.add_argument("action", choices=["index", "list", "search", "page"])
+    p.add_argument("args", nargs="*", help="index: directories; list: words; search: regex; page: id and page number")
+    p.add_argument("--book", action="append", help="search: only books whose id contains this (repeatable)")
+    p.add_argument("--pages", action="store_true", help="search: one line per book with the pages that match")
+    p.add_argument("--case", action="store_true", help="search: case-sensitive")
+    p.add_argument("--limit", type=int, default=300, help="search: maximum lines")
+    p.add_argument("--dpi", type=int, default=110, help="page: resolution")
+    p.add_argument("--library", help="default $TTRPG_LIBRARY or ~/.local/share/ttrpg/library")
+    p.set_defaults(func=cmd_library)
+
+    p = sub.add_parser("aon", help="search Archives of Nethys (rules, creatures, deities...): name, book and page, URL")
+    p.add_argument("query", nargs="+")
+    p.add_argument("--category", help="e.g. deity, creature, spell, rules, organization")
+    p.add_argument("--limit", type=int, default=10)
+    p.set_defaults(func=cmd_aon)
+
+    p = sub.add_parser("source", help="declare library books as sources of the campaign (cite as src:<id>#p<N>)")
+    p.add_argument("action", choices=["add"])
+    p.add_argument("books", nargs="+", help="library ids (ttrpg library list)")
+    p.add_argument("--as", dest="alias", help="citation id in this campaign, e.g. km")
+    p.add_argument("--root", default=".")
+    p.add_argument("--library")
+    p.set_defaults(func=cmd_source_add)
 
     p = sub.add_parser("transcribe", help="transcribe per-speaker session tracks locally into sessions/<day>/")
     p.add_argument("audio", nargs="+", help="audio files, a directory (Craig export, probe capture) or a Craig zip")

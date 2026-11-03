@@ -475,3 +475,50 @@ class SessionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LibraryTest(unittest.TestCase):
+    def setUp(self):
+        from ttrpg import library
+        self.library = library
+        self.dir = tempfile.TemporaryDirectory()
+        base = Path(self.dir.name)
+        self.books, self.lib, self.campaign = base / "books", base / "lib", base / "campaign"
+        for rel in ("Lost Omens/10. City of Marvels.pdf", "Society/01-04. Bandits of the Wood.pdf",
+                    "Box/Accessories/Flip-Mat.pdf", "Box (Legacy)/Accessories/Flip-Mat.pdf", "Rules/[PZO1] GM Book.pdf"):
+            write(self.books, rel, "pdf")
+        write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+        self.extracted = []
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def fake_extract(self, pdf, out):
+        self.extracted.append(Path(pdf).name)
+        write(out, "p001.txt", f"Cover of {Path(pdf).stem}\n")
+        write(out, "p002.txt", "The Dragon of the West lairs here.\nnothing\n")
+        return 2
+
+    def test_index_ids_search_and_declare(self):
+        catalog = self.library.index(self.lib, [self.books], self.fake_extract, log=lambda _: None)
+        self.assertEqual(sorted(catalog), ["accessories-flip-mat", "bandits-of-the-wood",
+                                           "city-of-marvels", "flip-mat", "gm-book"])
+        self.assertEqual(catalog["city-of-marvels"]["title"], "City of Marvels")
+        # unchanged files are not extracted again, and ids stay put
+        self.extracted.clear()
+        self.assertEqual(self.library.index(self.lib, [self.books], self.fake_extract, log=lambda _: None), catalog)
+        self.assertEqual(self.extracted, [])
+        hits = list(self.library.search(self.lib, "dragon of", ["city"]))
+        self.assertEqual(hits, [("city-of-marvels", 2, "The Dragon of the West lairs here.")])
+        self.library.declare(self.campaign, self.lib, "city-of-marvels", "com")
+        write(self.campaign, "npcs/a.md", "---\ntype: npc\ntitle: A\n---\nSeen [p. 2](src:com#p2).\n")
+        self.assertEqual(messages(self.campaign), [])
+        self.assertEqual((self.campaign / ".cache/sources/com/p002.txt").read_text().splitlines()[0], "The Dragon of the West lairs here.")
+        with self.assertRaises(KeyError):
+            self.library.declare(self.campaign, self.lib, "nope")
+
+    def test_aon_marks_editions(self):
+        hits = {"hits": {"hits": [{"_source": {"name": "Dahak", "category": "deity", "source_raw": ["Codex pg. 28"],
+                                               "url": "/Deities.aspx?ID=337", "legacy_id": ["deity-150"], "summary": " First  child "}}]}}
+        self.assertEqual(list(self.library.aon("Dahak", fetch=lambda *_: hits)),
+                         [("Dahak", "deity", "Codex pg. 28", "https://2e.aonprd.com/Deities.aspx?ID=337", "First child", "remaster")])

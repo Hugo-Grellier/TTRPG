@@ -20,7 +20,9 @@ link, AP pages that mention it) for `campaign-compile` to complete.
 Re-running refreshes untouched AP notes, removes AP pages the module no
 longer has, and keeps every note the GM changed.
 
-PDF (citations and anything the module lacks):
+PDF (citations and anything the module lacks). If the GM's library is
+indexed (`tools/bin/ttrpg library list kingmaker`), declare the book from it:
+`tools/bin/ttrpg source add kingmaker --as km`. Otherwise extract it here:
 
 ```sh
 tools/bin/ttrpg pdf-text km /path/to/Kingmaker.pdf --title "Kingmaker AP"

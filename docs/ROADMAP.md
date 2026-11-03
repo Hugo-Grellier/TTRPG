@@ -72,7 +72,7 @@ scale are missing. Needed by any large campaign, AP or not. The owner has
 the official PDFs (518 files, `~/Downloads/manual/Pathfinder 2e/`: rulebooks,
 Lost Omens, APs, Society, adventures).
 
-- **6a Shared source library.** `ttrpg library index <dir>` extracts every
+- **6a Shared source library (done).** `ttrpg library index <dir>` extracts every
   PDF once (pdftotext, per page) into a library outside campaigns
   (`~/.cache/ttrpg/library/<id>/pNNN.txt` + `catalog.yaml`: id, title, path,
   pages, category, edition legacy/remaster, language). `ttrpg library search

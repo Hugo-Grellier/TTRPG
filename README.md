@@ -10,6 +10,10 @@ bin/ttrpg new ../Campaign/campaign-x --name "X" --language fr --tools-url <git u
 cd ../Campaign/campaign-x
 tools/bin/ttrpg import-foundry --module ~/foundrydata/Data/modules/<adventure-module>
 tools/bin/ttrpg pdf-text km /path/to/adventure.pdf --title "Adventure"
+tools/bin/ttrpg library index ~/pdfs/Pathfinder         # once: every PDF the GM owns, shared by all campaigns
+tools/bin/ttrpg library search "Westerhold" --pages     # which books and pages mention it
+tools/bin/ttrpg source add absalom-city-of-lost-omens   # declare a book; cite as src:<id>#p<N>
+tools/bin/ttrpg aon Dahak                               # Archives of Nethys: book, page, URL, legacy/remaster
 tools/bin/ttrpg check
 tools/bin/ttrpg export-foundry --install ~/foundrydata/Data/modules   # journals module
 tools/bin/ttrpg pull-foundry ~/foundrydata/Data/worlds/<world>          # edits made in Foundry -> notes
