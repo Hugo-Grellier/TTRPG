@@ -188,7 +188,7 @@ def cmd_library(args):
         if not args.args:
             print("ttrpg library search <regex> [--book id-part]", file=sys.stderr)
             return 2
-        hits = library.search(lib, " ".join(args.args), args.book, not args.case)
+        hits = library.search(lib, " ".join(args.args), args.book, not args.case, args.context)
         if args.pages:
             found = {}
             for book, page, _ in hits:
@@ -202,7 +202,7 @@ def cmd_library(args):
                 if count == args.limit:
                     print(f"... more than {args.limit} lines: narrow with --book or --pages", file=sys.stderr)
                     break
-                print(f"{book}#p{page}: {line[:200]}")
+                print(f"{book}#p{page}: {line[:200]}" if not args.context else f"--- {book}#p{page}\n{line}")
     elif args.action == "page":
         if len(args.args) != 2:
             print("ttrpg library page <id> <page>", file=sys.stderr)
@@ -366,7 +366,8 @@ def main(argv=None):
     p.add_argument("--book", action="append", help="search: only books whose id contains this (repeatable)")
     p.add_argument("--pages", action="store_true", help="search: one line per book with the pages that match")
     p.add_argument("--case", action="store_true", help="search: case-sensitive")
-    p.add_argument("--limit", type=int, default=300, help="search: maximum lines")
+    p.add_argument("--limit", type=int, default=300, help="search: maximum matches")
+    p.add_argument("--context", type=int, default=0, metavar="N", help="search: N lines before and after each match")
     p.add_argument("--dpi", type=int, default=110, help="page: resolution")
     p.add_argument("--library", help="default $TTRPG_LIBRARY or ~/.local/share/ttrpg/library")
     p.set_defaults(func=cmd_library)

@@ -19,18 +19,25 @@ in English unless the library holds a translation).
 
   ```sh
   tools/bin/ttrpg library search "Westerhold" --pages                 # books, page counts, pages
-  tools/bin/ttrpg library search "Westerhold" --book absalom          # the lines, as id#pN
+  tools/bin/ttrpg library search "Westerhold" --book absalom --context 4   # each match with 4 lines around
   ```
+
+  The pattern is a regular expression, case-insensitive: `'\bWest\b'` for a
+  whole word, `'Deepkeg|Drun'` for several names.
 
   Read each listed page in full (`cat ~/.local/share/ttrpg/library/<id>/pNNN.txt`,
   or `.cache/sources/<id>/` once declared), and the pages around it when a
   section starts or continues there. `tools/bin/ttrpg library page <id> <N>`
-  renders the page as an image: read it for maps, tables, sidebars and
-  anything the text extraction scrambles. `library list <words>` finds a
+  renders the page as an image (it prints the PNG path; open it): read it
+  for maps, tables, sidebars and anything the text extraction scrambles.
+  The page number is the PDF page (the file `pNNN.txt`), not the folio
+  printed on the page, which is often one or two lower: cite the PDF page. `library list <words>` finds a
   book's id.
 - **Archives of Nethys** (official text online): `tools/bin/ttrpg aon <name>
   [--category deity|creature|rules|...]` gives each entry's book and printed
-  page, its URL, and whether it is the legacy or the remaster version. Find
+  page, its URL, and whether it is the legacy or the remaster version. AoN
+  holds rules, creatures, deities, items and some organizations, rarely a
+  district or a village: no result is normal for a place. Find
   that passage in the library to cite the PDF page; cite AoN by URL only
   when the book is not in the library.
 - **Community wiki** (pathfinderwiki.com): only to discover which books talk
@@ -53,18 +60,28 @@ say in your report that the books were not read.
 
 ## 3. Write the note
 
-- Declare each book you cite: `tools/bin/ttrpg source add <id>` (it writes
-  `campaign.yaml`; ids are the library's).
-- One note per subject, found first by title and `aliases` (`campaign-edit`
-  rules); the type that fits (`settlement`, `location`, `faction`, `npc`,
+- Once you know which books you cite, declare them:
+  `tools/bin/ttrpg source add <id>...` (it writes `campaign.yaml`; ids are
+  the library's).
+- One note per subject, found first by title and `aliases`, in the folder of
+  its kind (`campaign-edit` step 3: `places/`, `factions/`, `npcs/`...); the type that fits (`settlement`, `location`, `faction`, `npc`,
   `region`, `item`, `event`...; a deity or an organization without a place
   is a `faction`, a historical era a `note`). Sections and frontmatter per
   `tools/ttrpg/note-types.md` and `tools/ttrpg/schema.yaml`, written in the
   campaign language; proper names as the source spells them unless the
   library holds the campaign language's edition.
 - Every paragraph ends with its citations, `([p. N](src:<id>#pN))`, N the
-  PDF page. `origin: ap` for a note that only reports published material;
-  `modified` once it carries the campaign's changes.
+  PDF page; the Sources section lists each page once with what it is about.
+  `origin: ap` for a note that reports published material, open
+  `[!question]`s included; `modified` once it carries the campaign's own
+  changes (`[!adaptation]`, invented paragraphs).
+- Each fact lives in the note of its subject: a settlement note says in one
+  line what each resident, faction or place inside means there (with its
+  citation); their own story goes in their notes. Link a subject that has a
+  note (`[[id]]`); name one that has none in plain text and list it in your
+  report. `aliases` are other names the books use, not index labels.
+- Leave out a section the books say nothing about; a gap the GM must fill
+  is one `> [!question]` where it belongs.
 - The campaign's changes to canon, if the GM asked for them: `> [!adaptation]`
   citing what they change. Ideas of yours: `> [!idea]`. Nothing invented as
   plain text.

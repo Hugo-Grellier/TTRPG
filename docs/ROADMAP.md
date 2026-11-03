@@ -93,12 +93,12 @@ Lost Omens, APs, Society, adventures).
   level in `campaign.yaml` for encounter budgets; a home base's improvements;
   mysteries with their clues (where each can be found, when it was found,
   marked by `session-debrief`); `chapter` sections for sandbox arcs.
-- **6e Skill `lore-research`.** A subject (a district, a deity, a faction)
+- **6e Skill `lore-research` (done).** A subject (a district, a deity, a faction)
   gathered from the whole library, remaster first, books that disagree
   shown side by side in `[!question]`, written as a canon note per
   `note-types.md`. Same rules as `campaign-compile`, over the library
   instead of `adventure/`.
-- **6f Large-campaign workflow.** `campaign-create` for a large pitch:
+- **6f Large-campaign workflow (written; verify below).** `campaign-create` for a large pitch:
   research inventory from the library, a decisions note comparing options
   with a recommendation, drafts (`ttrpg drafts`), agent waves as for the
   Kingmaker compile, a quality checklist (open structure, independent arcs,

@@ -99,16 +99,19 @@ def index(library, roots, extract=extract, log=print):
     return catalog
 
 
-def search(library, pattern, books=None, ignore_case=True):
-    """Yield (book, page, line) for each line matching the regex, books in catalog order."""
+def search(library, pattern, books=None, ignore_case=True, context=0):
+    """Yield (book, page, line) for each line matching the regex, books in catalog order; with context,
+    line is the matching line and the `context` lines around it, joined by newlines."""
     regex = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
     for book in sorted(load(library)):
         if books and not any(part in book for part in books):
             continue
         for page in sorted((library / book).glob("p*.txt")):
-            for line in page.read_text(encoding="utf-8").splitlines():
+            lines = page.read_text(encoding="utf-8").splitlines()
+            for n, line in enumerate(lines):
                 if regex.search(line):
-                    yield book, int(page.stem[1:]), line.strip()
+                    around = lines[max(0, n - context):n + context + 1] if context else [line]
+                    yield book, int(page.stem[1:]), "\n".join(part.strip() for part in around)
 
 
 def render_page(library, book, page, dpi=110):
