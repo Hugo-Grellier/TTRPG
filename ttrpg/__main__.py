@@ -176,6 +176,9 @@ def cmd_library(args):
             print("ttrpg library index <directory>...", file=sys.stderr)
             return 2
         library.index(lib, args.args)
+    elif not (lib / "catalog.yaml").is_file():
+        print(f"no library at {lib}: run `ttrpg library index <directory of PDFs>` (or set TTRPG_LIBRARY)", file=sys.stderr)
+        return 1
     elif args.action == "list":
         for book, entry in library.load(lib).items():
             line = f"{book}\t{entry.get('pages', '?')}\t{entry['title']}"
