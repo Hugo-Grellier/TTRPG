@@ -54,6 +54,33 @@ before building anything.
    checking against the notes: compare its tokens with each scene note's
    Opposition and report differences to the GM before changing either.
 
+## Region map for hexploration
+
+An `overview` map note for a region the PCs explore hex by hex (no
+creatures, no walls):
+
+1. Find the official map with a scale bar in the GM's library:
+   `tools/bin/ttrpg library search '^\s*\d+ miles\s*$' --pages` narrowed with
+   two place names of the region, then `library page <id> <N>` to look.
+   Prefer the largest printing. Community maps (PathfinderWiki's) place
+   things well but their distances are not canon: never use them for scale.
+2. Render the page at 300 dpi (`pdftoppm -png -r 300 -f N -l N <pdf>`); the
+   embedded raster has no place names (they are vector text). Crop to the
+   map, keep the scale bar, and save it under the world's
+   `Data/worlds/<world>/maps/` (licensed art: never in the repository).
+3. Measure the scale bar in pixels (its dark horizontal run). GM Core: a hex
+   is 12 miles corner to corner, about a day of travel. For hex columns,
+   `gridSize` = round(12 x pixels per mile x sqrt(3) / 2).
+4. `create-scene` with `gridType: hex-columns-odd`, that `gridSize`,
+   `gridDistance: 12`, `gridUnits: mi`, and the fixed id. Capture it: the
+   scale bar should span its miles / 12 hexes.
+5. Hex notes are keyed by the Foundry grid offset `"i_j"` (row, column; the
+   World Explorer `cells` format): `coord: "23_28"`, `map: <map note>`,
+   `cells: ["23_28"]`. A place's hex: its image position plus the scene
+   origin (`canvas.dimensions.sceneRect`), through `canvas.grid.getOffset`.
+   Check two distances the books give (e.g. "75 miles west of Absalom")
+   against the map and write the result in the map note.
+
 ## 3. Check and record
 
 - `capture-scene` in `plan` mode: every token, pin and wall where intended,

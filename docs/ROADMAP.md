@@ -105,7 +105,7 @@ Lost Omens, APs, Society, adventures).
   canon cited, geography and travel times, five-PC encounters), report from
   `ttrpg questions`.
 - **6g Gaps found by an audit of the dossier prompt (November 3, 2026):**
-  - *Region maps and hexploration (studied).* PathfinderWiki's map
+  - *Region maps and hexploration (official map + hex grid done; placing wiki places on hexes later).* PathfinderWiki's map
     (github.com/pf-wikis/mapping, CC BY-NC-SA, Paizo Community Use) gives
     every named Kortos place as GeoJSON with coordinates (Westerhold, Otari,
     Diobel, Escadar, aeon towers, ruins...), but its distances are not canon:
