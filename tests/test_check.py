@@ -450,6 +450,13 @@ class SessionTest(unittest.TestCase):
         self.assertIn("prep: draft", text)
         self.assertIn("[[km-a01]]", text)
         self.assertNotIn("km-zz", text)
+        write(self.root, "lore.tsv", "type\tid\ttitle\taliases\tmain_page\tpages\ttier\n"
+              "settlement\twesterhold\tWesterhold\t\t\tcity#p11;city#p29\t\nfaction\tinn-friends\tFriends\t\t\t\t\n")
+        drafts(self.root, Path(self.root) / "lore.tsv")
+        text = (Path(self.root) / "places/westerhold.md").read_text(encoding="utf-8")
+        self.assertIn("origin: ap", text)
+        self.assertIn("[p. 29](src:city#p29)", text)
+        self.assertIn("origin: custom", (Path(self.root) / "factions/inn-friends.md").read_text(encoding="utf-8"))
 
     def test_windows_cut_between_speech(self):
         from ttrpg.session import windows

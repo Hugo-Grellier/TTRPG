@@ -1,12 +1,13 @@
 ---
 name: campaign-create
-description: Build original campaign material with the GM - a sandbox from a pitch, or a new region, faction, settlement or threat added to any campaign, imported or not. Use when the GM wants to invent rather than import.
+description: Build original campaign material with the GM - a sandbox from a pitch, a long campaign (levels 1-20) from a detailed brief, or a new region, faction, settlement or threat added to any campaign, imported or not. Use when the GM wants to invent rather than import.
 ---
 
 # Create campaign material
 
 Works the same in an empty sandbox and in a campaign built from an adventure:
-created notes are `origin: custom` and sit beside any `adventure/` text.
+invented notes are `origin: custom` and sit beside any `adventure/` text;
+notes that report the published setting are written by `lore-research`.
 
 ## Interview first
 
@@ -40,6 +41,45 @@ previous ones.
    arcs are `chapter` notes (`note-types.md`, chapter (arc)), never a script.
 6. **Opening** - the first `scene` and a `session-prep` note from the
    `session-prep` skill.
+
+## A large campaign
+
+When the GM brings a long brief (a campaign over many levels, its
+inspirations, principles, places, a prologue, a first act, a distant threat),
+the brief replaces most of the interview: ask only what it leaves open and
+blocks the work. Then:
+
+1. **Principles** - `notes/00-pitch.md`: promise, tone, inspirations, the
+   brief's design principles as rules future work must respect, lines and
+   veils. Short; the brief's own words where they are good.
+2. **Research inventory** - every published subject the brief touches
+   (places, organizations, people, deities, creatures, events, the rules
+   subsystems it needs): `tools/bin/ttrpg library search <name> --pages` and
+   `tools/bin/ttrpg aon <name>` for each. Write
+   `.cache/research/inventory.tsv` (type, id, title, aliases, main_page,
+   pages as `book#pN;...`, tier `major` or not), declare the books
+   (`tools/bin/ttrpg source add <id>...`), then
+   `tools/bin/ttrpg drafts --inventory .cache/research/inventory.tsv`.
+3. **Canon** - the `lore-research` skill on each draft, major subjects first,
+   one agent per few subjects in parallel (a capable model for major ones);
+   agents report, you finish.
+4. **Decisions** - `notes/01-decisions.md`: each choice the brief asks you to
+   study (a destination, a patron, a relic, a first antagonist...) as a
+   table of options with criteria, sources and a recommendation in
+   `> [!idea]`; the GM adopts, rejects or changes each. Choices made in play
+   or by the GM move to the notes they concern.
+5. **Build** - the steps above (map, factions with clocks, people, hooks,
+   mysteries, arcs, opening) on top of canon, the brief's levels in
+   `chapter` notes: the near ones detailed, the far ones as directions.
+   Encounters for `party` characters, threats the PCs can see coming.
+6. **Review** - against the brief's principles and these questions: can the
+   PCs ignore or change every situation? do independent arcs exist, beside
+   the main threat? is every canon fact cited and every change an
+   `[!adaptation]`? do places, distances and travel times fit the official
+   maps? is each subsystem used worth its cost to the GM? Fix what fails;
+   say what you could not check.
+7. **Report** - what exists, the main canon findings that shaped it, the
+   decisions waiting on the GM, the risks, and `tools/bin/ttrpg questions`.
 
 Notes follow `tools/ttrpg/schema.yaml` (fields) and `tools/ttrpg/note-types.md`
 (sections). Statistics are Foundry compendium links (`@UUID[Compendium...]`)
