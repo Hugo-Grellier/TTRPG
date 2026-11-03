@@ -8,7 +8,7 @@ from . import vault
 
 FOLDERS = {"npc": "npcs", "faction": "factions", "location": "places", "settlement": "places", "hex": "places",
            "region": "places", "scene": "scenes", "item": "items", "quest": "quests", "handout": "handouts", "mystery": "mysteries",
-           "pc": "pcs", "chapter": "arcs", "clock": "clocks", "event": "events"}
+           "pc": "pcs", "company": "pcs", "chapter": "arcs", "clock": "clocks", "event": "events"}
 
 
 def drafts(root, inventory):

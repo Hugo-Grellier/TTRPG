@@ -123,7 +123,7 @@ Lost Omens, APs, Society, adventures).
   - *Encounters (done).* Survey existing PF2e encounter builders before writing
     one; then a tool that finds creatures by level and trait offline and
     budgets XP for `party` characters at a level.
-  - *Standing.* Structure what reputation does not hold: renown, wealth,
+  - *Standing (done).* Structure what reputation does not hold: renown, wealth,
     informal influence and legal authority, kept apart.
 - **Verify:** the dossier prompt run on a scratch campaign, then compared with
   this list.

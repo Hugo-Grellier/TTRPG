@@ -78,6 +78,9 @@ types:
     ancestry: {kind: str}
     class: {kind: str}
     location: {kind: ref, to: *places}
+  company:
+    renown: {kind: enum, values: [unknown, neighbourhood, local, regional, international, legendary], default: unknown}
+    base: {kind: ref, to: *places}
   mystery:
     state: {kind: enum, values: [open, solved, abandoned], default: open}
   scene:

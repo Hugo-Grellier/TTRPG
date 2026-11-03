@@ -77,6 +77,7 @@ open question, verify and idea of the campaign.
 | map | Show the players · Areas · Tokens · Ambience · Sources | À montrer aux joueurs · Zones · Tokens · Ambiance · Sources |
 | session | What happened · Consequences · Open threads | Ce qui s'est passé · Conséquences · Fils ouverts |
 | pc | In brief · Concept · Background · Ties · Ambitions · Secrets · Arc hooks · In the campaign | En bref · Concept · Passé · Liens · Ambitions · Secrets · Accroches d'arc · Dans la campagne |
+| company | In brief · Renown · Wealth · Influence · Authority · In the campaign | En bref · Renommée · Richesse · Influence · Autorité · Dans la campagne |
 | mystery | In brief · Truth · Clues · Revelations · In the campaign · Sources | En bref · Vérité · Indices · Révélations · Dans la campagne · Sources |
 | chapter (arc) | In brief · Premise · Stakes · Entry points · Forces · Possible outcomes · In the campaign · Sources | En bref · Prémisse · Enjeux · Points d'entrée · Forces en jeu · Issues possibles · Dans la campagne · Sources |
 
@@ -135,6 +136,16 @@ What goes in each:
   reputation with a public (a district's people, a city, a nation) written as
   a faction. Wealth, informal influence and legal authority are different
   things: say them in the faction or settlement note, not in this number.
+- **company**: the party as a group, one note (`pcs/`), its `base` the place
+  they call home. Five things kept apart: **Renown** (`renown`: how far they
+  are known, unknown → neighbourhood → local → regional → international →
+  legendary; for what, and where it stops), reputation with each group (the
+  factions' `reputation`), **Wealth** (what they own beyond the coins of
+  their Foundry sheets: properties, businesses, income, debts, linking the
+  place notes), **Influence** (who listens to them or owes them, informally,
+  by link) and **Authority** (offices, titles, charters and legal powers,
+  who granted them and what they allow). Famous is not powerful; liked by
+  one faction is not liked by all.
 - **mystery**: a truth the PCs uncover over time. **Truth** in `> [!secret]`.
   **Clues**: one line each: what it is, where or from whom (linked), what it
   points to, and once found, the session that found it (`[[session-id]]`);

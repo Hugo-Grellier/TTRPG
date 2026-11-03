@@ -78,6 +78,8 @@ Edit only what a source states, following `tools/ttrpg/schema.yaml`:
   disservices -1, -2, -5 or more); say which in the session's Consequences.
 - `mystery`: a clue the PCs found gets the session link on its line; a
   conclusion they reached moves to Revelations; `state` when it ends.
+- `company`: `renown` when word of the PCs reaches further; wealth,
+  influence and authority gained or lost, in their sections.
 - A base the PCs own: improvements made or promised, on its Improvements
   line.
 - `event`: `played: "yes"` for planned events that happened; a new `event`

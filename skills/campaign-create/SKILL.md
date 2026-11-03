@@ -26,7 +26,8 @@ previous ones.
 1. **Frame** - `campaign.yaml`: `start` (in-game date play begins), `name`,
    language, `party` (number of PCs). PCs get `pc` notes with their players
    after session zero; before it, leave room for them (arc hooks), never
-   write their backgrounds. A `notes/00-pitch.md` with the pitch, themes and lines/veils.
+   write their backgrounds. A `company` note holds the group's renown,
+   wealth, influence and authority as play builds them. A `notes/00-pitch.md` with the pitch, themes and lines/veils.
 2. **Map** - one `region` per area, then `hex`, `settlement` or `location`
    notes for what the PCs can reach in the first sessions. Each place gets
    at least one reason to go there.

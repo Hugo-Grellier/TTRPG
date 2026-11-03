@@ -575,3 +575,10 @@ class LibraryTest(unittest.TestCase):
         self.assertEqual(len(rows), 3)
         self.assertEqual([r["uuid"] for r in creatures.find(rows, range(0, 3), ["Undead"])], ["Compendium.pf2e.bestiary.Actor.a1"])
         self.assertEqual([r["name"] for r in creatures.find(rows, hazards=True)], ["Pit"])
+
+    def test_company(self):
+        write(self.campaign, "places/inn.md", "---\ntype: location\ntitle: Inn\n---\nI.\n")
+        write(self.campaign, "pcs/company.md", "---\ntype: company\ntitle: La compagnie\nrenown: local\nbase: inn\n---\nC.\n")
+        self.assertEqual(messages(self.campaign), [])
+        write(self.campaign, "pcs/company.md", "---\ntype: company\ntitle: La compagnie\nrenown: famous\n---\nC.\n")
+        self.assertEqual(len(messages(self.campaign)), 1)
