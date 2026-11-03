@@ -72,7 +72,7 @@ scale are missing. Needed by any large campaign, AP or not. The owner has
 the official PDFs (518 files, `~/Downloads/manual/Pathfinder 2e/`: rulebooks,
 Lost Omens, APs, Society, adventures).
 
-- **6a Shared source library (done).** `ttrpg library index <dir>` extracts every
+- **6a Shared source library (done; scanned books through OCR).** `ttrpg library index <dir>` extracts every
   PDF once (pdftotext, per page) into a library outside campaigns
   (`~/.cache/ttrpg/library/<id>/pNNN.txt` + `catalog.yaml`: id, title, path,
   pages, category, edition legacy/remaster, language). `ttrpg library search
@@ -104,6 +104,27 @@ Lost Omens, APs, Society, adventures).
   Kingmaker compile, a quality checklist (open structure, independent arcs,
   canon cited, geography and travel times, five-PC encounters), report from
   `ttrpg questions`.
+- **6g Gaps found by an audit of the dossier prompt (November 3, 2026):**
+  - *Region maps and hexploration.* Kortos has no official hex map. Survey
+    PathfinderWiki's interactive Golarion map (map.pathfinderwiki.com,
+    community-derived from the official maps, vector tiles with coordinates:
+    github.com/pf-wikis/mapping) for a region image with real distances;
+    otherwise a map page from the library (`library page`). Then a hex grid
+    over that image, `hex` notes keyed to it, travel times from GM Core's
+    exploration rules, and the Foundry scene through `map-ready`.
+  - *Chronology.* Define history versus plan: an event dated before
+    `campaign.yaml` `start` is the setting's past (cited canon); after it,
+    `played: "no"` is planned and `"yes"` happened. A `start` chosen from the
+    library (the latest book's year, the outcomes later books give
+    adventure paths such as Age of Ashes), with the reasoning in a note.
+  - *Library for remote agents.* Cloud agents (Codex, Claude on the web) have
+    no PDFs: a way to reach the text (a private host, or committed excerpts
+    of what a campaign cites).
+  - *Encounters.* Survey existing PF2e encounter builders before writing
+    one; then a tool that finds creatures by level and trait offline and
+    budgets XP for `party` characters at a level.
+  - *Standing.* Structure what reputation does not hold: renown, wealth,
+    informal influence and legal authority, kept apart.
 - **Verify:** the dossier prompt run on a scratch campaign, then compared with
   this list.
 - **Later:** a hex grid over any region map (Kortos has no module hex map),

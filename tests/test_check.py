@@ -549,3 +549,7 @@ class LibraryTest(unittest.TestCase):
         write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nparty: five\n")
         self.assertEqual(sorted(messages(self.campaign)), ["party must be the number of player characters",
                                                            "reputation: must be between -50 and 50"])
+
+    def test_scanned_books_detected(self):
+        self.assertTrue(self.library.mostly_images(["", " \n", "x" * 50, ""]))
+        self.assertFalse(self.library.mostly_images(["text " * 20] * 3 + [""] * 2))

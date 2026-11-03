@@ -7,7 +7,10 @@ Ids are derived from file names and kept in the catalog, so citations survive a 
 
 import os
 import re
+import shutil
 import subprocess
+import sys
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -51,12 +54,38 @@ def new_id(rel, taken):
     return f"{candidate}-{n}"
 
 
-def extract(pdf, out):
-    """Write one text file per page (p001.txt...) and return the page count."""
+def pdf_pages(pdf):
     text = subprocess.run(["pdftotext", "-enc", "UTF-8", str(pdf), "-"], capture_output=True, check=True).stdout.decode("utf-8", "replace")
     pages = text.split("\f")
     if pages and not pages[-1].strip():
         pages.pop()
+    return pages
+
+
+def mostly_images(pages):
+    """A scanned book: more than half of its pages carry no text layer (map folios are under that)."""
+    return len(pages) >= 4 and sum(len(page.strip()) < 40 for page in pages) * 2 > len(pages)
+
+
+def ocr(pdf):
+    """Pages of the PDF after OCR of its image-only pages (ocrmypdf, English and French), or None without ocrmypdf."""
+    if not shutil.which("ocrmypdf"):
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "ocr.pdf"
+        subprocess.run(["ocrmypdf", "--skip-text", "-l", "eng+fra", "--jobs", "4", "--output-type", "pdf", "-q", str(pdf), str(out)],
+                       check=True, capture_output=True)
+        return pdf_pages(out)
+
+
+def extract(pdf, out):
+    """Write one text file per page (p001.txt...) and return the page count. Scanned books go through OCR."""
+    pages = pdf_pages(pdf)
+    if mostly_images(pages):
+        print(f"{Path(pdf).name}: image-only pages, OCR...", file=sys.stderr)
+        pages = ocr(pdf) or pages
+        if mostly_images(pages):
+            print(f"{Path(pdf).name}: still no text (install ocrmypdf and tesseract)", file=sys.stderr)
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob("p*.txt"):
         old.unlink()
