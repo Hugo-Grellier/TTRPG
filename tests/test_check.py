@@ -553,3 +553,10 @@ class LibraryTest(unittest.TestCase):
     def test_scanned_books_detected(self):
         self.assertTrue(self.library.mostly_images(["", " \n", "x" * 50, ""]))
         self.assertFalse(self.library.mostly_images(["text " * 20] * 3 + [""] * 2))
+
+    def test_events_before_start_are_history(self):
+        write(self.campaign, "campaign.yaml", 'name: T\nsystem: pf2e\nlanguage: fr\nstart: "4725-01-01"\n')
+        write(self.campaign, "events/war.md", '---\ntype: event\ntitle: War\ndate: "4719-05-01"\n---\nPast.\n')
+        self.assertEqual(messages(self.campaign), [])
+        write(self.campaign, "events/war.md", '---\ntype: event\ntitle: War\ndate: "4719-05-01"\nplayed: "yes"\n---\nPast.\n')
+        self.assertEqual(messages(self.campaign), ["played on 4719-05-01, before the campaign starts (4725-01-01): events before start are the setting's past"])

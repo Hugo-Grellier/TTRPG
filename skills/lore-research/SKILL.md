@@ -53,6 +53,9 @@ say in your report that the books were not read.
   describes the world as it is now; older ones give its history. Adventure
   paths and Society scenarios move the timeline: say which year (AR) a
   source describes when it matters (a ruler replaced, a district burned).
+  A dated historical event the campaign needs is an `event` note dated
+  before `start` (`note-types.md`, Events); what books publish for years
+  after `start` is the future, not a fact of the note.
 - Two sources that disagree: give both, cited, in a `> [!question]`, and
   state neither as fact elsewhere in the note.
 - An adventure's spoilers (its villain, its ending) are facts like others,

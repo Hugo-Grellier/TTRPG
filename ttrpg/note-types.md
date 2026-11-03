@@ -161,5 +161,12 @@ What goes in each:
 - **Party**: `party` in `campaign.yaml` is the number of player characters
   and session `level` the party level at that session; encounters are built
   for both (GM Core encounter budget adjusted per character).
-- **Events** are dated in-game (`date`); `played: "yes"` only after a session.
-  Planned events take dates from `start` in `campaign.yaml`.
+- **Events** are dated in-game (`date`). Before `start` in `campaign.yaml`:
+  the setting's past, cited canon (or the campaign's own invented history,
+  uncited), never played. From `start` on: `played: "no"` is planned (dates
+  from the adventure or the GM), `played: "yes"` happened at the table, set
+  only after a session.
+- **Start date**: choose `start` from the sources and write why in a note:
+  the year the latest books describe the starting place, after the outcomes
+  later books give to earlier adventure paths. Canon published for years
+  after `start` is the future: `> [!secret]` or `[!idea]`, not fact.

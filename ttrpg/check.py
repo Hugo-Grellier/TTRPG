@@ -232,6 +232,12 @@ def check_chronology(campaign, report):
                 died = deaths.get(strip_link(participant))
                 if died and in_game_key(note.get("date")) > in_game_key(died):
                     report.error(f"{note.rel}:1", f"{strip_link(participant)} died {died}, before this event ({note.get('date')})")
+    start = campaign.config.get("start")
+    if isinstance(start, str) and DATE.fullmatch(start):
+        for note in notes:
+            date = note.get("date") if note.type == "event" and note.get("played") == "yes" else note.get("ingame") if note.type == "session" else None
+            if isinstance(date, str) and DATE.fullmatch(date) and in_game_key(date) < in_game_key(start):
+                report.error(f"{note.rel}:1", f"played on {date}, before the campaign starts ({start}): events before start are the setting's past")
     sessions = sorted((str(note.get("day")), note) for note in notes if note.type == "session" and note.get("ingame"))
     for (_, before), (_, after) in zip(sessions, sessions[1:]):
         if in_game_key(after.get("ingame")) < in_game_key(before.get("ingame")):

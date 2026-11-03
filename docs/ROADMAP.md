@@ -112,7 +112,7 @@ Lost Omens, APs, Society, adventures).
     otherwise a map page from the library (`library page`). Then a hex grid
     over that image, `hex` notes keyed to it, travel times from GM Core's
     exploration rules, and the Foundry scene through `map-ready`.
-  - *Chronology.* Define history versus plan: an event dated before
+  - *Chronology (done).* Define history versus plan: an event dated before
     `campaign.yaml` `start` is the setting's past (cited canon); after it,
     `played: "no"` is planned and `"yes"` happened. A `start` chosen from the
     library (the latest book's year, the outcomes later books give
