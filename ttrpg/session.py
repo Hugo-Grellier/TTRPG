@@ -122,10 +122,11 @@ def windows(speech, size=20 * 60 * 16000):
 
 def utterances(words, pause=1.0):
     """Join timed words into lines, splitting at pauses: a Whisper segment can span two remarks
-    with another speaker's in between, which would break the merge order."""
+    with another speaker's in between, which would break the merge order. Never inside a word:
+    Whisper's word pieces that do not start with a space ("C" "'est") continue the previous word."""
     lines = []
     for start, end, word in words:
-        if lines and start - lines[-1][1] < pause:
+        if lines and (start - lines[-1][1] < pause or not word[:1].isspace()):
             lines[-1] = (lines[-1][0], end, lines[-1][2] + word)
         else:
             lines.append((start, end, word))

@@ -410,6 +410,7 @@ class SessionTest(unittest.TestCase):
         words = [(1.0, 1.4, " The"), (1.5, 2.0, " bridge."), (12.0, 12.5, " The"), (12.6, 13.0, " river.")]
         alice = utterances(words)
         self.assertEqual(alice, [(1.0, 2.0, "The bridge."), (12.0, 13.0, "The river.")])
+        self.assertEqual(utterances([(55.0, 55.2, " C"), (73.0, 73.4, "'est"), (73.5, 74.0, " un")]), [(55.0, 74.0, "C'est un")])
         self.assertEqual([who for _, _, who, _ in merge({"Alice": alice, "Bob": [(6.0, 7.0, "Fire!")]})], ["Alice", "Bob", "Alice"])
         self.assertEqual(speaker(Path("1-alice.flac"), {}), ("alice", "unknown"))
         self.assertEqual(speaker(Path("speaker-001.wav"), {"speaker-001": "Hugo"}), ("Hugo", "player"))
