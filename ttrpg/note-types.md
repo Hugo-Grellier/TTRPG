@@ -66,7 +66,7 @@ open question, verify and idea of the campaign.
 | --- | --- | --- |
 | npc | In brief · Appearance · Personality · Background · Motivations · In the campaign · What they know · Relations · Rewards · Statistics · Sources | En bref · Apparence · Personnalité · Passé · Motivations · Dans la campagne · Ce que sait le PNJ · Relations · Récompenses · Statistiques · Sources |
 | faction | In brief · History · Goals · Organization and means · Members · Territory · In the campaign · If the PCs do nothing · Relations · Sources | En bref · Histoire · Objectifs · Organisation et moyens · Membres · Territoire · Dans la campagne · Si les PJ n'agissent pas · Relations · Sources |
-| location, settlement | In brief · Show the players · Description · History · Inhabitants · What is here · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Histoire · Habitants · Ce qui s'y trouve · Dans la campagne · Sources |
+| location, settlement | In brief · Show the players · Description · History · Inhabitants · What is here · Improvements · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Histoire · Habitants · Ce qui s'y trouve · Améliorations · Dans la campagne · Sources |
 | region, hex | In brief · Show the players · Description · Encounters · What is here · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Rencontres · Ce qui s'y trouve · Dans la campagne · Sources |
 | quest | In brief · Hook · Goal · How it unfolds · Reward · Done when · Failure · Sources | En bref · Accroche · Objectif · Déroulement · Récompense · Terminée quand · Échec · Sources |
 | item | In brief · Description · Powers · History · Where it is · Sources | En bref · Description · Pouvoirs · Histoire · Où le trouver · Sources |
@@ -76,6 +76,9 @@ open question, verify and idea of the campaign.
 | event | What happens · Consequences | Ce qui se passe · Conséquences |
 | map | Show the players · Areas · Tokens · Ambience · Sources | À montrer aux joueurs · Zones · Tokens · Ambiance · Sources |
 | session | What happened · Consequences · Open threads | Ce qui s'est passé · Conséquences · Fils ouverts |
+| pc | In brief · Concept · Background · Ties · Ambitions · Secrets · Arc hooks · In the campaign | En bref · Concept · Passé · Liens · Ambitions · Secrets · Accroches d'arc · Dans la campagne |
+| mystery | In brief · Truth · Clues · Revelations · In the campaign · Sources | En bref · Vérité · Indices · Révélations · Dans la campagne · Sources |
+| chapter (arc) | In brief · Premise · Stakes · Entry points · Forces · Possible outcomes · In the campaign · Sources | En bref · Prémisse · Enjeux · Points d'entrée · Forces en jeu · Issues possibles · Dans la campagne · Sources |
 
 What goes in each:
 
@@ -113,6 +116,35 @@ What goes in each:
   notes, so its sources are its own AP handout page; when to show it goes in
   the scene, item or NPC note that links it.
 - **Segments** (clock): `segments` in frontmatter matches the number of lines.
+- **Improvements** (location, settlement): for a place the PCs own or run
+  (a home base, an inn): one line per improvement, done or possible, what it
+  changes at the table, and where it comes from (money, a favour, a find, an
+  artisan met on the road), linking that note. No ledger: costs and Earn
+  Income stay in session notes.
+- **pc**: written with the player after session zero, never invented before.
+  `player` is the player's name as in `campaign.yaml` `players`; `foundry`
+  is the player's own actor (`Actor.<id>`), which the sync never touches. **Ties**:
+  one line per NPC, faction, place or other PC with its stakes (family,
+  mentor, debt, enemy). **Secrets**: what the player told the GM alone, in
+  `> [!secret]`. **Arc hooks**: situations the campaign can bring back, each
+  linking the note that would carry it; not every arc leads to the main
+  threat.
+- **Reputation** (faction `reputation`, -50 to 50): the party's standing with
+  that group, GM Core's reputation subsystem (printed p. 200; Revered 30, Admired 15, Liked
+  5, Ignored -4 to 4, Disliked -5, Hated -15, Hunted -30). Renown is
+  reputation with a public (a district's people, a city, a nation) written as
+  a faction. Wealth, informal influence and legal authority are different
+  things: say them in the faction or settlement note, not in this number.
+- **mystery**: a truth the PCs uncover over time. **Truth** in `> [!secret]`.
+  **Clues**: one line each: what it is, where or from whom (linked), what it
+  points to, and once found, the session that found it (`[[session-id]]`);
+  three clues at least for each conclusion the PCs must reach. **Revelations**:
+  what changes when they know. `state` becomes `solved` or `abandoned`.
+- **chapter (arc)**: in an original campaign, a possible arc, not a script:
+  **Premise** and **Stakes**, **Entry points** (hooks, PCs' arc hooks,
+  factions' clocks that lead in), **Forces** (factions, NPCs, clocks,
+  mysteries by link), **Possible outcomes** and what each changes. An
+  imported chapter keeps the adventure's text.
 - **Map** notes describe a Foundry scene; the scene itself (walls, lights,
   sounds, token positions) is edited in Foundry. `stage`: `raw` (image only),
   `walled`, `lit`, `ready` (set by the GM once played or checked); `kind`:
@@ -126,5 +158,8 @@ What goes in each:
   `weak`); npc `owners` lists the players (Foundry user names) who control
   it; a place's `discovered: "yes"` gives players a page with its title only, and
   its `map` and `cells` (World Explorer offsets `"i_j"`) reveal it on that map.
+- **Party**: `party` in `campaign.yaml` is the number of player characters
+  and session `level` the party level at that session; encounters are built
+  for both (GM Core encounter budget adjusted per character).
 - **Events** are dated in-game (`date`); `played: "yes"` only after a session.
   Planned events take dates from `start` in `campaign.yaml`.

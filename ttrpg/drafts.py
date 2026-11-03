@@ -7,7 +7,7 @@ from pathlib import Path
 from . import vault
 
 FOLDERS = {"npc": "npcs", "faction": "factions", "location": "places", "settlement": "places", "hex": "places",
-           "region": "places", "scene": "scenes", "item": "items", "quest": "quests", "handout": "handouts"}
+           "region": "places", "scene": "scenes", "item": "items", "quest": "quests", "handout": "handouts", "mystery": "mysteries"}
 
 
 def drafts(root, inventory):

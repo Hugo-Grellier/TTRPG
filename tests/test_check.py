@@ -531,3 +531,14 @@ class LibraryTest(unittest.TestCase):
         self.assertEqual(messages(self.campaign), ["[!adaptation] without a citation: cite the canon it changes"])
         items = [(line, kind, text) for _, line, kind, text in open_items(load(self.campaign))]
         self.assertEqual(items, [(10, "verify", "Wiki says a mill"), (13, "question", "Who owns the inn?")])
+
+    def test_long_campaign_types(self):
+        write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nparty: 5\n")
+        write(self.campaign, "pcs/ayla.md", "---\ntype: pc\ntitle: Ayla\nplayer: Alice\nclass: Rogue\nlevel: 3\n---\nConcept.\n")
+        write(self.campaign, "factions/guild.md", "---\ntype: faction\ntitle: Guild\nreputation: 12\n---\nG.\n")
+        write(self.campaign, "mysteries/m.md", "---\ntype: mystery\ntitle: M\n---\n> [!secret]\n> Truth.\n")
+        self.assertEqual(messages(self.campaign), [])
+        write(self.campaign, "factions/guild.md", "---\ntype: faction\ntitle: Guild\nreputation: 60\n---\nG.\n")
+        write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nparty: five\n")
+        self.assertEqual(sorted(messages(self.campaign)), ["party must be the number of player characters",
+                                                           "reputation: must be between -50 and 50"])

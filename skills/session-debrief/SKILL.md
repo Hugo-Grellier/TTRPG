@@ -53,6 +53,7 @@ title: <short title of what happened>
 day: <real date, YYYY-MM-DD, unquoted>
 ingame: "<in-game date at the end of the session>"
 present: [<players or PCs present>]
+level: <party level during the session>
 ---
 ```
 
@@ -70,6 +71,15 @@ Edit only what a source states, following `tools/ttrpg/schema.yaml`:
   what they now know or want, in the body.
 - `quest`: `state` (`active`, `done`, `failed`).
 - `clock`: `filled`, never above `segments`.
+- `pc`: `level`, `state`, `location`; new ties, ambitions or revealed
+  backgrounds in the body (Ties, In the campaign), only what the player said.
+- `faction`: `reputation` moved by a favour or a disservice the session
+  shows (GM Core, printed p. 200: favours +1 minor, +2 moderate, +5 major;
+  disservices -1, -2, -5 or more); say which in the session's Consequences.
+- `mystery`: a clue the PCs found gets the session link on its line; a
+  conclusion they reached moves to Revelations; `state` when it ends.
+- A base the PCs own: improvements made or promised, on its Improvements
+  line.
 - `event`: `played: "yes"` for planned events that happened; a new `event`
   note (dated, `played: "yes"`) for a notable unplanned one.
 - Place the PCs found: `discovered: "yes"`; on a region or hex map with

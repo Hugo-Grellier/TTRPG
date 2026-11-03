@@ -94,6 +94,8 @@ def check_config(campaign, report):
             report.error("campaign.yaml", f"missing {key}")
     if config.get("start") is not None and not (isinstance(config["start"], str) and DATE.fullmatch(config["start"])):
         report.error("campaign.yaml", "start must be a quoted in-game date YYYY-MM-DD")
+    if config.get("party") is not None and not (isinstance(config["party"], int) and config["party"] > 0):
+        report.error("campaign.yaml", "party must be the number of player characters")
     for source_id, source in (config.get("sources") or {}).items():
         if not isinstance(source, dict) or not isinstance(source.get("pages"), int):
             report.error("campaign.yaml", f"source {source_id!r} needs an integer pages count")
@@ -142,7 +144,10 @@ def field_problem(campaign, spec, value):
     if kind == "str":
         return "" if isinstance(value, str) else "must be text"
     if kind == "int":
-        return "" if isinstance(value, int) and not isinstance(value, bool) else "must be an integer"
+        if not isinstance(value, int) or isinstance(value, bool):
+            return "must be an integer"
+        low, high = spec.get("min"), spec.get("max")
+        return "" if (low is None or value >= low) and (high is None or value <= high) else f"must be between {low} and {high}"
     if kind == "list":
         return "" if isinstance(value, list) else "must be a list"
     if kind == "date":

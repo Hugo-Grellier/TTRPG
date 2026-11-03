@@ -10,7 +10,7 @@ description: Create or change notes in a campaign repository (NPC, place, factio
    for its sections. Write in the campaign language.
 2. Find before you create: search file names and `aliases` for the subject.
    If a note exists, edit it; do not create a second one.
-3. New note: file `<id>.md` in the folder of its kind (`npcs/`, `places/`,
+3. New note: file `<id>.md` in the folder of its kind (`npcs/`, `pcs/`, `mysteries/`, `places/`,
    `factions/`, `scenes/`, `quests/`, `events/`, `clocks/`, `sessions/`), id in
    lowercase ASCII with dashes. Minimal frontmatter:
 

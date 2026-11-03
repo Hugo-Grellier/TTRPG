@@ -2,7 +2,7 @@
 #
 # Field kinds: str, int, date (in-game YYYY-MM-DD), day (real-world YYYY-MM-DD),
 # list, enum (with `values`), ref (one note id, `to` lists allowed types),
-# refs (list of note ids).
+# refs (list of note ids). An int may set `min` and `max`.
 #
 # A relation is declared on one side only. `inverse` names the computed view
 # on the target (shown by exports and backlinks); writing that inverse field by
@@ -70,6 +70,16 @@ types:
   faction:
     leader: {kind: ref, to: [npc]}
     base: {kind: ref, to: *places}
+    reputation: {kind: int, min: -50, max: 50}
+  pc:
+    player: {kind: str}
+    state: {kind: enum, values: [playing, absent, retired, dead], default: playing}
+    level: {kind: int}
+    ancestry: {kind: str}
+    class: {kind: str}
+    location: {kind: ref, to: *places}
+  mystery:
+    state: {kind: enum, values: [open, solved, abandoned], default: open}
   scene:
     chapter: {kind: ref, to: [chapter]}
     location: {kind: ref, to: *places, inverse: scenes}
@@ -95,4 +105,5 @@ types:
   session:
     day: {kind: day, required: true}
     ingame: {kind: date}
+    level: {kind: int}
     present: {kind: list}

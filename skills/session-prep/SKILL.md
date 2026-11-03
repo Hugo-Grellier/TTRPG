@@ -22,6 +22,11 @@ description: Prepare the next game session from the campaign repository - what t
      can reveal and at what price, their statistics link.
    - **Places and scenes**: per likely scene, the read-aloud text, the stakes,
      the opposition with its link, and the outcomes, from the scene note.
+     Encounters fit the party: `party` in `campaign.yaml` and the last
+     session's `level` (GM Core XP budget, adjusted per character beyond
+     four); say when a scene's encounter was built for another size.
+   - **Arcs and mysteries**: PC arc hooks and mystery clues this session
+     can bring in, each linking its `pc` or `mystery` note.
    - Secrets the PCs may learn this session, in `> [!secret]` blocks.
 5. Do not mark anything as played. Run `tools/bin/ttrpg check`.
 6. If the GM wants it at the table: run the `foundry-sync` skill; the sheet

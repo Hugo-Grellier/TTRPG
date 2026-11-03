@@ -87,7 +87,7 @@ Lost Omens, APs, Society, adventures).
   note is original. Custom notes may cite. The export labels them.
 - **6c `ttrpg questions` (done).** Open `[!question]`, `[!idea]`, `[!verify]` across
   the campaign, by note; every skill's report and the GM's to-do list use it.
-- **6d Schema for long campaigns.** `pc` type (player, ties to NPCs and
+- **6d Schema for long campaigns (done).** `pc` type (player, ties to NPCs and
   factions, ambitions, secrets, arc hooks; filled after session zero);
   party reputation per faction (GM Core Reputation); renown; `party` size and
   level in `campaign.yaml` for encounter budgets; a home base's improvements;

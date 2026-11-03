@@ -23,7 +23,9 @@ A sandbox runs on factions and places, not on a plot. Each step links the
 previous ones.
 
 1. **Frame** - `campaign.yaml`: `start` (in-game date play begins), `name`,
-   language. A `notes/00-pitch.md` with the pitch, themes and lines/veils.
+   language, `party` (number of PCs). PCs get `pc` notes with their players
+   after session zero; before it, leave room for them (arc hooks), never
+   write their backgrounds. A `notes/00-pitch.md` with the pitch, themes and lines/veils.
 2. **Map** - one `region` per area, then `hex`, `settlement` or `location`
    notes for what the PCs can reach in the first sessions. Each place gets
    at least one reason to go there.
@@ -33,7 +35,9 @@ previous ones.
 4. **People** - for each faction a leader and one or two faces, plus NPCs who
    live in the starting places. Every NPC wants something.
 5. **Hooks** - `quest` notes (rumors, jobs, threats) that send the PCs toward
-   the factions. More hooks than the party can follow.
+   the factions. More hooks than the party can follow. Long conspiracies are
+   `mystery` notes with their clues spread over places and NPCs; possible
+   arcs are `chapter` notes (`note-types.md`, chapter (arc)), never a script.
 6. **Opening** - the first `scene` and a `session-prep` note from the
    `session-prep` skill.
 
