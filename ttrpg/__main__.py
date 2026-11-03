@@ -104,6 +104,19 @@ def cmd_rename(args):
     return 0
 
 
+def cmd_questions(args):
+    from .vault import load, open_items
+    counts, current = {}, None
+    for note, line, kind, text in open_items(load(args.root), args.kind):
+        counts[kind] = counts.get(kind, 0) + 1
+        if note is not current:
+            print(f"{note.rel} ({note.meta.get('title') or note.id})")
+            current = note
+        print(f"  {line} {kind}: {text[:160]}")
+    print(", ".join(f"{n} {kind}" for kind, n in counts.items()) or "nothing open")
+    return 0
+
+
 def cmd_maps(args):
     campaign = checker.vault.load(args.root)
     maps = [note for note in campaign.notes.values() if note.type == "map"]
@@ -310,6 +323,11 @@ def main(argv=None):
     p.add_argument("new")
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_rename)
+
+    p = sub.add_parser("questions", help="what waits on the GM: open [!question], [!verify] and [!idea] callouts by note")
+    p.add_argument("root", nargs="?", default=".")
+    p.add_argument("--kind", nargs="+", choices=["question", "verify", "idea"], default=["question", "verify", "idea"])
+    p.set_defaults(func=cmd_questions)
 
     p = sub.add_parser("maps", help="list maps by stage and places that still need one")
     p.add_argument("root", nargs="?", default=".")

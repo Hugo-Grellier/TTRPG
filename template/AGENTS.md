@@ -25,7 +25,9 @@ the tools move.
 ## Rules
 
 - The GM decides. Propose, explain, and edit what you are asked to edit; do
-  not invent canon silently. Mark open choices `> [!question]`.
+  not invent canon silently. Mark open choices `> [!question]`, changes to
+  published canon `> [!adaptation]` (citing it), unchecked facts
+  `> [!verify]` (`tools/ttrpg/note-types.md`, Provenance).
 - One subject, one note. The file name is the id (`armag-twice-born.md`),
   unique across the repository. Link with `[[id]]` or `[[id|text]]`, embed
   images with `![[file.png]]`. Never use relative Markdown links.

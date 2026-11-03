@@ -48,5 +48,10 @@ chosen by level, never invented stat blocks.
 - Keep it playable: every note answers "what do I do with this at the table?"
 - Write what is true in `> [!secret]` blocks when the players would learn it
   through play.
+- Set in the published world: use canon before inventing it. Search the GM's
+  library (`tools/bin/ttrpg library search <name> --pages`, then read the
+  pages) and Archives of Nethys (`tools/bin/ttrpg aon <name>`), cite what
+  you take, mark changes `> [!adaptation]` and unchecked facts `> [!verify]`
+  (`note-types.md`, Provenance).
 - Run `tools/bin/ttrpg check`, then summarize what exists, how it connects,
-  and the open `> [!question]`s.
+  and what `tools/bin/ttrpg questions` lists.

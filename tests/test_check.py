@@ -487,7 +487,7 @@ class LibraryTest(unittest.TestCase):
         for rel in ("Lost Omens/10. City of Marvels.pdf", "Society/01-04. Bandits of the Wood.pdf",
                     "Box/Accessories/Flip-Mat.pdf", "Box (Legacy)/Accessories/Flip-Mat.pdf", "Rules/[PZO1] GM Book.pdf"):
             write(self.books, rel, "pdf")
-        write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+        write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nsources:\n  km: {title: KM, pages: 9}\n")
         self.extracted = []
 
     def tearDown(self):
@@ -522,3 +522,12 @@ class LibraryTest(unittest.TestCase):
                                                "url": "/Deities.aspx?ID=337", "legacy_id": ["deity-150"], "summary": " First  child "}}]}}
         self.assertEqual(list(self.library.aon("Dahak", fetch=lambda *_: hits)),
                          [("Dahak", "deity", "Codex pg. 28", "https://2e.aonprd.com/Deities.aspx?ID=337", "First child", "remaster")])
+
+    def test_provenance_callouts_and_open_items(self):
+        from ttrpg.vault import load, open_items
+        write(self.campaign, "places/w.md", "---\ntype: location\ntitle: W\n---\nCanon [p. 2](src:km#p2).\n\n"
+              "> [!adaptation]\n> The keep is ruined here.\n\n> [!verify] Wiki says a mill\n> stands here.\n\n"
+              "> [!question]\n> Who owns the inn?\n\n> [!secret]\n> Hidden.\n")
+        self.assertEqual(messages(self.campaign), ["[!adaptation] without a citation: cite the canon it changes"])
+        items = [(line, kind, text) for _, line, kind, text in open_items(load(self.campaign))]
+        self.assertEqual(items, [(10, "verify", "Wiki says a mill"), (13, "question", "Who owns the inn?")])

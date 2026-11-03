@@ -35,7 +35,17 @@ faction's members keep their own story in their notes.
 Every paragraph or list item ends with the sources it comes from,
 `([[ap-page]])` or `([p. N](src:id#pN))`, N being the PDF page (what a PDF
 viewer opens, not the printed folio), unpadded (`#p32`); the Sources section lists every page
-that says something about the subject. An original note has none.
+that says something about the subject.
+
+Provenance is read per paragraph, in any note, imported or original: a
+cited paragraph is canon (the book or Archives of Nethys page says it); an
+uncited paragraph in an `origin: custom` or `modified` note is this
+campaign's own creation; a change to canon goes in `> [!adaptation]`, which
+cites what it changes; a fact not checked in an official source (community
+wiki, memory, a summary) goes in `> [!verify]` with where it comes from,
+never as plain text. Cite the GM's library (`ttrpg library search`, then
+`ttrpg source add <id>`) rather than Archives of Nethys when the book is
+there; AoN pages are cited by URL.
 
 Name items, spells, actions, conditions and creatures as the game's edition
 in the campaign language names them, keeping the Foundry link:
@@ -48,7 +58,9 @@ pre-remaster), from pathfinder-fr and Archives of Nethys: look them up there,
 by the Foundry id of the linked document first.
 
 Callouts: `> [!secret]` never reaches players, `> [!question]` is a GM
-decision still open, `> [!idea]` is a suggestion not yet adopted.
+decision still open, `> [!idea]` is a suggestion not yet adopted,
+`> [!adaptation]` and `> [!verify]` as above. `ttrpg questions` lists every
+open question, verify and idea of the campaign.
 
 | Type | Sections (en) | Sections (fr) |
 | --- | --- | --- |

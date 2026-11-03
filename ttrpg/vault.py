@@ -14,6 +14,7 @@ SKIP_FILES = {"README.md", "AGENTS.md", "CLAUDE.md"}
 WIKILINK = re.compile(r"(!?)\[\[(?!/)([^\]|#]+)(#[^\]|]*)?(?:\|([^\]]*))?\]\]")
 SOURCE = re.compile(r"src:([a-z0-9][a-z0-9-]*)#p(\d+)")
 UUID = re.compile(r"@UUID\[([^\]]+)\](?:\{([^}]*)\})?")
+CALLOUT = re.compile(r"^> \[!(\w+)\][^\n]*\n((?:>[^\n]*\n?)*)", re.M)
 MDLINK = re.compile(r"\]\((?!https?:|mailto:|src:|modules/|systems/|icons/|worlds/|#)([^)\s]+)\)")
 
 
@@ -110,3 +111,17 @@ def load(root):
         else:
             campaign.notes[note.id] = note
     return campaign
+
+
+OPEN = ("question", "verify", "idea")
+
+
+def open_items(campaign, kinds=OPEN):
+    """(note, line, kind, first line) for each callout still waiting on the GM, in file order."""
+    for note in sorted(campaign.notes.values(), key=lambda note: note.rel):
+        for match in CALLOUT.finditer(note.body):
+            kind = match[1].lower()
+            if kind in kinds:
+                head = match[0].split("\n", 1)[0].split("]", 1)[1].strip()
+                text = head or next((line.lstrip("> ").strip() for line in match[2].splitlines() if line.lstrip("> ").strip()), "")
+                yield note, note.line_of(match.start()), kind, text

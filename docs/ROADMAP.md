@@ -81,11 +81,11 @@ Lost Omens, APs, Society, adventures).
   declaration stays in the campaign). `pdf-text` becomes the one-book case.
   Page images on demand (pdftoppm) for maps. Rules lookups and URLs through
   the Archives of Nethys index the glossary already uses.
-- **6b Provenance per paragraph.** A cited paragraph is canon; `> [!adaptation]`
+- **6b Provenance per paragraph (done).** A cited paragraph is canon; `> [!adaptation]`
   changes canon for this campaign and cites what it changes; `> [!verify]` is
   unverified (community wiki only, memory); an uncited paragraph in a custom
   note is original. Custom notes may cite. The export labels them.
-- **6c `ttrpg questions`.** Open `[!question]`, `[!idea]`, `[!verify]` across
+- **6c `ttrpg questions` (done).** Open `[!question]`, `[!idea]`, `[!verify]` across
   the campaign, by note; every skill's report and the GM's to-do list use it.
 - **6d Schema for long campaigns.** `pc` type (player, ties to NPCs and
   factions, ambitions, secrets, arc hooks; filled after session zero);

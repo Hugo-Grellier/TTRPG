@@ -6,7 +6,7 @@ import re
 from datetime import date as Date
 
 from . import vault
-from .vault import SCHEMA, SOURCE, UUID, WIKILINK, MDLINK, fields_for, body_hash
+from .vault import CALLOUT, SCHEMA, SOURCE, UUID, WIKILINK, MDLINK, fields_for, body_hash
 
 DATE = re.compile(r"(-?\d{1,5})-(\d{2})-(\d{2})")
 ASSET = re.compile(r"\.[a-zA-Z0-9]{2,4}$")
@@ -192,6 +192,9 @@ def check_body(campaign, note, foundry_index, report):
             report.error(where, f"unknown source {match[1]!r} (declare it in campaign.yaml)")
         elif isinstance(source.get("pages"), int) and not 1 <= int(match[2]) <= source["pages"]:
             report.error(where, f"page {match[2]} outside {match[1]} (1-{source['pages']})")
+    for match in CALLOUT.finditer(note.body):
+        if match[1].lower() == "adaptation" and not (SOURCE.search(match[0]) or WIKILINK.search(match[0]) or "https://" in match[0]):
+            report.warn(f"{note.rel}:{note.line_of(match.start())}", "[!adaptation] without a citation: cite the canon it changes")
     for match in UUID.finditer(note.body):
         where = f"{note.rel}:{note.line_of(match.start())}"
         uuid = match[1]

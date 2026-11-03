@@ -23,7 +23,7 @@ from markdown_it import MarkdownIt
 
 from . import vault
 from .foundry_import import TOOLS, require_foundry_cli, slug
-from .vault import SOURCE, WIKILINK, body_hash, fields_for
+from .vault import CALLOUT, SOURCE, WIKILINK, body_hash, fields_for
 
 CATEGORIES = {
     "npc": "npcs", "faction": "factions", "location": "places", "settlement": "places", "region": "places",
@@ -34,7 +34,7 @@ LABELS = {
     "fr": {"npcs": "PNJ", "factions": "Factions", "places": "Lieux", "discovered": "Lieux découverts", "quests": "Quêtes", "clocks": "Horloges",
            "events": "Chronologie", "maps": "Cartes", "scenes": "Scènes", "sessions": "Séances",
            "handouts": "Aides de jeu", "items": "Objets", "chapters": "Chapitres", "notes": "Notes",
-           "secret": "Secret", "question": "Question", "idea": "Idée", "note": "Note", "info": "Info",
+           "secret": "Secret", "question": "Question", "idea": "Idée", "adaptation": "Adaptation", "verify": "À vérifier", "note": "Note", "info": "Info",
            "todo": "À faire", "quote": "", "progress": "Progression",
            "fields": {"level": "Niveau", "state": "État", "died": "Mort le", "location": "Lieu", "factions": "Factions",
                       "leader": "Chef", "base": "Base", "region": "Région", "in": "Dans", "giver": "Commanditaire",
@@ -54,12 +54,11 @@ LABELS = {
     "en": {"npcs": "NPCs", "factions": "Factions", "places": "Places", "discovered": "Discovered places", "quests": "Quests", "clocks": "Clocks",
            "events": "Timeline", "maps": "Maps", "scenes": "Scenes", "sessions": "Sessions",
            "handouts": "Handouts", "items": "Items", "chapters": "Chapters", "notes": "Notes",
-           "secret": "Secret", "question": "Question", "idea": "Idea", "note": "Note", "info": "Info",
+           "secret": "Secret", "question": "Question", "idea": "Idea", "adaptation": "Adaptation", "verify": "To verify", "note": "Note", "info": "Info",
            "todo": "To do", "quote": "", "progress": "Progress"},
 }
 HIDDEN_FIELDS = {"type", "title", "origin", "visibility", "prep", "aliases", "tags", "source", "source_hash", "foundry",
                  "image", "grid", "segments", "filled"}
-CALLOUT = re.compile(r"^> \[!(\w+)\][^\n]*\n((?:>[^\n]*\n?)*)", re.M)
 ALPHABET = string.ascii_letters + string.digits
 
 
