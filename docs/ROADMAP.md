@@ -105,13 +105,21 @@ Lost Omens, APs, Society, adventures).
   canon cited, geography and travel times, five-PC encounters), report from
   `ttrpg questions`.
 - **6g Gaps found by an audit of the dossier prompt (November 3, 2026):**
-  - *Region maps and hexploration.* Kortos has no official hex map. Survey
-    PathfinderWiki's interactive Golarion map (map.pathfinderwiki.com,
-    community-derived from the official maps, vector tiles with coordinates:
-    github.com/pf-wikis/mapping) for a region image with real distances;
-    otherwise a map page from the library (`library page`). Then a hex grid
-    over that image, `hex` notes keyed to it, travel times from GM Core's
-    exploration rules, and the Foundry scene through `map-ready`.
+  - *Region maps and hexploration (studied).* PathfinderWiki's map
+    (github.com/pf-wikis/mapping, CC BY-NC-SA, Paizo Community Use) gives
+    every named Kortos place as GeoJSON with coordinates (Westerhold, Otari,
+    Diobel, Escadar, aeon towers, ruins...), but its distances are not canon:
+    Absalom-Otari 42 miles there, ~75 in *The Road from Otari*; Diobel-Eagle
+    Garrison 73 there, ~100 in *The Apocalypse Prophet* (no constant factor).
+    The official map with a scale bar is in the library (World Guide PDF p.
+    14, Starstone Isle, 50-mile bar). GM Core hexploration (PDF p. 207): a
+    hex is 12 miles corner to corner, about a day. Plan: render the official
+    map page at high resolution and crop it, measure the scale bar, make it a
+    Foundry scene with a native hex grid sized to 12 miles (the fork's
+    `create-scene` needs a grid type), hex notes keyed by Foundry grid offset
+    (`"i_j"`, the World Explorer cells already used); optionally place the
+    wiki's named places on hexes by fitting their coordinates to the official
+    map on a few known towns.
   - *Chronology (done).* Define history versus plan: an event dated before
     `campaign.yaml` `start` is the setting's past (cited canon); after it,
     `played: "no"` is planned and `"yes"` happened. A `start` chosen from the
