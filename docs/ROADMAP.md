@@ -36,8 +36,8 @@ player notes with player ownership). Verify in the local Foundry
 (`foundry-local-1`, port 30001) with Kingmaker imported alongside. Then live
 sync through foundry-vtt-mcp (`ttrpg foundry plan|apply|pull`, tool
 `sync-world`): journals, actors and items, ownership and death, date, clocks,
-discovered places. Next: deploy the fork's bridge and Global Progress Clocks
-to production (maxi-lab bundle, owner approval), map pins as managed scene
+discovered places. Deployed to production on November 4, 2026. Next:
+map pins as managed scene
 notes from `map-ready`.
 
 ### 3 — Foundry changes back to the repository (done: world files and `ttrpg foundry pull` through MCP)
