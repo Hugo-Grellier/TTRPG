@@ -25,11 +25,12 @@ in English unless the library holds a translation).
   The pattern is a regular expression, case-insensitive: `'\bWest\b'` for a
   whole word, `'Deepkeg|Drun'` for several names.
 
-  Read each listed page in full (`cat ~/.local/share/ttrpg/library/<id>/pNNN.txt`,
-  or `.cache/sources/<id>/` once declared), and the pages around it when a
-  section starts or continues there. `tools/bin/ttrpg library page <id> <N>`
+  Read each listed page in full (`tools/bin/ttrpg library page <id> <N> --text`),
+  and the pages around it when a section starts or continues there: an
+  entry often ends on the next page. `tools/bin/ttrpg library page <id> <N>`
   renders the page as an image (it prints the PNG path; open it): read it
-  for maps, tables, sidebars and anything the text extraction scrambles.
+  for maps, tables, sidebars and two-column pages, whose extracted text
+  interleaves the columns.
   The page number is the PDF page (the file `pNNN.txt`), not the folio
   printed on the page, which is often one or two lower: cite the PDF page. `library list <words>` finds a
   book's id.
@@ -37,8 +38,9 @@ in English unless the library holds a translation).
   [--category deity|creature|rules|...]` gives each entry's book and printed
   page, its URL, and whether it is the legacy or the remaster version. AoN
   holds rules, creatures, deities, items and some organizations, rarely a
-  district or a village: no result is normal for a place. Find
-  that passage in the library to cite the PDF page; cite AoN by URL only
+  district or a village: do not ask it about places. The page it gives is
+  the printed folio: find the passage in the library (`library search
+  '<a phrase>' --book <id>`) to cite the PDF page; cite AoN by URL only
   when the book is not in the library.
 - **Community wiki** (pathfinderwiki.com): only to discover which books talk
   about the subject. A fact found nowhere else goes in `> [!verify]` with the
@@ -65,8 +67,10 @@ in your report that the books were not read.
 ## 3. Write the note
 
 - Once you know which books you cite, declare them:
-  `tools/bin/ttrpg source add <id>...` (it writes `campaign.yaml`; ids are
-  the library's).
+  `tools/bin/ttrpg source add <id> <id>=<alias>...` (it writes
+  `campaign.yaml`; ids are the library's; a book already declared keeps its
+  alias, which it prints). When several agents research in parallel, report
+  the books to declare instead, and the one who finishes declares them.
 - One note per subject, found first by title and `aliases`, in the folder of
   its kind (`campaign-edit` step 3: `places/`, `factions/`, `npcs/`...); the type that fits (`settlement`, `location`, `faction`, `npc`,
   `region`, `item`, `event`...; a deity or an organization without a place
@@ -85,7 +89,9 @@ in your report that the books were not read.
   note (`[[id]]`); name one that has none in plain text and list it in your
   report. `aliases` are other names the books use, not index labels.
 - Leave out a section the books say nothing about; a gap the GM must fill
-  is one `> [!question]` where it belongs.
+  is one `> [!question]` where it belongs, only when the campaign needs the
+  answer (a detail the books leave out is not a question: say it in your
+  report).
 - The campaign's changes to canon, if the GM asked for them: `> [!adaptation]`
   citing what they change. Ideas of yours: `> [!idea]`. Nothing invented as
   plain text.

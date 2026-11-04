@@ -189,7 +189,10 @@ def cmd_library(args):
         if not args.args:
             print("ttrpg library search <regex> [--book id-part]", file=sys.stderr)
             return 2
-        hits = library.search(lib, " ".join(args.args), args.book, not args.case, args.context)
+        hits = list(library.search(lib, " ".join(args.args), args.book, not args.case, args.context))
+        if not hits:
+            print("no match", file=sys.stderr)
+            return 1
         if args.pages:
             found = {}
             for book, page, _ in hits:
@@ -208,13 +211,26 @@ def cmd_library(args):
         if len(args.args) != 2:
             print("ttrpg library page <id> <page>", file=sys.stderr)
             return 2
-        print(library.render_page(lib, args.args[0], int(args.args[1]), args.dpi))
+        book, number = args.args[0], int(args.args[1])
+        if args.text:
+            text = lib / book / f"p{number:03}.txt"
+            if not text.is_file():
+                print(f"no page {number} in {book}", file=sys.stderr)
+                return 1
+            print(text.read_text(encoding="utf-8"))
+        else:
+            print(library.render_page(lib, book, number, args.dpi))
     return 0
 
 
 def cmd_aon(args):
+    found = False
     for name, category, sources, url, summary, edition in library.aon(" ".join(args.query), args.category, args.limit):
+        found = True
         print(f"{name} [{category}{', ' + edition if edition else ''}] {sources}\n  {url}" + (f"\n  {summary[:300]}" if summary else ""))
+    if not found:
+        print("no entry on Archives of Nethys (it rarely has places: search the library)", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -241,8 +257,8 @@ def cmd_creatures(args):
             print("--level takes a level or a range, e.g. 3, 1-5, -1-2", file=sys.stderr)
             return 2
         levels = range(int(bounds[1]), int(bounds[2] or bounds[1]) + 1)
-    elif party_level is not None:
-        levels = range(party_level - 4, party_level + 5)
+    elif party_level is not None and not args.name:
+        levels = range(party_level - 4, party_level + 5)  # GM Core: creatures beyond +-4 cost no XP
     if party_level is not None:
         budgets = ", ".join(f"{threat} {creatures.budget(party, threat)}" for threat in creatures.THREATS)
         print(f"party of {party} at level {party_level}: {budgets} XP (GM Core p. 75)")
@@ -252,6 +268,9 @@ def cmd_creatures(args):
         cost = creatures.xp(row["level"], party_level) if party_level is not None and not args.hazards else None
         name = row["name"] + (f" ({names[row['id']]})" if names.get(row["id"]) and names[row["id"]] != row["name"] else "")
         print(f"{row['level']}\t{cost if cost is not None else ''}\t{name}\t{row['rarity']}\t{', '.join(row['traits'])}\t@UUID[{row['uuid']}]")
+    if not rows:
+        print("no match" + (f" between levels {levels.start} and {levels.stop - 1}" if levels else ""), file=sys.stderr)
+        return 1
     if len(rows) > args.limit:
         print(f"... {len(rows)} matches: narrow with --trait, --name or --level", file=sys.stderr)
     return 0
@@ -294,8 +313,9 @@ def cmd_source_add(args):
         print("--as takes a single book", file=sys.stderr)
         return 2
     for book in args.books:
+        book, _, alias = book.partition("=")
         try:
-            print(library.declare(args.root, lib, book, args.alias))
+            print(library.declare(args.root, lib, book, alias or args.alias))
         except KeyError:
             print(f"{book}: not in the library ({lib}); see `ttrpg library list`", file=sys.stderr)
             return 1
@@ -440,6 +460,7 @@ def main(argv=None):
     p.add_argument("--limit", type=int, default=300, help="search: maximum matches")
     p.add_argument("--context", type=int, default=0, metavar="N", help="search: N lines before and after each match")
     p.add_argument("--dpi", type=int, default=110, help="page: resolution")
+    p.add_argument("--text", action="store_true", help="page: print the page's extracted text instead of rendering it")
     p.add_argument("--library", help="default $TTRPG_LIBRARY or ~/.local/share/ttrpg/library")
     p.set_defaults(func=cmd_library)
 
@@ -475,7 +496,7 @@ def main(argv=None):
     p = sub.add_parser("source", help="declare library books as sources (cite as src:<id>#p<N>); "
                        "excerpts: commit the text of cited pages in sources/ for agents without the library")
     p.add_argument("action", choices=["add", "excerpts"])
-    p.add_argument("books", nargs="*", help="library ids (ttrpg library list)")
+    p.add_argument("books", nargs="*", help="library ids (ttrpg library list), each optionally id=alias")
     p.add_argument("--as", dest="alias", help="citation id in this campaign, e.g. km")
     p.add_argument("--root", default=".")
     p.add_argument("--library")

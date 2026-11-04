@@ -55,12 +55,18 @@ blocks the work. Then:
    veils. Short; the brief's own words where they are good.
 2. **Research inventory** - every published subject the brief touches
    (places, organizations, people, deities, creatures, events, the rules
-   subsystems it needs): `tools/bin/ttrpg library search <name> --pages` and
-   `tools/bin/ttrpg aon <name>` for each. Write
+   subsystems it needs): `tools/bin/ttrpg library search <name> --pages`
+   for each, and `tools/bin/ttrpg aon <name>` for rules, creatures, deities
+   and organizations (it has no places). The `--pages` list is every page
+   naming the subject: keep in `pages` those whose text is about it (read
+   the first lines), the entry itself first. Write
    `.cache/research/inventory.tsv` (type, id, title, aliases, main_page,
    pages as `book#pN;...`, tier `major` or not), declare the books
    (`tools/bin/ttrpg source add <id>...`), then
    `tools/bin/ttrpg drafts --inventory .cache/research/inventory.tsv`.
+   Drafts are notes: links to them resolve, so add a row (without pages for
+   an original subject) for anything you will link before writing it, and
+   commit after each wave (the pre-commit check refuses broken links).
 3. **Canon** - the `lore-research` skill on each draft, major subjects first,
    one agent per few subjects in parallel (a capable model for major ones);
    agents report, you finish.
@@ -86,7 +92,9 @@ Notes follow `tools/ttrpg/schema.yaml` (fields) and `tools/ttrpg/note-types.md`
 (sections). Statistics are Foundry compendium links (`@UUID[Compendium...]`)
 chosen by level, never invented stat blocks: `tools/bin/ttrpg creatures
 --party-level N --trait <trait>` lists them with their XP for the party and
-their `@UUID[...]`.
+their `@UUID[...]` (`--party-level` is needed until a session note has a
+`level`; without `--level` it lists party level -4 to +4, the creatures
+worth XP; `--name` searches every level).
 
 ## Rules
 

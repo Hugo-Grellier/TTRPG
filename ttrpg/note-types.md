@@ -59,15 +59,18 @@ by the Foundry id of the linked document first.
 
 Callouts: `> [!secret]` never reaches players, `> [!question]` is a GM
 decision still open, `> [!idea]` is a suggestion not yet adopted,
-`> [!adaptation]` and `> [!verify]` as above. `ttrpg questions` lists every
-open question, verify and idea of the campaign.
+`> [!adaptation]` and `> [!verify]` as above, `> [!todo]` work left on a
+draft (`ttrpg drafts` writes it; remove it when the note is written).
+`ttrpg questions` lists every open question, verify and idea of the
+campaign: ask a `[!question]` only for a decision the GM must make, not for
+every detail the books leave out.
 
 | Type | Sections (en) | Sections (fr) |
 | --- | --- | --- |
 | npc | In brief · Appearance · Personality · Background · Motivations · In the campaign · What they know · Relations · Rewards · Statistics · Sources | En bref · Apparence · Personnalité · Passé · Motivations · Dans la campagne · Ce que sait le PNJ · Relations · Récompenses · Statistiques · Sources |
 | faction | In brief · History · Goals · Organization and means · Members · Territory · In the campaign · If the PCs do nothing · Relations · Sources | En bref · Histoire · Objectifs · Organisation et moyens · Membres · Territoire · Dans la campagne · Si les PJ n'agissent pas · Relations · Sources |
-| location, settlement | In brief · Show the players · Description · History · Inhabitants · What is here · Improvements · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Histoire · Habitants · Ce qui s'y trouve · Améliorations · Dans la campagne · Sources |
-| region, hex | In brief · Show the players · Description · Encounters · What is here · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Rencontres · Ce qui s'y trouve · Dans la campagne · Sources |
+| location, settlement | In brief · Show the players · Description · History · Inhabitants · Government · What is here · Rumours · Improvements · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Histoire · Habitants · Gouvernement · Ce qui s'y trouve · Rumeurs · Améliorations · Dans la campagne · Sources |
+| region, hex | In brief · Show the players · Description · Travel · Encounters · What is here · Rumours · Published adventures · In the campaign · Sources | En bref · À montrer aux joueurs · Description · Voyages · Rencontres · Ce qui s'y trouve · Rumeurs · Aventures publiées · Dans la campagne · Sources |
 | quest | In brief · Hook · Goal · How it unfolds · Reward · Done when · Failure · Sources | En bref · Accroche · Objectif · Déroulement · Récompense · Terminée quand · Échec · Sources |
 | item | In brief · Description · Powers · History · Where it is · Sources | En bref · Description · Pouvoirs · Histoire · Où le trouver · Sources |
 | scene | In brief · Read aloud · Situation · Stakes · Opposition · How it unfolds · Outcomes · Treasure · Sources | En bref · À lire · Situation · Enjeux · Opposition · Déroulement · Issues · Trésor · Sources |
@@ -122,6 +125,14 @@ What goes in each:
   changes at the table, and where it comes from (money, a favour, a find, an
   artisan met on the road), linking that note. No ledger: costs and Earn
   Income stay in session notes.
+- **Government** (location, settlement): who rules, how, and what the books
+  leave out (a place without a ruler of its own says so, cited).
+- **Rumours** (location, settlement, region, hex): a table of what the PCs
+  can hear, true or false, each linking the note it leads to.
+- **Travel** (region, hex): distances and travel times to the neighbouring
+  places, measured on the official map (say which) or cited.
+- **Published adventures** (region, hex): adventures and scenarios set
+  there, with levels and pages, for the GM to reuse.
 - **pc**: written with the player after session zero, never invented before.
   `player` is the player's name as in `campaign.yaml` `players`; `foundry`
   is the player's own actor (`Actor.<id>`), which the sync never touches. **Ties**:

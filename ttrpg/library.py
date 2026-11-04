@@ -137,10 +137,21 @@ def search(library, pattern, books=None, ignore_case=True, context=0):
             continue
         for page in sorted((library / book).glob("p*.txt")):
             lines = page.read_text(encoding="utf-8").splitlines()
-            for n, line in enumerate(lines):
-                if regex.search(line):
-                    around = lines[max(0, n - context):n + context + 1] if context else [line]
-                    yield book, int(page.stem[1:]), "\n".join(part.strip() for part in around)
+            matches = [n for n, line in enumerate(lines) if regex.search(line)]
+            if not context:
+                for n in matches:
+                    yield book, int(page.stem[1:]), lines[n].strip()
+                continue
+            # Matches whose context overlaps share one block.
+            blocks = []
+            for n in matches:
+                start, end = max(0, n - context), n + context + 1
+                if blocks and start <= blocks[-1][1]:
+                    blocks[-1][1] = end
+                else:
+                    blocks.append([start, end])
+            for start, end in blocks:
+                yield book, int(page.stem[1:]), "\n".join(part.strip() for part in lines[start:end])
 
 
 def render_page(library, book, page, dpi=110):
@@ -161,6 +172,9 @@ def declare(root, library, book, alias=None):
     alias = alias or book
     config_path = Path(root) / "campaign.yaml"
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    for other, declared in (config.get("sources") or {}).items():
+        if other != alias and (declared or {}).get("library", other) == book:
+            return f"{book}: already declared as {other}; cite src:{other}#p<N>"
     source = config.setdefault("sources", {}).setdefault(alias, {})
     source.update({"title": entry["title"], "pages": entry["pages"]})
     if alias != book:

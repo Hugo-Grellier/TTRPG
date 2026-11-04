@@ -518,6 +518,7 @@ class LibraryTest(unittest.TestCase):
         hits = list(self.library.search(self.lib, "dragon of", ["city"]))
         self.assertEqual(hits, [("city-of-marvels", 2, "The Dragon of the West lairs here.")])
         self.library.declare(self.campaign, self.lib, "city-of-marvels", "com")
+        self.assertIn("already declared as com", self.library.declare(self.campaign, self.lib, "city-of-marvels"))
         write(self.campaign, "npcs/a.md", "---\ntype: npc\ntitle: A\n---\nSeen [p. 2](src:com#p2).\n")
         self.assertEqual(messages(self.campaign), [])
         self.assertEqual((self.campaign / ".cache/sources/com/p002.txt").read_text().splitlines()[0], "The Dragon of the West lairs here.")
@@ -566,6 +567,10 @@ class LibraryTest(unittest.TestCase):
         write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nparty: five\n")
         self.assertEqual(sorted(messages(self.campaign)), ["party must be the number of player characters",
                                                            "reputation: must be between -50 and 50"])
+
+    def test_section_twice_warns(self):
+        write(self.campaign, "places/w.md", "---\ntype: location\ntitle: W\n---\n## Dans la campagne\nA.\n\n## Dans la campagne\nB.\n")
+        self.assertEqual(messages(self.campaign), ["section 'Dans la campagne' appears twice: merge them"])
 
     def test_scanned_books_detected(self):
         self.assertTrue(self.library.mostly_images(["", " \n", "x" * 50, ""]))

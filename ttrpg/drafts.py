@@ -33,7 +33,7 @@ def drafts(root, inventory):
             if (row.get("tier") or "").strip() == "major":
                 meta["tags"] = ["major"]
             sources = [f"- [[{page}]]\n" for page in pages] + [f"- [p. {page.split('#p')[1]}](src:{page})\n" for page in cited]
-            body = "> [!todo] Fiche à compléter depuis ses sources.\n\nSources :\n" + "".join(sources) if sources else "> [!todo] Fiche à écrire.\n"
+            body = "> [!todo] Fiche à compléter depuis ses sources.\n\n## Sources\n\n" + "".join(sources) if sources else "> [!todo] Fiche à écrire.\n"
             path = root / FOLDERS[kind] / f"{note_id}.md"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(vault.join_frontmatter(meta, body), encoding="utf-8")

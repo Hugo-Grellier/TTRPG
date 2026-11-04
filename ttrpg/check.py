@@ -188,6 +188,11 @@ def check_body(campaign, note, foundry_index, report):
             report.error(where, f"broken link [[{target}]]")
         elif players and other.get("visibility") != "players":
             report.error(where, f"players note links GM-only note [[{target}]]")
+    seen = set()
+    for match in re.finditer(r"^## +(.+?) *$", note.body, re.MULTILINE):
+        if match[1] in seen:
+            report.warn(f"{note.rel}:{note.line_of(match.start())}", f"section '{match[1]}' appears twice: merge them")
+        seen.add(match[1])
     for match in MDLINK.finditer(note.body):
         report.error(f"{note.rel}:{note.line_of(match.start())}", f"relative link ({match[1]}): use [[id]] instead")
     for match in SOURCE.finditer(note.body):
