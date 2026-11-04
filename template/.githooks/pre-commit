@@ -1,3 +1,5 @@
 #!/bin/sh
 # Refuse a commit that leaves the campaign incoherent. Enable with: git config core.hooksPath .githooks
+# Commit the text of the cited pages (sources/) for agents that do not have the GM's library.
+tools/bin/ttrpg source excerpts >/dev/null 2>&1 && git add -A sources 2>/dev/null
 exec tools/bin/ttrpg check

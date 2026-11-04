@@ -40,7 +40,10 @@ the tools move.
   `players` notes. Inside any note, `> [!secret]` blocks never reach players.
 - Cite a source page as `[p. 12](src:km#p12)`; the id must be declared under
   `sources` in `campaign.yaml`. Source PDFs are never committed; a local copy
-  of their text may exist in `.cache/sources/<id>/pNNN.txt`.
+  of their text may exist in `.cache/sources/<id>/pNNN.txt`, and the text of
+  every cited page is committed in `sources/<id>/pNNN.txt`
+  (`tools/bin/ttrpg source excerpts`, run by the pre-commit hook): read it to
+  check a citation when you do not have the library.
 - Foundry references (`@UUID[Actor...]`, `@UUID[Compendium...]`, `@Check[...]`)
   are kept as written: they become clickable in Foundry.
 - In-game dates are quoted `"4710-03-15"` strings; real dates are plain.

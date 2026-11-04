@@ -13,6 +13,7 @@ tools/bin/ttrpg pdf-text km /path/to/adventure.pdf --title "Adventure"
 tools/bin/ttrpg library index ~/pdfs/Pathfinder         # once: every PDF the GM owns, shared by all campaigns
 tools/bin/ttrpg library search "Westerhold" --pages     # which books and pages mention it
 tools/bin/ttrpg source add absalom-city-of-lost-omens   # declare a book; cite as src:<id>#p<N>
+tools/bin/ttrpg source excerpts                          # commit the cited pages' text in sources/ for agents without the library
 tools/bin/ttrpg aon Dahak                               # Archives of Nethys: book, page, URL, legacy/remaster
 tools/bin/ttrpg creatures --index ~/foundrydata/Data/systems/pf2e   # once: index of the system's bestiaries
 tools/bin/ttrpg creatures --party-level 2 --trait undead  # creatures, their XP for the party, compendium links

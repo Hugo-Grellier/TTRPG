@@ -280,6 +280,15 @@ def cmd_hexmap(args):
 
 
 def cmd_source_add(args):
+    if args.action == "excerpts":
+        written, removed, missing = library.excerpts(vault.load(args.root))
+        print(f"sources/: {written} pages written, {removed} no longer cited removed")
+        for page in missing:
+            print(f"{page}: no text in .cache/sources/ (declare the book with `source add`)", file=sys.stderr)
+        return 1 if missing else 0
+    if not args.books:
+        print("source add: give library ids", file=sys.stderr)
+        return 2
     lib = Path(args.library) if args.library else library.location()
     if args.alias and len(args.books) > 1:
         print("--as takes a single book", file=sys.stderr)
@@ -463,9 +472,10 @@ def main(argv=None):
     p.add_argument("--px-per-mile", type=float, help="report the fit error in miles")
     p.set_defaults(func=cmd_hexmap)
 
-    p = sub.add_parser("source", help="declare library books as sources of the campaign (cite as src:<id>#p<N>)")
-    p.add_argument("action", choices=["add"])
-    p.add_argument("books", nargs="+", help="library ids (ttrpg library list)")
+    p = sub.add_parser("source", help="declare library books as sources (cite as src:<id>#p<N>); "
+                       "excerpts: commit the text of cited pages in sources/ for agents without the library")
+    p.add_argument("action", choices=["add", "excerpts"])
+    p.add_argument("books", nargs="*", help="library ids (ttrpg library list)")
     p.add_argument("--as", dest="alias", help="citation id in this campaign, e.g. km")
     p.add_argument("--root", default=".")
     p.add_argument("--library")

@@ -521,6 +521,14 @@ class LibraryTest(unittest.TestCase):
         write(self.campaign, "npcs/a.md", "---\ntype: npc\ntitle: A\n---\nSeen [p. 2](src:com#p2).\n")
         self.assertEqual(messages(self.campaign), [])
         self.assertEqual((self.campaign / ".cache/sources/com/p002.txt").read_text().splitlines()[0], "The Dragon of the West lairs here.")
+        # excerpts: cited pages committed in sources/, uncited ones dropped, unknown text reported
+        from ttrpg.vault import load
+        write(self.campaign, "sources/com/p001.txt", "old\n")
+        write(self.campaign, "npcs/b.md", "---\ntype: npc\ntitle: B\n---\nMissing [p. 3](src:km#p3).\n")
+        self.assertEqual(self.library.excerpts(load(self.campaign)), (1, 1, ["km#p3"]))
+        self.assertEqual(sorted(p.name for p in (self.campaign / "sources").rglob("*.txt")), ["p002.txt"])
+        self.assertEqual(self.library.excerpts(load(self.campaign)), (0, 0, ["km#p3"]))
+        self.assertEqual(messages(self.campaign), [])
         with self.assertRaises(KeyError):
             self.library.declare(self.campaign, self.lib, "nope")
 

@@ -187,3 +187,28 @@ def aon(query, category=None, size=10, fetch=None):
         edition = "legacy" if doc.get("remaster_id") else "remaster" if doc.get("legacy_id") else ""
         yield (doc.get("name", ""), doc.get("category", ""), ", ".join(sources if isinstance(sources, list) else [sources]),
                "https://2e.aonprd.com" + doc.get("url", ""), " ".join((doc.get("summary") or "").split()), edition)
+
+
+def excerpts(campaign):
+    """Copy the text of every cited page into sources/<id>/pNNN.txt (committed, for agents without the
+    library) and drop the pages no longer cited. A page whose text is not in .cache/sources/ is left as is."""
+    from .vault import SOURCE
+    root = Path(campaign.root)
+    cited = {(m[1], int(m[2])) for note in campaign.notes.values() for m in SOURCE.finditer(note.body)}
+    written, missing, removed = 0, [], 0
+    for book, page in sorted(cited):
+        name = f"p{page:03d}.txt"
+        src, dst = root / ".cache" / "sources" / book / name, root / "sources" / book / name
+        if src.is_file():
+            text = src.read_text(encoding="utf-8")
+            if not dst.is_file() or dst.read_text(encoding="utf-8") != text:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_text(text, encoding="utf-8")
+                written += 1
+        elif not dst.is_file():
+            missing.append(f"{book}#p{page}")
+    for path in (root / "sources").glob("*/p*.txt"):
+        if (path.parent.name, int(path.stem[1:])) not in cited:
+            path.unlink()
+            removed += 1
+    return written, removed, missing

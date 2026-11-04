@@ -44,8 +44,9 @@ in English unless the library holds a translation).
   about the subject. A fact found nowhere else goes in `> [!verify]` with the
   wiki page it comes from.
 
-If `library` says the library is missing (a cloud agent), work from AoN and
-say in your report that the books were not read.
+If `library` says the library is missing (a cloud agent), the pages already
+cited are in `sources/<id>/pNNN.txt`; for anything else work from AoN and say
+in your report that the books were not read.
 
 ## 2. Weigh them
 
@@ -95,7 +96,8 @@ say in your report that the books were not read.
 
 Go back through the pages read: each fact about the subject is in the note
 or in the note of the subject it belongs to, and every page that says
-something about it is cited. Run `tools/bin/ttrpg check`, then report: books
+something about it is cited. Run `tools/bin/ttrpg source excerpts` (commits the cited pages' text for
+agents without the library) and `tools/bin/ttrpg check`, then report: books
 and pages read, what the books do not say (the gaps the GM will fill), the
 conflicts, and `tools/bin/ttrpg questions` for the notes you touched. When
 several agents research in parallel, report instead of finishing for all.

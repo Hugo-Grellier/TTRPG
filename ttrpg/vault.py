@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 SCHEMA = yaml.safe_load((Path(__file__).parent / "schema.yaml").read_text(encoding="utf-8"))
-SKIP_DIRS = {".git", ".cache", ".github", "tools", "node_modules", ".obsidian", ".claude", ".agents"}
+SKIP_DIRS = {".git", ".cache", ".github", "tools", "node_modules", ".obsidian", ".claude", ".agents", "sources"}
 SKIP_FILES = {"README.md", "AGENTS.md", "CLAUDE.md"}
 
 WIKILINK = re.compile(r"(!?)\[\[(?!/)([^\]|#]+)(#[^\]|]*)?(?:\|([^\]]*))?\]\]")

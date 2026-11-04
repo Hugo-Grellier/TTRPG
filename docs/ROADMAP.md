@@ -125,9 +125,11 @@ Lost Omens, APs, Society, adventures).
     `played: "no"` is planned and `"yes"` happened. A `start` chosen from the
     library (the latest book's year, the outcomes later books give
     adventure paths such as Age of Ashes), with the reasoning in a note.
-  - *Library for remote agents.* Cloud agents (Codex, Claude on the web) have
-    no PDFs: a way to reach the text (a private host, or committed excerpts
-    of what a campaign cites).
+  - *Library for remote agents (done: cited pages).* Cloud agents (Codex,
+    Claude on the web) have no PDFs: each campaign commits the text of the
+    pages it cites (`ttrpg source excerpts`, in the pre-commit hook). A
+    private host for the whole library waits until a remote agent needs to
+    research new subjects.
   - *Encounters (done).* Survey existing PF2e encounter builders before writing
     one; then a tool that finds creatures by level and trait offline and
     budgets XP for `party` characters at a level.
