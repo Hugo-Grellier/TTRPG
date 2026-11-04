@@ -73,7 +73,11 @@ creatures, no walls):
    `gridSize` = round(12 x pixels per mile x sqrt(3) / 2).
 4. `create-scene` with `gridType: hex-columns-odd`, that `gridSize`,
    `gridDistance: 12`, `gridUnits: mi`, and the fixed id. Capture it: the
-   scale bar should span its miles / 12 hexes.
+   scale bar should span its miles / 12 hexes. Players see a region map
+   without a token: turn token vision off and global light on for the
+   scene (`tokenVision: false`), and World Explorer on
+   (`flags.world-explorer.enabled`); revealed cells then show, the rest
+   stays hidden.
 5. Hex notes are keyed by the Foundry grid offset `"i_j"` (row, column; the
    World Explorer `cells` format): `coord: "23_28"`, `map: <map note>`,
    `cells: ["23_28"]`. A place's hex: its image position plus the scene
