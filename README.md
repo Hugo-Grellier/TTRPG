@@ -16,6 +16,7 @@ tools/bin/ttrpg source add absalom-city-of-lost-omens   # declare a book; cite a
 tools/bin/ttrpg aon Dahak                               # Archives of Nethys: book, page, URL, legacy/remaster
 tools/bin/ttrpg creatures --index ~/foundrydata/Data/systems/pf2e   # once: index of the system's bestiaries
 tools/bin/ttrpg creatures --party-level 2 --trait undead  # creatures, their XP for the party, compendium links
+tools/bin/ttrpg hexmap --control "Absalom=1346,1272" ... # PathfinderWiki's places onto an official map's hexes
 tools/bin/ttrpg check
 tools/bin/ttrpg export-foundry --install ~/foundrydata/Data/modules   # journals module
 tools/bin/ttrpg pull-foundry ~/foundrydata/Data/worlds/<world>          # edits made in Foundry -> notes

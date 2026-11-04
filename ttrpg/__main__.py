@@ -257,6 +257,28 @@ def cmd_creatures(args):
     return 0
 
 
+def cmd_hexmap(args):
+    from . import hexmap
+    def pair(text, sep=","):
+        a, b = text.split(sep)
+        return float(a), float(b)
+    controls = {}
+    for item in args.control:
+        name, _, xy = item.rpartition("=")
+        controls[name] = pair(xy)
+    try:
+        places, errors = hexmap.place(hexmap.wiki_places(library.location().parent / "wiki-map"), controls,
+                                      args.size, pair(args.origin), pair(args.image, "x"))
+    except (KeyError, ValueError) as error:
+        print(f"hexmap: {error} (names as on PathfinderWiki's map)", file=sys.stderr)
+        return 1
+    for name, error in errors.items():
+        print(f"# control {name}: {error / args.px_per_mile:.1f} mi off" if args.px_per_mile else f"# control {name}: {error:.0f} px off")
+    for row in sorted(places, key=lambda r: (r[4], r[0])):
+        print("\t".join(map(str, row)))
+    return 0
+
+
 def cmd_source_add(args):
     lib = Path(args.library) if args.library else library.location()
     if args.alias and len(args.books) > 1:
@@ -431,6 +453,15 @@ def main(argv=None):
     p.add_argument("--limit", type=int, default=60)
     p.add_argument("--root", default=".")
     p.set_defaults(func=cmd_creatures)
+
+    p = sub.add_parser("hexmap", help="put PathfinderWiki's named places on the hexes of an official region map")
+    p.add_argument("--control", action="append", required=True, metavar="NAME=X,Y",
+                   help="a town on both maps and its pixel on the map image (three or more)")
+    p.add_argument("--size", type=float, required=True, help="the scene's grid size (hex height, px)")
+    p.add_argument("--origin", required=True, help="image origin in the scene, X,Y (create-scene imageOrigin)")
+    p.add_argument("--image", required=True, help="map image size, WxH")
+    p.add_argument("--px-per-mile", type=float, help="report the fit error in miles")
+    p.set_defaults(func=cmd_hexmap)
 
     p = sub.add_parser("source", help="declare library books as sources of the campaign (cite as src:<id>#p<N>)")
     p.add_argument("action", choices=["add"])

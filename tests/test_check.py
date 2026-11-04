@@ -582,3 +582,16 @@ class LibraryTest(unittest.TestCase):
         self.assertEqual(messages(self.campaign), [])
         write(self.campaign, "pcs/company.md", "---\ntype: company\ntitle: La compagnie\nrenown: famous\n---\nC.\n")
         self.assertEqual(len(messages(self.campaign)), 1)
+
+    def test_hexmap_matches_foundry_offsets_and_fits(self):
+        from ttrpg import hexmap
+        # offsets read from Foundry 14 (hex columns, size 61, image origin 158.48, 152.5)
+        for (x, y), want in {(1346, 1272): (23, 28), (952, 1314): (24, 20), (564, 1374): (25, 13),
+                             (910, 412): (9, 20), (752, 1522): (27, 17)}.items():
+            self.assertEqual(hexmap.hex_offset(x + 158.48264889255228, y + 152.5, 61), want)
+        places = [("A", "city", 0, 0, ""), ("B", "city", 1, 0, ""), ("C", "city", 0, 1, ""), ("Far", "city", 50, 50, "")]
+        out, errors = hexmap.place(places, {"A": (100, 500), "B": (300, 500), "C": (100, 300)}, 61, (0, 0), (1000, 1000))
+        self.assertEqual([row[:4] for row in out], [("A", "city", 100, 500), ("B", "city", 300, 500), ("C", "city", 100, 300)])
+        self.assertLess(max(errors.values()), 1e-6)
+        with self.assertRaises(KeyError):
+            hexmap.place(places, {"A": (0, 0), "B": (1, 0), "Nowhere": (2, 2)}, 61, (0, 0), (10, 10))

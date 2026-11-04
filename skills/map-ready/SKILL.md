@@ -80,6 +80,15 @@ creatures, no walls):
    origin (`canvas.dimensions.sceneRect`), through `canvas.grid.getOffset`.
    Check two distances the books give (e.g. "75 miles west of Absalom")
    against the map and write the result in the map note.
+6. Named places from PathfinderWiki's map onto the hexes: find three or
+   more towns on the official image (pixel of each dot) and run
+   `tools/bin/ttrpg hexmap --control "Absalom=1346,1272" --control ... --size
+   <gridSize> --origin <imageOrigin x,y from create-scene> --image <WxH>
+   --px-per-mile <scale>`. It prints the fit error per town (under half a
+   hex is good) and each wiki place with its kind, image pixel and hex. A
+   hex note made from it cites the books for what is there and keeps the
+   wiki position as `> [!verify]` until a book or the official map confirms
+   it.
 
 ## 3. Check and record
 
