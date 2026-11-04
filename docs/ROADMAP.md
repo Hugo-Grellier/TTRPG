@@ -20,7 +20,7 @@ each subject, structured, in French); session prep condenses them. Skill
 to judge, then every subject of Kingmaker and the Beginner Box by cloud
 agents. The earlier distilled notes (Chapter 1, zones 1-2) are replaced.
 
-### 1c — Foundry scene tools in the MCP (tools done; `map-ready` skill next)
+### 1c — Foundry scene tools in the MCP (done: tools and `map-ready`)
 Add to a fork of foundry-vtt-mcp what the prototype needed: create a scene
 from an image or pack entry; create/update/delete embedded scene documents
 (Wall, AmbientLight, AmbientSound, Token, Note, Tile, Region) in one generic
@@ -40,7 +40,7 @@ discovered places. Next: deploy the fork's bridge and Global Progress Clocks
 to production (maxi-lab bundle, owner approval), map pins as managed scene
 notes from `map-ready`.
 
-### 3 — Foundry changes back to the repository (done from world files; MCP route for remote servers next)
+### 3 — Foundry changes back to the repository (done: world files and `ttrpg foundry pull` through MCP)
 Read world journals (pack or MCP), turn changed pages back into Markdown,
 write them over the notes and leave the diff for GM review. Repository wins a
 conflict.
