@@ -47,13 +47,20 @@ previous ones.
 
 When the GM brings a long brief (a campaign over many levels, its
 inspirations, principles, places, a prologue, a first act, a distant threat),
-the brief replaces most of the interview: ask only what it leaves open and
-blocks the work. Then:
+the brief replaces most of the interview, but not the GM's direction: the GM
+directs, you research, propose and write. Work in passes and stop at each
+**checkpoint**: show what you have in a few lines, ask the round of questions
+it raises (two to four, each with two or three options, your recommendation
+first), and go on only with the GM's answers. Never build on a choice the GM
+has not made, unless they said "à toi de voir" for it. Then:
 
-1. **Principles** - `notes/00-pitch.md`: promise, tone, inspirations, the
+1. **Read-back (checkpoint)** - say in ten lines what you understood: the
+   promise, the tone, what the PCs are, the scale, the first act, the threat,
+   and what the brief leaves open. The GM corrects before any research.
+2. **Principles** - `notes/00-pitch.md`: promise, tone, inspirations, the
    brief's design principles as rules future work must respect, lines and
    veils. Short; the brief's own words where they are good.
-2. **Research inventory** - every published subject the brief touches
+3. **Research inventory** - every published subject the brief touches
    (places, organizations, people, deities, creatures, events, the rules
    subsystems it needs): `tools/bin/ttrpg library search <name> --pages`
    for each, and `tools/bin/ttrpg aon <name>` for rules, creatures, deities
@@ -67,26 +74,39 @@ blocks the work. Then:
    Drafts are notes: links to them resolve, so add a row (without pages for
    an original subject) for anything you will link before writing it, and
    commit after each wave (the pre-commit check refuses broken links).
-3. **Canon** - the `lore-research` skill on each draft, major subjects first,
+4. **Canon** - the `lore-research` skill on each draft, major subjects first,
    one agent per few subjects in parallel (a capable model for major ones);
    agents report, you finish.
-4. **Decisions** - `notes/01-decisions.md`: each choice the brief asks you to
-   study (a destination, a patron, a relic, a first antagonist...) as a
-   table of options with criteria, sources and a recommendation in
-   `> [!idea]`; the GM adopts, rejects or changes each. Choices made in play
-   or by the GM move to the notes they concern.
-5. **Build** - the steps above (map, factions with clocks, people, hooks,
-   mysteries, arcs, opening) on top of canon, the brief's levels in
-   `chapter` notes: the near ones detailed, the far ones as directions.
-   Encounters for `party` characters, threats the PCs can see coming.
-6. **Review** - against the brief's principles and these questions: can the
+5. **Canon findings and decisions (checkpoint)** - what canon gives that the
+   brief did not expect (a ready antagonist, a place that contradicts the
+   brief, a rule that changes a plan), then each choice the brief asks you to
+   study (a destination, a patron, a relic, a first antagonist...), asked in
+   rounds. Record them in `notes/01-decisions.md`: options with criteria,
+   sources, and the GM's choice and reason; a choice left to you stays
+   `> [!idea]`. Choices made in play move to the notes they concern.
+6. **Skeleton (checkpoint)** - before writing notes: the factions (one line
+   each: goal, collision, clock), the main NPCs (one line: what they want),
+   the arcs as `chapter` titles with their levels, and the opening situation.
+   The GM cuts, adds, renames, changes the colour.
+7. **Build** - the notes on the validated skeleton, near content first (map,
+   factions with clocks, people, hooks, mysteries, opening), far arcs as
+   directions. Encounters for `party` characters, threats the PCs can see
+   coming. Agents only get validated parts. After each wave, show the GM a
+   short list of what was written and any choice you had to make (checkpoint);
+   their corrections apply before the next wave.
+8. **Review** - against the brief's principles and these questions: can the
    PCs ignore or change every situation? do independent arcs exist, beside
    the main threat? is every canon fact cited and every change an
    `[!adaptation]`? do places, distances and travel times fit the official
    maps? is each subsystem used worth its cost to the GM? Fix what fails;
    say what you could not check.
-7. **Report** - what exists, the main canon findings that shaped it, the
-   decisions waiting on the GM, the risks, and `tools/bin/ttrpg questions`.
+9. **Report** - what exists, the main canon findings that shaped it, what is
+   still open, the risks, and `tools/bin/ttrpg questions`.
+
+Ask in the conversation rather than in notes: a `[!question]` is for what the
+GM wants to decide later (in play, after session zero), not for what blocks
+your work now. With no GM to answer (a cloud agent, an unattended run), stop
+at the first checkpoint and report instead of guessing past it.
 
 Notes follow `tools/ttrpg/schema.yaml` (fields) and `tools/ttrpg/note-types.md`
 (sections). Statistics are Foundry compendium links (`@UUID[Compendium...]`)
