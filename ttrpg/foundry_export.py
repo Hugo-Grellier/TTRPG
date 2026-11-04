@@ -55,7 +55,8 @@ LABELS = {
                       "yes": "oui", "no": "non", "raw": "image seule", "walled": "murée", "lit": "éclairée",
                       "ready": "prête", "battle": "combat", "overview": "vue d'ensemble",
                       "neighbourhood": "connus du quartier", "local": "héros locaux", "regional": "personnalités régionales",
-                      "international": "célèbres dans plusieurs nations", "legendary": "légendaires", "playing": "en jeu", "absent": "absent", "retired": "retiré", "solved": "résolu", "abandoned": "abandonné"}},
+                      "international": "célèbres dans plusieurs nations", "legendary": "légendaires", "playing": "en jeu", "absent": "absent", "retired": "retiré", "solved": "résolu", "abandoned": "abandonné"},
+           "values_by_type": {"mystery": {"open": "ouvert"}}},
     "en": {"npcs": "NPCs", "factions": "Factions", "places": "Places", "discovered": "Discovered places", "quests": "Quests", "clocks": "Clocks",
            "events": "Timeline", "maps": "Maps", "scenes": "Scenes", "sessions": "Sessions",
            "handouts": "Handouts", "items": "Items", "chapters": "Chapters", "notes": "Notes",
@@ -143,6 +144,11 @@ class Exporter:
         return re.sub(r"\[([^\]]*)\]\((" + SOURCE.pattern + r")\)",
                       lambda m: f"{m[1]} ({sources.get(m[3], {}).get('title', m[3])}, p. {m[4]})", text)
 
+    def value(self, kind, v):
+        """A field value in the campaign language; a type may override the shared label (grammatical gender)."""
+        own = self.label.get("values_by_type", {}).get(kind, {})
+        return own.get(str(v), self.label.get("values", {}).get(str(v), str(v)))
+
     def header(self, note):
         """Frontmatter relations and state as one line of links above the body."""
         parts = []
@@ -152,7 +158,7 @@ class Exporter:
             spec = fields_for(note.type).get(name, {})
             values = value if isinstance(value, list) else [value]
             shown = [f"[[{vault_id(v)}]]" if spec.get("kind") in ("ref", "refs")
-                     else self.label.get("values", {}).get(str(v), str(v)) for v in values]
+                     else self.value(note.type, v) for v in values]
             parts.append(f"**{self.field(name)}** {', '.join(shown)}")
         if note.type == "clock" and isinstance(note.get("segments"), int):
             filled = note.get("filled") or 0

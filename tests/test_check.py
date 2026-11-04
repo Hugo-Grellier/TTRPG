@@ -553,6 +553,15 @@ class LibraryTest(unittest.TestCase):
         write(self.campaign, "factions/guild.md", "---\ntype: faction\ntitle: Guild\nreputation: 12\n---\nG.\n")
         write(self.campaign, "mysteries/m.md", "---\ntype: mystery\ntitle: M\n---\n> [!secret]\n> Truth.\n")
         self.assertEqual(messages(self.campaign), [])
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.vault import load
+        write(self.campaign, "quests/q.md", "---\ntype: quest\ntitle: Q\nstate: open\n---\nQ.\n")
+        write(self.campaign, "mysteries/m.md", "---\ntype: mystery\ntitle: M\nstate: open\n---\nM.\n")
+        campaign = load(self.campaign)
+        exporter = Exporter(campaign)
+        self.assertIn("ouverte", exporter.header(campaign.notes["q"]))   # la quête
+        self.assertIn("ouvert", exporter.header(campaign.notes["m"]))    # le mystère
+        self.assertNotIn("ouverte", exporter.header(campaign.notes["m"]))
         write(self.campaign, "factions/guild.md", "---\ntype: faction\ntitle: Guild\nreputation: 60\n---\nG.\n")
         write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nparty: five\n")
         self.assertEqual(sorted(messages(self.campaign)), ["party must be the number of player characters",
