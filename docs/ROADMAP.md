@@ -136,8 +136,9 @@ Lost Omens, APs, Society, adventures).
     budgets XP for `party` characters at a level.
   - *Standing (done).* Structure what reputation does not hold: renown, wealth,
     informal influence and legal authority, kept apart.
-- **Verify:** the dossier prompt run on a scratch campaign, then compared with
-  this list.
+- **Verify (done, reduced: prologue and act 1, November 4, 2026):** the
+  dossier prompt run on a scratch campaign, then compared with this list;
+  the full run comes with the campaign the players choose.
 - **Later:** a hex grid over any region map (Kortos has no module hex map),
   once a sandbox reaches hexploration in play; French names of lore places
   and organizations when no French edition is in the library.
