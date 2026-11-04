@@ -281,7 +281,7 @@ def cmd_hexmap(args):
 
 def cmd_source_add(args):
     if args.action == "excerpts":
-        written, removed, missing = library.excerpts(vault.load(args.root))
+        written, removed, missing = library.excerpts(checker.vault.load(args.root))
         print(f"sources/: {written} pages written, {removed} no longer cited removed")
         for page in missing:
             print(f"{page}: no text in .cache/sources/ (declare the book with `source add`)", file=sys.stderr)
