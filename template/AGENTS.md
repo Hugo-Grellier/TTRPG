@@ -2,7 +2,8 @@
 
 This repository is a tabletop campaign prepared by its GM: one Markdown note
 per subject, with YAML frontmatter. `campaign.yaml` sets the game system, the
-language every note is written in, the calendar and the cited sources. The
+language every note is written in, the calendar and the cited sources; its
+`id` names the Foundry module and must not change once synced. The
 tools live in the `tools/` submodule (repository `TTRPG`); its skills are
 linked into `.claude/skills` and `.agents/skills`. If you cannot open the
 submodule (web chat), read the same files in the `TTRPG` repository:

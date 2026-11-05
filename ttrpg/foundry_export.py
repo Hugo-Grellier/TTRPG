@@ -91,7 +91,8 @@ class Exporter:
     def __init__(self, campaign):
         self.campaign = campaign
         self.config = campaign.config
-        self.module_id = f"ttrpg-{slug(self.config.get('name', 'campaign'))}"
+        # `id` keeps every Foundry id stable when the campaign is renamed; older campaigns fall back to the name.
+        self.module_id = f"ttrpg-{slug(self.config.get('id') or self.config.get('name', 'campaign'))}"
         self.label = LABELS.get(self.config.get("language"), LABELS["en"])
         self.markdown = MarkdownIt("commonmark", {"html": True}).enable("table").enable("strikethrough")
         self.notes = [note for note in campaign.notes.values() if exported(note) and not note.error]

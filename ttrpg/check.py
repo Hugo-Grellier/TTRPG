@@ -94,6 +94,8 @@ def check_config(campaign, report):
             report.error("campaign.yaml", f"missing {key}")
     if config.get("start") is not None and not (isinstance(config["start"], str) and DATE.fullmatch(config["start"])):
         report.error("campaign.yaml", "start must be a quoted in-game date YYYY-MM-DD")
+    if config.get("id") is not None and not (isinstance(config["id"], str) and re.fullmatch(r"[a-z0-9-]+", config["id"])):
+        report.error("campaign.yaml", "id must be lowercase letters, digits and dashes (it names the Foundry module)")
     if config.get("party") is not None and not (isinstance(config["party"], int) and config["party"] > 0):
         report.error("campaign.yaml", "party must be the number of player characters")
     for source_id, source in (config.get("sources") or {}).items():

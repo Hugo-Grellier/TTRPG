@@ -572,6 +572,15 @@ class LibraryTest(unittest.TestCase):
         write(self.campaign, "places/w.md", "---\ntype: location\ntitle: W\n---\n## Dans la campagne\nA.\n\n## Dans la campagne\nB.\n")
         self.assertEqual(messages(self.campaign), ["section 'Dans la campagne' appears twice: merge them"])
 
+    def test_campaign_id_names_module(self):
+        from ttrpg.foundry_export import Exporter
+        write(self.campaign, "campaign.yaml", "name: Long title (draft)\nid: west\nsystem: pf2e\nlanguage: fr\n")
+        self.assertEqual(messages(self.campaign), [])
+        from ttrpg import vault
+        self.assertEqual(Exporter(vault.load(self.campaign)).module_id, "ttrpg-west")
+        write(self.campaign, "campaign.yaml", "name: T\nid: West Hold\nsystem: pf2e\nlanguage: fr\n")
+        self.assertEqual(messages(self.campaign), ["id must be lowercase letters, digits and dashes (it names the Foundry module)"])
+
     def test_stats_is_bare_uuid(self):
         write(self.campaign, "npcs/v.md", "---\ntype: npc\ntitle: V\nstats: '@UUID[Compendium.pf2e.x.Actor.y]'\n---\nV.\n")
         self.assertEqual(messages(self.campaign), ["stats: '@UUID[Compendium.pf2e.x.Actor.y]' must be the bare uuid (Compendium.pf2e...), not a link"])
