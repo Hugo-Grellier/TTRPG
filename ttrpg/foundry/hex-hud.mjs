@@ -6,6 +6,8 @@
 // that is not revealed.
 const BASE = new URL("..", import.meta.url).pathname.replace(/^\//, "");
 let config = { labels: {}, scenes: [] };
+// Loaded once, awaited by every canvas: the first scene can be drawn before "ready".
+let loading = null;
 let table = null, panel = null, last = null, timer = null;
 
 const esc = (s) => foundry.utils.escapeHTML(String(s ?? ""));
@@ -39,6 +41,7 @@ function revealed(scene, cell) {
 }
 
 function render(scene, cell, x, y) {
+  if (!panel) return;
   const L = config.labels;
   const row = table?.cells?.[cell] ?? {};
   const found = revealed(scene, cell) ? places(scene, cell) : null;
@@ -88,8 +91,11 @@ function move(event) {
   timer = setTimeout(() => render(scene, cell, event.clientX, event.clientY), 300);
 }
 
-Hooks.once("ready", async () => {
-  config = (await load("hud.json")) ?? config;
+Hooks.once("setup", () => {
+  loading = load("hud.json").then((value) => { config = value ?? config; });
+});
+
+Hooks.once("ready", () => {
   panel = document.createElement("section");
   panel.id = "ttrpg-hex-hud";
   panel.hidden = true;
@@ -98,6 +104,7 @@ Hooks.once("ready", async () => {
 
 Hooks.on("canvasReady", async () => {
   hide();
+  await loading;
   const scene = canvas.scene;
   table = scene && config.scenes.includes(scene.id) ? await load(`hexes/${scene.id}.json`) : null;
   const view = canvas.app.view;

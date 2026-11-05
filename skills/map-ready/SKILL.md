@@ -86,7 +86,19 @@ creatures, no walls):
    origin (`canvas.dimensions.sceneRect`), through `canvas.grid.getOffset`.
    Check two distances the books give (e.g. "75 miles west of Absalom")
    against the map and write the result in the map note.
-6. Named places from PathfinderWiki's map onto the hexes: find three or
+6. The hex table `maps/<map note>.hexes.tsv` (cell, region note, GM Core
+   terrain, travel `open|difficult|greater-difficult`) covers every land
+   cell: draft it from the image colours and the nearest named region, then
+   have the GM review it. The exported module shows it when a user hovers a
+   hex (region, terrain, travel, exploration, places), players only on cells
+   World Explorer revealed.
+7. Zone borders and zone names go in one transparent image laid on the
+   background as a Tile (World Explorer's fog covers tiles, not drawings:
+   a Drawing label would show every name to the players). Detailed
+   regional maps of the library can be Tiles placed by named places and
+   masked to their zone's cells. Foundry 14 Tiles are anchored at their
+   centre: `x`, `y` = top-left + half the size.
+8. Named places from PathfinderWiki's map onto the hexes: find three or
    more towns on the official image (pixel of each dot) and run
    `tools/bin/ttrpg hexmap --control "Absalom=1346,1272" --control ... --size
    <gridSize> --origin <imageOrigin x,y from create-scene> --image <WxH>
