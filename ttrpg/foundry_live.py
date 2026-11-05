@@ -63,6 +63,13 @@ def digest(data):
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
 
 
+def ours(flags, campaign, known):
+    """A world document, clock or cell belongs to this campaign when it carries its id; one synced before
+    campaigns were marked belongs to it only if this campaign still wants it (never deleted, never another's)."""
+    flags = flags or {}
+    return flags.get("campaign") == campaign or ("campaign" not in flags and known)
+
+
 def managed(document_name, _id, data, parent=None):
     """A desired document: its data carries flags.ttrpg.hash, the hash of everything else."""
     data = json.loads(json.dumps(data))
@@ -135,7 +142,14 @@ def desired(exporter):
         pages = entry.pop("pages")
         documents.append(managed("JournalEntry", entry["_id"], {**entry, "folder": folder}))
         documents += [managed("JournalEntryPage", page["_id"], page, f"JournalEntry.{entry['_id']}") for page in pages]
-    return documents + actors_and_items(exporter)
+    documents += actors_and_items(exporter)
+    # Several campaigns can share a world: each document names its campaign (the module id).
+    for document in documents:
+        flags = document["data"]["flags"]["ttrpg"]
+        flags.pop("hash")
+        flags["campaign"] = exporter.module_id
+        flags["hash"] = digest(document["data"])
+    return documents
 
 
 def key(document):
@@ -232,7 +246,7 @@ def clocks(exporter):
         filled = int(note.get("filled") or 0)
         out[_id] = {"id": _id, "type": "clock", "name": note.meta.get("title") or note.id, "value": filled,
                     "max": int(note.get("segments")), "private": note.get("visibility") != "players",
-                    "ttrpg": {"id": note.id, "path": note.rel, "value": filled}}
+                    "ttrpg": {"id": note.id, "path": note.rel, "value": filled, "campaign": exporter.module_id}}
     return out
 
 
@@ -282,7 +296,8 @@ def explored(exporter):
             if not isinstance(cell, str) or cell.count("_") != 1:
                 continue  # the checker reports it
             i, j = (int(part) for part in cell.split("_"))
-            out.setdefault(scene, {})[f"{i}_{j}"] = {"offset": {"i": i, "j": j}, "reveal": True, "ttrpg": {"id": note.id}}
+            out.setdefault(scene, {})[f"{i}_{j}"] = {"offset": {"i": i, "j": j}, "reveal": True,
+                                                     "ttrpg": {"id": note.id, "campaign": exporter.module_id}}
     return out
 
 
@@ -341,9 +356,10 @@ def world_state(exporter, backend, world=()):
             continue
         cells = current["value"] or {}
         want = wanted.get(scene, {})
-        ours = {key for key, value in cells.items() if isinstance(value, dict) and value.get("ttrpg")}
+        mine = {key for key, value in cells.items() if isinstance(value, dict) and value.get("ttrpg")
+                and ours(value["ttrpg"], exporter.module_id, key in want)}
         change = {key: value for key, value in want.items() if cells.get(key) != value}
-        remove = sorted(ours - set(want))
+        remove = sorted(mine - set(want))
         if change or remove:
             steps["explore"].append({"uuid": scene, "set": change, "remove": remove})
     date = current_date(exporter.campaign)
@@ -361,19 +377,23 @@ def world_state(exporter, backend, world=()):
             raise
         return steps  # the clocks module is not enabled in this world
     want = clocks(exporter)
-    ours = {key: value for key, value in current.items() if isinstance(value, dict) and value.get("ttrpg")}
-    edited = {key for key, value in ours.items()
+    mine = {key: value for key, value in current.items() if isinstance(value, dict) and value.get("ttrpg")
+            and ours(value["ttrpg"], exporter.module_id, key in want)}
+    edited = {key for key, value in mine.items()
               if key in want and value.get("value") not in (value["ttrpg"].get("value"), want[key]["value"])}
-    steps["clocks_edited"] = [ours[key] for key in sorted(edited)]
+    steps["clocks_edited"] = [mine[key] for key in sorted(edited)]
     steps["clocks"] = {key: value for key, value in want.items() if current.get(key) != value and key not in edited}
-    steps["clocks_remove"] = sorted(key for key in ours if key not in want)
+    steps["clocks_remove"] = sorted(key for key in mine if key not in want)
     return steps
 
 
 def sync(root, backend, apply=False, force=False):
     exporter = Exporter(vault.load(root))
-    world = backend.sync(op="inventory", types=TYPES, text=True)["documents"]
-    steps = plan(desired(exporter), world)
+    want = desired(exporter)
+    known = {key(document) for document in want}
+    world = [document for document in backend.sync(op="inventory", types=TYPES, text=True)["documents"]
+             if ours(document.get("flags"), exporter.module_id, key(document) in known)]
+    steps = plan(want, world)
     steps.update(world_state(exporter, backend, world))
     if force:
         # Overwrite what changed in Foundry with the notes, even where the notes did not change.
@@ -405,7 +425,10 @@ def sync(root, backend, apply=False, force=False):
 def pull(root, backend):
     exporter = Exporter(vault.load(root))
     report = new_report()
+    known = {key(document) for document in desired(exporter)}
     for document in backend.sync(op="inventory", types=["JournalEntryPage"], text=True)["documents"]:
+        if not ours(document.get("flags"), exporter.module_id, key(document) in known):
+            continue
         page = {"_id": document["_id"], "flags": {"ttrpg": document.get("flags")},
                 "text": {"format": 2, "markdown": document.get("markdown", "")}}
         pull_page(exporter, document["parent"].split(".")[1], page, report)

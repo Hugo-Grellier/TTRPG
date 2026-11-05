@@ -7,8 +7,10 @@ the official map image; the hex is then Foundry's grid offset `"i_j"` for hex co
 shifted down), as `canvas.grid.getOffset` gives it.
 """
 
+import csv
 import json
 import math
+import re
 import urllib.request
 from pathlib import Path
 
@@ -84,3 +86,41 @@ def place(places, controls, size, origin, image):
             i, j = hex_offset(x + origin[0], y + origin[1], size)
             out.append((name, kind, round(x), round(y), f"{i}_{j}", link))
     return out, errors
+
+
+# GM Core hexploration terrains (PDF p. 209) plus hills, and its three travel costs.
+TERRAINS = ("plains", "hills", "forest", "mountain", "swamp", "desert", "aquatic", "arctic")
+TRAVEL = ("open", "difficult", "greater-difficult")
+CELL = re.compile(r"-?\d+_-?\d+")
+
+
+def table_path(map_note):
+    """A region map's hex table sits beside its note: maps/carte-kortos.md -> maps/carte-kortos.hexes.tsv."""
+    return map_note.path.with_name(map_note.path.stem + ".hexes.tsv")
+
+
+def hex_table(map_note):
+    """Rows of the map's hex table (cell, region, terrain, travel), keyed by cell; {} without a table."""
+    path = table_path(map_note)
+    if not path.is_file():
+        return {}
+    with open(path, encoding="utf-8", newline="") as tsv:
+        return {row["cell"].strip(): {key: (row.get(key) or "").strip() for key in ("region", "terrain", "travel")}
+                for row in csv.DictReader(tsv, delimiter="\t") if (row.get("cell") or "").strip()}
+
+
+def table_problems(campaign, map_note):
+    """What is wrong in a map's hex table, as (where, message)."""
+    where = table_path(map_note).relative_to(campaign.root).as_posix()
+    out = []
+    for cell, row in hex_table(map_note).items():
+        if not CELL.fullmatch(cell):
+            out.append((where, f"cell {cell!r} must be a grid offset i_j"))
+        region = campaign.notes.get(row["region"]) if row["region"] else None
+        if row["region"] and (region is None or region.type != "region"):
+            out.append((where, f"{cell}: region {row['region']!r} is not a region note"))
+        if row["terrain"] and row["terrain"] not in TERRAINS:
+            out.append((where, f"{cell}: terrain {row['terrain']!r} not in {list(TERRAINS)}"))
+        if row["travel"] and row["travel"] not in TRAVEL:
+            out.append((where, f"{cell}: travel {row['travel']!r} not in {list(TRAVEL)}"))
+    return out

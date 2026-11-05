@@ -47,7 +47,21 @@ def check(root, fix=False):
         check_origin(note, report, fix)
     check_chronology(campaign, report)
     check_assets(campaign, report)
+    check_maps(campaign, report)
     return campaign, report
+
+
+def check_maps(campaign, report):
+    """A map's Foundry scene is a Scene uuid; a region map's hex table names real regions and GM Core terrains."""
+    from .hexmap import table_problems
+    for note in campaign.notes.values():
+        if note.type != "map":
+            continue
+        scene = note.get("foundry")
+        if scene and not str(scene).startswith("Scene."):
+            report.error(f"{note.rel}:1", f"foundry: {scene!r} must be a scene uuid (Scene.<id>)")
+        for where, message in table_problems(campaign, note):
+            report.error(where, message)
 
 
 WARN_BYTES, MAX_BYTES = 5_000_000, 50_000_000

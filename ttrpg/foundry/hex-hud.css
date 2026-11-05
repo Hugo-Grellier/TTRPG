@@ -1,0 +1,19 @@
+#ttrpg-hex-hud {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  min-width: 12rem;
+  max-width: 20rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border-dark, #333);
+  border-radius: 4px;
+  background: rgba(20, 20, 24, 0.9);
+  color: #eee;
+  font-size: var(--font-size-13, 13px);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+}
+#ttrpg-hex-hud p { margin: 0.1rem 0; }
+#ttrpg-hex-hud .title { font-weight: bold; color: #f0d48a; }
+#ttrpg-hex-hud .key { color: #aaa; }
+#ttrpg-hex-hud .unknown { font-style: italic; color: #aaa; }
+#ttrpg-hex-hud ul { margin: 0.3rem 0 0; padding-left: 1rem; }

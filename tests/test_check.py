@@ -105,6 +105,33 @@ class RenameTest(unittest.TestCase):
 
 
 class ExportTest(unittest.TestCase):
+    def test_region_map_hex_table_and_panel_flags(self):
+        from ttrpg.check import check
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.vault import load
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "places/cairn.md", "---\ntype: region\ntitle: Cairnlands\n---\nR.\n")
+            write(root, "maps/kortos.md", "---\ntype: map\ntitle: K\nkind: overview\nfoundry: Scene.abc\n---\nM.\n")
+            write(root, "maps/kortos.hexes.tsv", "cell\tregion\tterrain\ttravel\n23_30\tcairn\tplains\topen\n")
+            write(root, "places/tertres.md", "---\ntype: hex\ntitle: Les Tertres\nregion: cairn\nmap: kortos\ncells: [\"22_32\"]\n"
+                  "travel: difficult\nexplored: reconnoitered\ndiscovered: \"yes\"\n---\nH.\n")
+            self.assertEqual([m for _, _, m in check(root)[1].items], [])
+            exporter = Exporter(load(root))
+            self.assertEqual(exporter.hex_tables(), {"abc": {"cells": {"23_30": {"region": "Cairnlands", "terrain": "plaine", "travel": "dégagé"}}}})
+            places = {e["name"]: e for e in exporter.entries()}
+            gm = next(p for p in places["Lieux"]["pages"] if p["name"] == "Les Tertres")["flags"]["ttrpg"]
+            shown = places["Lieux découverts"]["pages"][0]["flags"]["ttrpg"]
+            for flags in (gm, shown):
+                self.assertEqual((flags["scene"], flags["cells"], flags["region"], flags["travel"], flags["explored"]),
+                                 ("Scene.abc", ["22_32"], "Cairnlands", "difficile", "reconnu"))
+            write(root, "maps/kortos.hexes.tsv", "cell\tregion\tterrain\ttravel\n23-30\tkortos\tlava\tfast\n")
+            write(root, "maps/kortos.md", "---\ntype: map\ntitle: K\nkind: overview\nfoundry: abc\n---\nM.\n")
+            self.assertEqual(sorted(m for _, _, m in check(root)[1].items), sorted([
+                "foundry: 'abc' must be a scene uuid (Scene.<id>)", "cell '23-30' must be a grid offset i_j",
+                "23-30: region 'kortos' is not a region note", "23-30: terrain 'lava' not in ['plains', 'hills', 'forest', 'mountain', 'swamp', 'desert', 'aquatic', 'arctic']",
+                "23-30: travel 'fast' not in ['open', 'difficult', 'greater-difficult']"]))
+
     def test_links_secrets_and_inverse_relations(self):
         from ttrpg.foundry_export import Exporter
         from ttrpg.vault import load
@@ -244,6 +271,28 @@ class FakeWorld:
 
 
 class LiveSyncTest(unittest.TestCase):
+    def test_two_campaigns_share_a_world(self):
+        from ttrpg import foundry_live
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            write(a, "campaign.yaml", "name: A\nsystem: pf2e\nlanguage: fr\n")
+            write(a, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nA.\n")
+            write(b, "campaign.yaml", "name: B\nsystem: pf2e\nlanguage: fr\n")
+            write(b, "npcs/m.md", "---\ntype: npc\ntitle: Hilde\n---\nB.\n")
+            world = FakeWorld()
+            foundry_live.sync(a, world, apply=True)
+            first = set(world.docs)
+            steps, done = foundry_live.sync(b, world, apply=True)
+            self.assertEqual((done["created"], done["deleted"]), (3, 0))  # folder, entry, page
+            self.assertTrue(first <= set(world.docs))
+            steps, _ = foundry_live.sync(a, world)
+            self.assertEqual([len(steps[x]) for x in ("create", "update", "delete", "edited")], [0, 0, 0, 0])
+            # Documents synced before campaigns were marked: kept, and adopted only by the campaign that wants them.
+            for doc in world.docs.values():
+                doc["data"]["flags"]["ttrpg"].pop("campaign")
+                doc["data"]["flags"]["ttrpg"]["hash"] = "legacy"
+            steps, _ = foundry_live.sync(b, world)
+            self.assertEqual((len(steps["delete"]), len(steps["update"])), (0, 3))
+
     def test_plan_apply_edit_and_pull(self):
         from ttrpg import foundry_live
         from ttrpg.foundry_export import Exporter

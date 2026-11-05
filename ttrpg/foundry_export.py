@@ -56,16 +56,28 @@ LABELS = {
                       "ready": "prête", "battle": "combat", "overview": "vue d'ensemble",
                       "neighbourhood": "connus du quartier", "local": "héros locaux", "regional": "personnalités régionales",
                       "international": "célèbres dans plusieurs nations", "legendary": "légendaires", "playing": "en jeu", "absent": "absent", "retired": "retiré", "solved": "résolu", "abandoned": "abandonné"},
-           "values_by_type": {"mystery": {"open": "ouvert"}}},
+           "values_by_type": {"mystery": {"open": "ouvert"},
+                              "hex": {"open": "dégagé", "difficult": "difficile", "greater-difficult": "très difficile",
+                                      "reconnoitered": "reconnu", "mapped": "cartographié"}},
+           "hud": {"hex": "Case", "region": "Région", "terrain": "Terrain", "travel": "Voyage", "explored": "Exploration",
+                   "unknown": "Inexploré", "places": "Lieux",
+                   "plains": "plaine", "hills": "collines", "forest": "forêt", "mountain": "montagne", "swamp": "marais",
+                   "desert": "désert", "aquatic": "eau", "arctic": "glace"}},
     "en": {"npcs": "NPCs", "factions": "Factions", "places": "Places", "discovered": "Discovered places", "quests": "Quests", "clocks": "Clocks",
            "events": "Timeline", "maps": "Maps", "scenes": "Scenes", "sessions": "Sessions",
            "handouts": "Handouts", "items": "Items", "chapters": "Chapters", "notes": "Notes",
            "pcs": "Player characters", "mysteries": "Mysteries",
            "secret": "Secret", "question": "Question", "idea": "Idea", "adaptation": "Adaptation", "verify": "To verify", "note": "Note", "info": "Info",
-           "todo": "To do", "quote": "", "progress": "Progress"},
+           "todo": "To do", "quote": "", "progress": "Progress",
+           "values_by_type": {"hex": {"greater-difficult": "greater difficult"}},
+           "hud": {"hex": "Hex", "region": "Region", "terrain": "Terrain", "travel": "Travel", "explored": "Explored",
+                   "unknown": "Unexplored", "places": "Places",
+                   "plains": "plains", "hills": "hills", "forest": "forest", "mountain": "mountain", "swamp": "swamp",
+                   "desert": "desert", "aquatic": "water", "arctic": "arctic"}},
 }
 HIDDEN_FIELDS = {"type", "title", "origin", "visibility", "prep", "aliases", "tags", "source", "source_hash", "foundry",
                  "image", "grid", "segments", "filled"}
+HUD = Path(__file__).parent / "foundry"
 ALPHABET = string.ascii_letters + string.digits
 
 
@@ -219,9 +231,47 @@ class Exporter:
             "ownership": {"default": 2 if players else 0},
             # The way back compares against these: what was exported, and the repository body it came from.
             "flags": {"ttrpg": {"id": note.id, "path": note.rel, "header": self.convert(header),
-                                "exported": page_hash(markdown), "body": body_hash(body)}},
+                                "exported": page_hash(markdown), "body": body_hash(body), **self.hex_flags(note)}},
             "sort": 0,
         }
+
+    def map_scene(self, map_id):
+        note = self.campaign.notes.get(str(map_id or ""))
+        scene = str(note.get("foundry") or "") if note else ""
+        return scene if scene.startswith("Scene.") else ""
+
+    def hex_flags(self, note):
+        """Where a place sits on a region map, for the hex hover panel: its scene, its cells and, for a hex, what the
+        panel shows (players get them through the title-only discovered page)."""
+        scene, cells = self.map_scene(note.get("map")), note.get("cells")
+        if not scene or not isinstance(cells, list):
+            return {}
+        out = {"scene": scene, "cells": [str(cell) for cell in cells]}
+        if note.type == "hex":
+            region = self.campaign.notes.get(str(note.get("region") or ""))
+            out.update({"kind": "hex", "region": (region.meta.get("title") or region.id) if region else "",
+                        "terrain": str(note.get("terrain") or ""), "travel": self.value("hex", note.get("travel")) if note.get("travel") else "",
+                        "explored": self.value("hex", note.get("explored")) if note.get("explored") not in (None, "no") else ""})
+        return out
+
+    def hex_tables(self):
+        """Per region map scene, the public hex table: region, terrain and travel of every cell."""
+        from .hexmap import hex_table
+        out = {}
+        hud = self.label.get("hud", LABELS["en"]["hud"])
+        for note in self.campaign.notes.values():
+            scene = self.map_scene(note.id) if note.type == "map" else ""
+            table = hex_table(note) if scene else {}
+            if not table:
+                continue
+            cells = {}
+            for cell, row in table.items():
+                region = self.campaign.notes.get(row["region"])
+                cells[cell] = {"region": (region.meta.get("title") or region.id) if region else "",
+                               "terrain": hud.get(row["terrain"], row["terrain"]),
+                               "travel": self.value("hex", row["travel"]) if row["travel"] else ""}
+            out[scene.split(".", 1)[1]] = {"cells": cells}
+        return out
 
     def entries(self):
         grouped = {}
@@ -251,7 +301,7 @@ class Exporter:
         pages = [{"_id": foundry_id(self.module_id, "discovered", note.id), "_key": f"!journal.pages!{entry}.{foundry_id(self.module_id, 'discovered', note.id)}",
                   "name": note.meta.get("title") or note.id, "type": "text", "title": {"show": True, "level": 1},
                   "text": {"format": 2, "markdown": "", "content": ""}, "ownership": {"default": 2}, "sort": (index + 1) * 100,
-                  "flags": {"ttrpg": {"discovered": note.id, "path": note.rel, "exported": page_hash("")}}}
+                  "flags": {"ttrpg": {"discovered": note.id, "path": note.rel, "exported": page_hash(""), **self.hex_flags(note)}}}
                  for index, note in enumerate(notes)]
         return {"_id": entry, "_key": f"!journal!{entry}", "name": self.label["discovered"], "pages": pages,
                 "ownership": {"default": 2}, "sort": (len(LABELS["en"]) + 1) * 100,
@@ -279,10 +329,20 @@ class Exporter:
                 continue
             (out / "assets").mkdir(exist_ok=True)
             shutil.copy2(path, out / "assets" / name)
+        tables = self.hex_tables()
+        for scene, table in tables.items():
+            (out / "hexes").mkdir(exist_ok=True)
+            (out / "hexes" / f"{scene}.json").write_text(json.dumps(table, ensure_ascii=False), encoding="utf-8")
+        (out / "scripts").mkdir(exist_ok=True)
+        shutil.copy2(HUD / "hex-hud.mjs", out / "scripts" / "hex-hud.mjs")
+        shutil.copy2(HUD / "hex-hud.css", out / "styles.css")
+        (out / "hud.json").write_text(json.dumps({"labels": self.label.get("hud", LABELS["en"]["hud"]),
+                                                  "scenes": sorted(tables)}, ensure_ascii=False), encoding="utf-8")
         manifest = {
             "id": self.module_id, "title": f"{self.config.get('name')} (TTRPG)",
             "description": "Campaign notes exported from the campaign repository. Regenerated by ttrpg export-foundry; edit the repository, not this module.",
             "version": date.today().isoformat(), "compatibility": {"minimum": "13", "verified": "14"},
+            "esmodules": ["scripts/hex-hud.mjs"], "styles": ["styles.css"],
             "packs": [{"name": "notes", "label": f"{self.config.get('name')}", "path": "packs/notes", "type": "JournalEntry",
                        "ownership": {"PLAYER": "NONE", "TRUSTED": "NONE", "ASSISTANT": "OWNER"}}],
         }

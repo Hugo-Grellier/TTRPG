@@ -39,6 +39,8 @@ types:
   hex:
     coord: {kind: str}
     terrain: {kind: str}
+    travel: {kind: enum, values: [open, difficult, greater-difficult]}
+    explored: {kind: enum, values: ["no", reconnoitered, mapped], default: "no"}
     region: {kind: ref, to: [region], inverse: hexes}
     discovered: {kind: enum, values: ["yes", "no"], default: "no"}
     map: {kind: ref, to: [map]}
