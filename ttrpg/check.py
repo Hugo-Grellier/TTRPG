@@ -130,6 +130,8 @@ def check_fields(campaign, note, report):
     for cell in note.get("cells") or [] if isinstance(note.get("cells"), list) else []:
         if not (isinstance(cell, str) and re.fullmatch(r"-?\d+_-?\d+", cell)):
             report.error(where, f"cells: {cell!r} must be a quoted grid offset \"i_j\" (World Explorer's)")
+    if isinstance(note.get("stats"), str) and not note.get("stats").startswith("Compendium."):
+        report.error(where, f"stats: {note.get('stats')!r} must be the bare uuid (Compendium.pf2e...), not a link")
     if note_type == "npc" and note.get("died") and note.get("state") != "dead":
         report.error(where, "died is set but state is not dead")
 

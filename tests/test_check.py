@@ -572,6 +572,10 @@ class LibraryTest(unittest.TestCase):
         write(self.campaign, "places/w.md", "---\ntype: location\ntitle: W\n---\n## Dans la campagne\nA.\n\n## Dans la campagne\nB.\n")
         self.assertEqual(messages(self.campaign), ["section 'Dans la campagne' appears twice: merge them"])
 
+    def test_stats_is_bare_uuid(self):
+        write(self.campaign, "npcs/v.md", "---\ntype: npc\ntitle: V\nstats: '@UUID[Compendium.pf2e.x.Actor.y]'\n---\nV.\n")
+        self.assertEqual(messages(self.campaign), ["stats: '@UUID[Compendium.pf2e.x.Actor.y]' must be the bare uuid (Compendium.pf2e...), not a link"])
+
     def test_scanned_books_detected(self):
         self.assertTrue(self.library.mostly_images(["", " \n", "x" * 50, ""]))
         self.assertFalse(self.library.mostly_images(["text " * 20] * 3 + [""] * 2))
