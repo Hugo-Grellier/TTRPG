@@ -72,7 +72,9 @@ creatures, no walls):
    is 12 miles corner to corner, about a day of travel. For hex columns,
    `gridSize` = round(12 x pixels per mile x sqrt(3) / 2).
 4. `create-scene` with `gridType: hex-columns-odd`, that `gridSize`,
-   `gridDistance: 12`, `gridUnits: mi`, and the fixed id. Capture it: the
+   `gridDistance: 12`, `gridUnits: mi`, and the fixed id. Keep the
+   `padding` the map note records (write it there the first time): it moves
+   the scene origin, and with it every hex offset `i_j` of the notes. Capture it: the
    scale bar should span its miles / 12 hexes. Players see a region map
    without a token: turn token vision off and global light on for the
    scene (`tokenVision: false`), and World Explorer on
