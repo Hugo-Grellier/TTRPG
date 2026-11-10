@@ -18,12 +18,13 @@ from datetime import datetime, timedelta
 from . import vault
 from .foundry_export import Exporter, foundry_id, page_hash
 from .foundry_sync import new_report, note_body, pull_page
+from .hexmap import CELL, hex_centre
 from .check import in_game_key
 
 HOST, PORT = "127.0.0.1", 31414
 # Bytes per apply call: the bridge's WebRTC channel takes 64 KB a message and each query 10 s.
 BATCH = 40_000
-TYPES = ["Folder", "JournalEntry", "JournalEntryPage", "Actor", "Item", "ActiveEffect"]
+TYPES = ["Folder", "JournalEntry", "JournalEntryPage", "Actor", "Item", "ActiveEffect", "Note"]
 DEAD = {"fr": "Mort", "en": "Dead"}
 CLOCKS = "global-progress-clocks.activeClocks"
 # pf2e world clock: the in-game year is the real one plus the theme's offset.
@@ -130,9 +131,35 @@ def actors_and_items(exporter):
     return documents
 
 
+def map_pins(exporter):
+    """A pin per place the notes put on a region map (`map` and `cells`, the map note giving the scene and
+    its `grid` size): at the centre of the place's first cell, opening its page; places sharing a cell sit
+    side by side. Foundry shows a pin to the users who can read its page, so players only see those of
+    `visibility: players` places."""
+    cells = {}
+    for note in sorted(exporter.notes, key=lambda note: note.id):
+        scene, listed = exporter.map_scene(note.get("map")), note.get("cells")
+        size = exporter.campaign.notes[str(note.get("map"))].get("grid") if scene else None
+        if isinstance(size, int) and isinstance(listed, list) and listed and CELL.fullmatch(str(listed[0])):  # the checker reports a bad cell
+            cells.setdefault((scene, size, listed[0]), []).append(note)
+    documents = []
+    for (scene, size, cell), notes in cells.items():
+        # ponytail: region maps are hex columns, odd columns down (map-ready builds them so); another
+        # grid needs the scene's grid type, which sync-world does not return yet.
+        x, y = hex_centre(*(int(part) for part in cell.split("_")), size)
+        for index, note in enumerate(notes):
+            entry, page = exporter.pages[note.id]
+            documents.append(managed("Note", foundry_id(exporter.module_id, "pin", note.id),
+                                     {"entryId": entry, "pageId": page, "y": round(y),
+                                      "x": round(x + (index - (len(notes) - 1) / 2) * size / 3),
+                                      "text": note.meta.get("title") or note.id,
+                                      "flags": {"ttrpg": {"id": note.id, "path": note.rel}}}, scene))
+    return documents
+
+
 def desired(exporter):
     """The world documents the notes describe: one folder, a journal per category, a page per note,
-    and the actors and items of `actors_and_items`."""
+    the actors and items of `actors_and_items`, and the pins of `map_pins`."""
     name = exporter.config.get("name", "Campagne")
     folder = foundry_id(exporter.module_id, "folder", "journal")
     # The folder also remembers the in-game date the sync last gave the world clock.
@@ -143,6 +170,7 @@ def desired(exporter):
         documents.append(managed("JournalEntry", entry["_id"], {**entry, "folder": folder}))
         documents += [managed("JournalEntryPage", page["_id"], page, f"JournalEntry.{entry['_id']}") for page in pages]
     documents += actors_and_items(exporter)
+    documents += map_pins(exporter)
     # Several campaigns can share a world: each document names its campaign (the module id).
     for document in documents:
         flags = document["data"]["flags"]["ttrpg"]
@@ -334,7 +362,7 @@ def pins(exporter, backend):
                     changes.append({"documentName": "Note", "parent": scene, "_id": pin["_id"],
                                     "data": {"entryId": entry, "pageId": page,
                                              "flags": {"ttrpg": {"id": target, "path": exporter.campaign.notes[target].rel, "original": original}}}})
-            elif flags:
+            elif "original" in flags:  # a pin of `map_pins` has none: it is the sync's own
                 changes.append({"documentName": "Note", "parent": scene, "_id": pin["_id"],
                                 "data": {**original, "flags.-=ttrpg": None}, "flags": flags})
     return changes

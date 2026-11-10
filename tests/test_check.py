@@ -445,6 +445,41 @@ class LiveSyncTest(unittest.TestCase):
             self.assertEqual((n1["pageId"], n1["flags"]), ("PPPPPPPPPPPPPPPP", None))
             self.assertEqual(world.pins["Scene.SSSSSSSSSSSSSSSS"][0]["pageId"], "PPPPPPPPPPPPPPPP")
 
+    def test_placed_notes_get_managed_pins(self):
+        from ttrpg import foundry_live
+        from ttrpg.foundry_export import Exporter
+        from ttrpg.hexmap import hex_centre, hex_offset
+        from ttrpg.vault import load
+        scene = "Scene.SSSSSSSSSSSSSSSS"
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "maps/region.md", f"---\ntype: map\ntitle: Région\nkind: overview\nfoundry: {scene}\ngrid: 71\n---\n")
+            write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\nmap: region\ncells: ["23_30", "23_31"]\n---\nMJ.\n')
+            write(root, "places/ailleurs.md", "---\ntype: hex\ntitle: Ailleurs\n---\nMJ.\n")
+            self.assertEqual(messages(root), [])
+            world = FakeWorld()
+            foundry_live.sync(root, world, apply=True)
+            pins = lambda: [d for d in world.docs.values() if d["documentName"] == "Note"]
+            pin = pins()[0]["data"]
+            # Foundry's getCenterPoint({i: 23, j: 30}) on a 71 px hex-columns-odd grid: (1885.63, 1633).
+            self.assertEqual([(d["parent"], pin["x"], pin["y"], pin["text"]) for d in pins()], [(scene, 1886, 1633, "Tour")])
+            self.assertEqual((pin["entryId"], pin["pageId"]), Exporter(load(root)).pages["tour"])
+            self.assertEqual(hex_offset(*hex_centre(24, 23, 71), 71), (24, 23))
+            # The scene lists the pin with its flags: the retargeting of adventure pins leaves it alone.
+            world.pins[scene] = [{"_id": pins()[0]["_id"], "entryId": pin["entryId"], "pageId": pin["pageId"], "flags": pin["flags"]["ttrpg"]}]
+            steps = foundry_live.sync(root, world)[0]
+            self.assertEqual([steps[action] for action in ("create", "update", "delete", "pins")], [[], [], [], []])
+            write(root, "places/tour.md", '---\ntype: hex\ntitle: Tour\nmap: region\ncells: ["24_23"]\n---\nMJ.\n')
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual((pins()[0]["data"]["x"], pins()[0]["data"]["y"]), (1455, 1740))
+            write(root, "places/ailleurs.md", '---\ntype: hex\ntitle: Ailleurs\nmap: region\ncells: ["24_23"]\n---\nMJ.\n')
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual(sorted(d["data"]["x"] for d in pins()), [1443, 1467])  # two places of one cell, side by side
+            write(root, "places/tour.md", "---\ntype: hex\ntitle: Tour\n---\nMJ.\n")
+            (Path(root) / "places/ailleurs.md").unlink()
+            foundry_live.sync(root, world, apply=True)
+            self.assertEqual(pins(), [])
+
     def test_batches_stay_small(self):
         from ttrpg.foundry_live import BATCH, batches
         docs = [{"documentName": "JournalEntryPage", "_id": str(i), "data": {"text": "x" * 10_000}} for i in range(10)]

@@ -73,7 +73,8 @@ creatures, no walls):
    `gridSize` = round(12 x pixels per mile x sqrt(3) / 2).
 4. `create-scene` with `gridType: hex-columns-odd`, that `gridSize`,
    `gridDistance: 12`, `gridUnits: mi`, and the fixed id. Keep the
-   `padding` the map note records (write it there the first time): it moves
+   `padding` and `grid` (the `gridSize`) the map note records (write them
+   there the first time): the padding moves
    the scene origin, and with it every hex offset `i_j` of the notes. Capture it: the
    scale bar should span its miles / 12 hexes. Players see a region map
    without a token: turn token vision off and global light on for the
@@ -84,6 +85,8 @@ creatures, no walls):
    World Explorer `cells` format): `coord: "23_28"`, `map: <map note>`,
    `cells: ["23_28"]`. A place's hex: its image position plus the scene
    origin (`canvas.dimensions.sceneRect`), through `canvas.grid.getOffset`.
+   Do not pin these notes by hand: `ttrpg foundry apply` puts a pin on
+   each note's first cell and keeps it with the note (see `foundry-sync`).
    Check two distances the books give (e.g. "75 miles west of Absalom")
    against the map and write the result in the map note.
 6. The hex table `maps/<map note>.hexes.tsv` (cell, region note, GM Core

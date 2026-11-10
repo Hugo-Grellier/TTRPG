@@ -95,7 +95,7 @@ def cmd_foundry(args):
     if done:
         print(f"applied: {done['created']} created, {done['updated']} updated, {done['deleted']} deleted")
         for uuid in done["missing"]:
-            print(f"not in this world: {uuid} (the note's foundry link points at an actor this world does not have)")
+            print(f"not in this world: {uuid} (a note's foundry link points at an actor or a scene this world does not have)")
     return 0
 
 

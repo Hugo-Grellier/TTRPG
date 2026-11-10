@@ -1,6 +1,6 @@
 ---
 name: foundry-sync
-description: Bring the running Foundry world up to date with the campaign notes - journals, actors and items the notes define, NPC ownership and death, the in-game date, clocks, discovered places and their map cells - and bring back what changed in Foundry during play. Use when the GM asks to update, sync or push the campaign to Foundry, or after a session debrief or any edit the table should see.
+description: Bring the running Foundry world up to date with the campaign notes - journals, actors and items the notes define, NPC ownership and death, the in-game date, clocks, discovered places and their map cells, a pin per place on its region map - and bring back what changed in Foundry during play. Use when the GM asks to update, sync or push the campaign to Foundry, or after a session debrief or any edit the table should see.
 ---
 
 # Sync the Foundry world
@@ -36,6 +36,7 @@ Claude Code with the foundry-mcp server and open the world as GM.
 | last session `ingame`, else played events, else `campaign.yaml` `start` | the world date (Simple Calendar when active, else the pf2e world clock); never moved back once play moved it on |
 | clock `segments` and `filled` | Global Progress Clocks, private unless `visibility: players` |
 | map note with `foundry: Scene.<id>` | its pins that open an adventure page whose subject has a campaign note (`km-a23-…` → `a23-…`) open the note's page instead; the original link is kept and restored if the note goes |
+| note with `map` and `cells`, its map note with `foundry: Scene.<id>` and `grid` (the scene's grid size) | a pin at the centre of its first cell, opening its page; notes sharing a cell sit side by side. Hex columns with odd columns down only (what `map-ready` builds). Foundry shows a pin to the users who can read its page: players see the pins of `visibility: players` notes |
 | place `discovered: "yes"` | a title-only page in the players' "discovered places" journal (the GM page stays hidden); with `map` and `cells` (`["i_j"]`, World Explorer offsets), those cells revealed |
 
 Only documents the sync created or adopted (they carry `flags.ttrpg`) are

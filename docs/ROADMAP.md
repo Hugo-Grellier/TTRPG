@@ -36,9 +36,9 @@ player notes with player ownership). Verify in the local Foundry
 (`foundry-local-1`, port 30001) with Kingmaker imported alongside. Then live
 sync through foundry-vtt-mcp (`ttrpg foundry plan|apply|pull`, tool
 `sync-world`): journals, actors and items, ownership and death, date, clocks,
-discovered places. Deployed to production on November 4, 2026. Next:
-map pins as managed scene
-notes from `map-ready`.
+discovered places. Deployed to production on November 4, 2026. Map pins
+are managed scene notes since November 10, 2026 (a pin per note placed on a
+region map, hex columns only; not yet deployed to production).
 
 ### 3 — Foundry changes back to the repository (done: world files and `ttrpg foundry pull` through MCP)
 Read world journals (pack or MCP), turn changed pages back into Markdown,

@@ -53,6 +53,13 @@ def fit(pairs):
     return lambda lon, lat: tuple(c[0] * lon + c[1] * lat + c[2] for c in coef)
 
 
+def hex_centre(i, j, size):
+    """Scene point at the centre of hex (i, j), as Foundry's `canvas.grid.getCenterPoint`: hex columns,
+    odd columns shifted down, `size` the hex height (grid.size)."""
+    w = size * 2 / math.sqrt(3)
+    return j * 0.75 * w + w / 2, i * size + (size / 2 if j % 2 else 0)
+
+
 def hex_offset(x, y, size):
     """Foundry offset (row, column) of the hex containing scene point (x, y): hex columns, odd columns
     shifted down, `size` the hex height (grid.size). Hex (i, j) is centred on
