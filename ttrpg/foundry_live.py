@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 from . import vault
 from .foundry_export import Exporter, foundry_id, page_hash
-from .foundry_sync import new_report, pull_page
+from .foundry_sync import new_report, note_body, pull_page
 from .check import in_game_key
 
 HOST, PORT = "127.0.0.1", 31414
@@ -387,6 +387,13 @@ def world_state(exporter, backend, world=()):
     return steps
 
 
+def held(exporter, document):
+    """Whether the notes already hold a page's Foundry text."""
+    flags = document.get("flags") or {}
+    note = exporter.campaign.notes.get(flags.get("id"))
+    return note is not None and note_body(exporter, note, document["markdown"], flags.get("header") or "").strip() == note.body.strip()
+
+
 def sync(root, backend, apply=False, force=False):
     exporter = Exporter(vault.load(root))
     want = desired(exporter)
@@ -394,6 +401,9 @@ def sync(root, backend, apply=False, force=False):
     world = [document for document in backend.sync(op="inventory", types=TYPES, text=True)["documents"]
              if ours(document.get("flags"), exporter.module_id, key(document) in known)]
     steps = plan(want, world)
+    # Text the notes already hold is not an edit to lose: after a pull, Foundry may still carry what the GM
+    # typed (a Markdown callout, a src: link) where the export writes its own form.
+    steps["edited"] = [document for document in steps["edited"] if not held(exporter, document)]
     steps.update(world_state(exporter, backend, world))
     if force:
         # Overwrite what changed in Foundry with the notes, even where the notes did not change.

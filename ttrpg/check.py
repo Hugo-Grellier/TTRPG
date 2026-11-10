@@ -223,6 +223,9 @@ def check_body(campaign, note, foundry_index, report):
     for match in CALLOUT.finditer(note.body):
         if match[1].lower() == "adaptation" and not (SOURCE.search(match[0]) or WIKILINK.search(match[0]) or "https://" in match[0]):
             report.warn(f"{note.rel}:{note.line_of(match.start())}", "[!adaptation] without a citation: cite the canon it changes")
+        inner = re.search(r"^> \[!\w+\]", match[2], re.M)
+        if inner:  # one blockquote: Obsidian and Foundry show the second marker as text, inside the first callout
+            report.warn(f"{note.rel}:{note.line_of(match.start(2) + inner.start())}", "callout inside another: leave a blank line between two callouts")
     for match in UUID.finditer(note.body):
         where = f"{note.rel}:{note.line_of(match.start())}"
         uuid = match[1]

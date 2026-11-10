@@ -184,6 +184,15 @@ class ExportTest(unittest.TestCase):
             self.assertIn('data-title="Palier du cadeau"><p><strong>Question : Palier du cadeau</strong></p>'.replace(" : ", ": "), sent)
             self.assertIn('<span data-src="km#p3">p. 3 (KM (EN), p. 3)</span>', sent)
             self.assertEqual(from_foundry(sent, exporter).strip(), body)
+            # A one-line callout is all title: its citation and emphasis show rendered and come back as written.
+            body = "> [!secret] Il **ment** ([p. 4](src:km#p4)).\n\n> [!question] Qui ? ([p. 5](src:km#p5))\n> À trancher dans `campaign.yaml`."
+            sent = exporter.foundry_markdown(exporter.convert(body))
+            self.assertIn('<p><strong>Il <strong>ment</strong> (<span data-src="km#p4">p. 4 (KM (EN), p. 4)</span>).</strong></p></section>', sent)
+            self.assertEqual(from_foundry(sent, exporter).strip(), body)
+            # A page exported before titles were rendered (escaped in the heading) comes back the same.
+            old = ('<section class="secret" id="secret-1" data-title="Vu (&lt;span data-src=&quot;km#p4&quot;&gt;p. 4 (KM (EN), p. 4)&lt;/span&gt;)">'
+                   "<p><strong>Vu (&lt;span data-src=&quot;km#p4&quot;&gt;p. 4 (KM (EN), p. 4)&lt;/span&gt;)</strong></p></section>")
+            self.assertEqual(from_foundry(old, exporter).strip(), "> [!secret] Vu ([p. 4](src:km#p4))")
 
 
 class FakeWorld:
@@ -308,17 +317,18 @@ class LiveSyncTest(unittest.TestCase):
             self.assertEqual(pages, {page for _, page in Exporter(load(root)).pages.values()})
             steps, _ = foundry_live.sync(root, world)
             self.assertEqual([len(steps[a]) for a in ("adopt", "create", "update", "release", "delete", "edited")], [0] * 6)
-            write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nVoir [[f]] demain.\n")
+            write(root, "npcs/n.md", '---\ntype: npc\ntitle: "Oleg"  # le marchand\n---\nVoir [[f]] demain.\n')
             (Path(root) / "factions/f.md").unlink()
             steps, done = foundry_live.sync(root, world, apply=True)
             self.assertEqual(done, {"created": 0, "updated": 1, "deleted": 1, "missing": []})  # the factions entry, its page with it
             page = next(d for d in world.docs.values() if d["documentName"] == "JournalEntryPage")
-            page["data"]["text"]["markdown"] += "\n\nAjouté dans Foundry."
+            page["data"]["text"]["markdown"] += "\n\nAjouté dans Foundry.\n\n> [!secret] Tapé tel quel."  # the export writes a section
             steps, done = foundry_live.sync(root, world, apply=True)
             self.assertIsNone(done)
             self.assertEqual(len(steps["edited"]), 1)
             self.assertEqual(foundry_live.pull(root, world)["updated"], ["npcs/n.md"])
-            self.assertIn("Ajouté dans Foundry.", (Path(root) / "npcs/n.md").read_text())
+            self.assertEqual((Path(root) / "npcs/n.md").read_text(),  # frontmatter as written
+                             '---\ntype: npc\ntitle: "Oleg"  # le marchand\n---\nVoir f demain.\n\nAjouté dans Foundry.\n\n> [!secret] Tapé tel quel.\n')
             steps, done = foundry_live.sync(root, world, apply=True)
             self.assertEqual((len(steps["edited"]), done["updated"]), (0, 1))
 
@@ -594,6 +604,9 @@ class LibraryTest(unittest.TestCase):
               "> [!adaptation]\n> The keep is ruined here.\n\n> [!verify] Wiki says a mill\n> stands here.\n\n"
               "> [!question]\n> Who owns the inn?\n\n> [!secret]\n> Hidden.\n")
         self.assertEqual(messages(self.campaign), ["[!adaptation] without a citation: cite the canon it changes"])
+        write(self.campaign, "npcs/glued.md", "---\ntype: npc\ntitle: Glued\n---\n> [!secret]\n> One.\n> [!secret]\n> Two.\n")
+        self.assertIn("callout inside another: leave a blank line between two callouts", messages(self.campaign))
+        (self.campaign / "npcs/glued.md").unlink()
         items = [(line, kind, text) for _, line, kind, text in open_items(load(self.campaign))]
         self.assertEqual(items, [(10, "verify", "Wiki says a mill"), (13, "question", "Who owns the inn?")])
 
@@ -612,6 +625,8 @@ class LibraryTest(unittest.TestCase):
         self.assertIn("ouverte", exporter.header(campaign.notes["q"]))   # la quête
         self.assertIn("ouvert", exporter.header(campaign.notes["m"]))    # le mystère
         self.assertNotIn("ouverte", exporter.header(campaign.notes["m"]))
+        campaign.notes["q"].meta["cells"] = ["23_23"]  # Foundry's Markdown would pair the underscores of two cells
+        self.assertIn(r"23\_23", exporter.header(campaign.notes["q"]))
         write(self.campaign, "factions/guild.md", "---\ntype: faction\ntitle: Guild\nreputation: 60\n---\nG.\n")
         write(self.campaign, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nparty: five\n")
         self.assertEqual(sorted(messages(self.campaign)), ["party must be the number of player characters",

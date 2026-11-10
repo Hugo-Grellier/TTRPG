@@ -47,19 +47,24 @@ def reverse_links(text, exporter):
 
 def from_foundry(text, exporter):
     """Undo foundry_markdown: HTML callouts back to `> [!kind] title`, cited spans back to src: links."""
+    def cite(text):
+        return re.sub(r'<span data-src="([^"#]+)#p(\d+)">(.*?) \(.*?, p\. \d+\)</span>', r"[\3](src:\1#p\2)", text)
+
     def quote(kind, own, inner):
-        lines = to_markdown(inner).strip().split("\n")
-        return f"> [!{kind}]{' ' + own if own else ''}\n" + "\n".join(f"> {line}" if line else ">" for line in lines)
+        # Inline code written in the notes; the import's converter drops the tag, as the adventures' pages need.
+        body = to_markdown(re.sub(r"<code>(.*?)</code>", r"`\1`", inner)).strip()
+        lines = [f"> {line}" if line else ">" for line in body.split("\n")] if body else []
+        return "\n".join([f"> [!{kind}]{' ' + own if own else ''}"] + lines)
 
     def block(match):
-        tag, kind, own, inner = match["tag"], match["kind"] or "secret", unescape(match["own"] or ""), match["inner"]
+        tag, kind, own, inner = match["tag"], match["kind"] or "secret", cite(unescape(match["own"] or "")), match["inner"]
         label = "" if tag == "section" else exporter.label.get(kind, kind.capitalize())
         if label or own:
-            inner = re.sub(r"^\s*<p><strong>[^<]*</strong></p>", "", inner, count=1)
+            inner = re.sub(r"^\s*<p><strong>.*?</strong></p>", "", inner, count=1)
         return quote(kind, own, inner)
 
     # Citations first: inside a callout, the HTML-to-Markdown step would flatten them to text.
-    text = re.sub(r'<span data-src="([^"#]+)#p(\d+)">(.*?) \(.*?, p\. \d+\)</span>', r"[\3](src:\1#p\2)", text)
+    text = cite(text)
     text = re.sub(r'<(?P<tag>section) class="secret" id="secret-\d+"(?: data-title="(?P<own>[^"]*)")?>(?P<kind>)(?P<inner>.*?)</section>'
                   r'|<(?P<tag2>blockquote) class="callout-(?P<kind2>\w+)"(?: data-title="(?P<own2>[^"]*)")?>(?P<inner2>.*?)</blockquote>',
                   lambda m: block({"tag": m["tag"] or m["tag2"], "kind": m["kind"] or m["kind2"], "own": m["own"] or m["own2"],
@@ -72,6 +77,14 @@ def page_markdown(page):
     if text.get("format") == 2 and text.get("markdown") is not None:
         return text["markdown"]
     return to_markdown(text.get("content") or "")
+
+
+def note_body(exporter, note, markdown, header):
+    """The note body a page's Foundry text gives back."""
+    if header and markdown.startswith(header):
+        markdown = markdown[len(header):]
+    lead = note.body[: len(note.body) - len(note.body.lstrip("\n"))]
+    return lead + reverse_links(from_foundry(markdown, exporter).strip(), exporter) + "\n"
 
 
 def pull_page(exporter, entry_id, page, report):
@@ -95,15 +108,14 @@ def pull_page(exporter, entry_id, page, report):
         # Repository wins; a player page was exported without its secrets, so its text cannot replace the note.
         report["conflicts"].append(note.rel)
         return
-    header = flags.get("header") or ""
-    if header and markdown.startswith(header):
-        markdown = markdown[len(header):]
-    lead = note.body[: len(note.body) - len(note.body.lstrip("\n"))]
-    body = lead + reverse_links(from_foundry(markdown, exporter).strip(), exporter) + "\n"
+    body = note_body(exporter, note, markdown, flags.get("header") or "")
     meta = dict(note.meta)
     if meta.get("origin") == "ap" and meta.get("source_hash") and body_hash(body) != meta["source_hash"]:
         meta["origin"] = "modified"
-    note.path.write_text(vault.join_frontmatter(meta, body), encoding="utf-8")
+    # Frontmatter the pull does not change stays as written (quotes, comments): the diff is the page's text only.
+    text = note.path.read_text(encoding="utf-8")
+    head = text[: len(text) - len(note.body)] if meta == note.meta else vault.join_frontmatter(meta, "")
+    note.path.write_text(head + body, encoding="utf-8")
     report["updated"].append(note.rel)
 
 

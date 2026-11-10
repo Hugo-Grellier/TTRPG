@@ -170,8 +170,9 @@ class Exporter:
                 continue
             spec = fields_for(note.type).get(name, {})
             values = value if isinstance(value, list) else [value]
+            # Foundry's Markdown takes `23_23 … 23_23` for emphasis: a plain value's underscores are escaped.
             shown = [f"[[{vault_id(v)}]]" if spec.get("kind") in ("ref", "refs")
-                     else self.value(note.type, v) for v in values]
+                     else self.value(note.type, v).replace("_", r"\_") for v in values]
             parts.append(f"**{self.field(name)}** {', '.join(shown)}")
         if note.type == "clock" and isinstance(note.get("segments"), int):
             filled = note.get("filled") or 0
@@ -193,11 +194,13 @@ class Exporter:
             own = match[0].split("\n", 1)[0].split("]", 1)[1].strip()
             body = self.markdown.render(inner).strip()
             attr = f' data-title="{escape(own)}"' if own else ""
+            # The title is Markdown too (a one-line callout is all title): shown rendered, kept raw in data-title.
+            shown = self.markdown.renderInline(own)
             if kind == "secret":
-                heading = f"<p><strong>{escape(own)}</strong></p>" if own else ""
+                heading = f"<p><strong>{shown}</strong></p>" if own else ""
                 return f'<section class="secret" id="secret-{next(secret)}"{attr}>{heading}{body}</section>\n\n'
             label = self.label.get(kind, kind.capitalize())
-            title = ": ".join(part for part in (label, escape(own)) if part)
+            title = ": ".join(part for part in (label, shown) if part)
             return f'<blockquote class="callout-{kind}"{attr}>' + (f"<p><strong>{title}</strong></p>" if title else "") + f"{body}</blockquote>\n\n"
         return CALLOUT.sub(callout, markdown)
 
