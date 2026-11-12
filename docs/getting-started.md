@@ -53,21 +53,22 @@ For a published adventure you own as a Foundry module:
 
 The sync talks to the world through your browser: a small program on your
 computer (the backend) and a Foundry module (the bridge) that connects your
-GM session to it. Both come from the same repository, a fork of
-foundry-vtt-mcp that adds the sync:
+GM session to it. Both come from a fork of foundry-vtt-mcp that adds the sync.
 
-```sh
-git clone --branch feat/sync-world https://github.com/Hugo-Grellier/foundry-vtt-mcp.git
-cd foundry-vtt-mcp && npm ci && npm run build
-```
+1. **Bridge module.** In Foundry's setup screen, *Install Module*, paste the
+   manifest URL
+   `https://github.com/Hugo-Grellier/foundry-vtt-mcp/releases/latest/download/module.json`
+   and install. Do not pick "Foundry MCP Bridge" from Foundry's module list
+   instead: that one has no sync. Then enable the module in your world
+   (*Manage Modules*). Its default settings are the right ones.
+2. **Backend.** On your computer, once:
 
-1. **Bridge module.** Copy `module.json`, `dist/`, `lang/`, `styles/` and
-   `templates/` from `packages/foundry-module/` into
-   `<Foundry Data>/modules/foundry-mcp-bridge/` on the Foundry server. Do not
-   install "Foundry MCP Bridge" from Foundry's module list instead: that one
-   has no sync. Restart Foundry if it was running, then enable the module in
-   your world (*Manage Modules*). Its default settings are the right ones.
-2. **Backend.** On your computer, each time you want to sync:
+   ```sh
+   git clone --branch feat/sync-world https://github.com/Hugo-Grellier/foundry-vtt-mcp.git
+   cd foundry-vtt-mcp && npm ci && npm run build
+   ```
+
+   then, each time you want to sync:
    `node foundry-vtt-mcp/packages/mcp-server/dist/backend.js`
    and leave it running. (Claude Code configured with the foundry-mcp server
    starts it by itself.)
