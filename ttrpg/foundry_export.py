@@ -288,7 +288,8 @@ class Exporter:
                 page["sort"] = (index + 1) * 100
             yield {
                 "_id": entry, "_key": f"!journal!{entry}", "name": self.label[category], "pages": pages,
-                "ownership": {"default": 1 if any(page["ownership"]["default"] >= 1 for page in pages) else 0},
+                # Foundry lists an entry for a player only at observer; its GM pages stay explicitly none.
+                "ownership": {"default": 2 if any(page["ownership"]["default"] for page in pages) else 0},
                 "sort": (order + 1) * 100, "flags": {"ttrpg": {"category": category}}, "folder": None,
             }
         if self.discovered():

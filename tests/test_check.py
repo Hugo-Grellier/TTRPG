@@ -424,6 +424,11 @@ class LiveSyncTest(unittest.TestCase):
             write(root, "places/autre.md", "---\ntype: hex\ntitle: Autre\n---\nMJ.\n")
             other = next(p for e in Exporter(load(root)).entries() for p in e["pages"] if p["flags"]["ttrpg"].get("id") == "autre")
             self.assertEqual(other["ownership"], {"default": 0})  # not limited through its entry
+            write(root, "places/auberge.md", "---\ntype: location\ntitle: Auberge\nvisibility: players\n---\nOuverte.\n")
+            lieux = next(e for e in Exporter(load(root)).entries() if e["name"] == "Lieux")
+            # Players find the entry in their sidebar (Foundry lists it at observer only) and open their page, no other.
+            self.assertEqual((lieux["ownership"], sorted(p["ownership"]["default"] for p in lieux["pages"])), ({"default": 2}, [0, 0, 2]))
+            (Path(root) / "places/auberge.md").unlink()
             world = FakeWorld()
             world.scenes["Scene.SSSSSSSSSSSSSSSS"] = {"0_0": {"offset": {"i": 0, "j": 0}, "reveal": True}}  # revealed by the GM
             foundry_live.sync(root, world, apply=True)
