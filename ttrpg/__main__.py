@@ -10,11 +10,17 @@ import sys
 from datetime import date
 from pathlib import Path
 
-import yaml
+try:
+    import markdown_it  # noqa: F401
+    import yaml
+except ImportError as error:
+    _tools = Path(__file__).resolve().parent.parent
+    raise SystemExit(f"{error}: install the tools' Python packages once with\n"
+                     f"  python3 -m venv {_tools}/.venv && {_tools}/.venv/bin/pip install -r {_tools}/requirements.txt") from None
 
 from . import check as checker
 from .foundry_export import export
-from .foundry_import import import_adventure, import_module
+from .foundry_import import import_adventure, import_module, slug
 from .foundry_sync import pull
 from .rename import rename
 from . import library, session
@@ -58,6 +64,15 @@ def cmd_pull_foundry(args):
 def cmd_foundry(args):
     from . import foundry_live
     backend = foundry_live.Backend(args.host, args.port)
+    exporter = foundry_live.Exporter(checker.vault.load(args.root))
+    world = backend.world()
+    print(f"world: {world['title']} ({world['id']})")
+    refusal = foundry_live.world_guard(exporter.campaign.config, world, args.action == "apply")
+    if refusal:
+        raise SystemExit(refusal)
+    if not (backend.sync(op="setting", key="core.moduleConfiguration")["value"] or {}).get(exporter.module_id):
+        print(f"note: module {exporter.module_id} is not active in this world; images in the notes and the hex panel need it "
+              "(`ttrpg export-foundry --install <Foundry Data/modules>`, then enable it in the world)")
     if args.action == "pull":
         report = foundry_live.pull(args.root, backend)
         for rel in report["updated"]:
@@ -370,17 +385,24 @@ def cmd_new(args):
     if root.exists() and any(root.iterdir()):
         raise SystemExit(f"{root} is not empty")
     shutil.copytree(TOOLS / "template", root, dirs_exist_ok=True)
-    config = {"name": args.name, "system": args.system, "language": args.language,
+    # The id names the Foundry module and its documents: written once, so renaming the campaign keeps them.
+    config = {"id": slug(args.name), "name": args.name, "system": args.system, "language": args.language,
               "calendar": args.calendar, "start": args.start or None, "sources": {}}
     (root / "campaign.yaml").write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
     run = lambda *command: subprocess.run(command, cwd=root, check=True)
     run("git", "init", "-q", "-b", "main")
-    run("git", "-c", "protocol.file.allow=always", "submodule", "add", "-q", args.tools_url, "tools")
+    tools_url = args.tools_url or subprocess.run(["git", "-C", str(TOOLS), "remote", "get-url", "origin"],
+                                                 capture_output=True, text=True).stdout.strip()
+    if not tools_url:
+        raise SystemExit("--tools-url is needed: this copy of the tools has no `origin` remote")
+    run("git", "-c", "protocol.file.allow=always", "submodule", "add", "-q", tools_url, "tools")
     for skills in (".claude/skills", ".agents/skills"):
         (root / skills).parent.mkdir(exist_ok=True)
         (root / skills).symlink_to(Path("../tools/skills"))
     run("git", "config", "core.hooksPath", ".githooks")
-    print(f"campaign repository ready in {root}")
+    print(f"campaign repository ready in {root}\n"
+          "next: open it with your agent (Claude Code, Codex) and describe the campaign, or write notes by hand;\n"
+          "`tools/bin/ttrpg check` validates them, tools/docs/getting-started.md has the rest")
     return 0
 
 
@@ -526,7 +548,7 @@ def main(argv=None):
     p.add_argument("--language", default="fr")
     p.add_argument("--calendar", default="golarion")
     p.add_argument("--start", default="", help='in-game date play begins, e.g. "4710-03-01"')
-    p.add_argument("--tools-url", required=True, help="Git URL of this tools repository")
+    p.add_argument("--tools-url", help="Git URL of this tools repository (default: this copy's origin)")
     p.set_defaults(func=cmd_new)
 
     args = parser.parse_args(argv)

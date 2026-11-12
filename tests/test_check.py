@@ -1,4 +1,7 @@
+import contextlib
+import io
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -479,6 +482,39 @@ class LiveSyncTest(unittest.TestCase):
             (Path(root) / "places/ailleurs.md").unlink()
             foundry_live.sync(root, world, apply=True)
             self.assertEqual(pins(), [])
+
+    def test_a_campaign_only_syncs_with_its_worlds(self):
+        from ttrpg.foundry_live import world_guard
+        table, test = {"id": "table", "title": "La table"}, {"id": "essai", "title": "Essai"}
+        self.assertIsNone(world_guard({"world": "table"}, table, apply=True))
+        self.assertIsNone(world_guard({"world": ["essai", "table"]}, test, apply=True))
+        self.assertIn("not with essai", world_guard({"world": "table"}, test, apply=False))  # the browser is in another world
+        self.assertIsNone(world_guard({}, table, apply=False))  # looking is allowed before the GM names the world
+        self.assertIn("add `world: table`", world_guard({}, table, apply=True))
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\nworld: {a: 1}\n")
+            self.assertIn("world must be a Foundry world id, or a list of them (the worlds `ttrpg foundry` may sync)", messages(root))
+
+    def test_plan_changes_nothing(self):
+        from ttrpg import foundry_live
+        with tempfile.TemporaryDirectory() as root:
+            write(root, "campaign.yaml", "name: T\nsystem: pf2e\nlanguage: fr\n")
+            write(root, "npcs/n.md", "---\ntype: npc\ntitle: Oleg\n---\nMJ.\n")
+            world = FakeWorld()
+            steps, done = foundry_live.sync(root, world)
+            self.assertTrue(steps["create"])
+            self.assertEqual((world.docs, done), ({}, None))
+
+    def test_new_campaign_is_ready_to_check(self):
+        from ttrpg.__main__ import main
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as tools:
+            subprocess.run(["git", "init", "-q", tools], check=True)
+            subprocess.run(["git", "-C", tools, "-c", "user.name=t", "-c", "user.email=t@example.org", "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+            campaign = Path(root) / "c"
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["new", str(campaign), "--name", "Les Terres Volées", "--tools-url", tools]), 0)
+            self.assertIn("id: les-terres-volees\n", (campaign / "campaign.yaml").read_text())
+            self.assertEqual(messages(campaign), [])
 
     def test_batches_stay_small(self):
         from ttrpg.foundry_live import BATCH, batches

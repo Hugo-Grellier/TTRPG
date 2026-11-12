@@ -29,6 +29,8 @@ DEAD = {"fr": "Mort", "en": "Dead"}
 CLOCKS = "global-progress-clocks.activeClocks"
 # pf2e world clock: the in-game year is the real one plus the theme's offset.
 YEAR_OFFSET = {"AR": 2700, "IC": 5200, "CE": 0}
+NOT_CONNECTED = ("\nNo GM browser is connected: open the world as a GM in a browser on this machine, with the module "
+                 "Foundry MCP Bridge active in that world.")
 
 
 class Backend:
@@ -38,14 +40,15 @@ class Backend:
         try:
             self.socket = socket.create_connection((host, port), timeout=timeout)
         except OSError as error:
-            raise SystemExit(f"foundry-mcp backend not reachable on {host}:{port} ({error}): "
-                             "start Claude Code with the foundry-mcp server, and connect the GM's browser") from None
+            raise SystemExit(f"foundry-mcp backend not reachable on {host}:{port} ({error}): start it with "
+                             "`node <foundry-vtt-mcp>/packages/mcp-server/dist/backend.js` (Claude Code with the "
+                             "foundry-mcp server starts it too), then open the world as GM in a browser") from None
         self.stream = self.socket.makefile("rwb")
         self.count = 0
 
-    def sync(self, **args):
+    def call(self, tool, **args):
         self.count += 1
-        request = {"id": str(self.count), "method": "call_tool", "params": {"name": "sync-world", "args": args}}
+        request = {"id": str(self.count), "method": "call_tool", "params": {"name": tool, "args": args}}
         self.stream.write((json.dumps(request, ensure_ascii=False) + "\n").encode())
         self.stream.flush()
         reply = json.loads(self.stream.readline())
@@ -53,8 +56,16 @@ class Backend:
             raise SystemExit(f"foundry-mcp: {reply['error'].get('message')}")
         text = reply["result"]["content"][-1]["text"]
         if reply["result"].get("isError"):
-            raise SystemExit(f"foundry-mcp: {text}")
-        result = json.loads(text)
+            hint = NOT_CONNECTED if "not connected" in text else ""
+            raise SystemExit(f"foundry-mcp: {text}{hint}")
+        return json.loads(text)
+
+    def world(self):
+        """The world the GM's browser is in: its id and title."""
+        return self.call("get-world-info")
+
+    def sync(self, **args):
+        result = self.call("sync-world", **args)
         if isinstance(result, dict) and result.get("error"):
             raise SystemExit(f"foundry-mcp: {result['error']} (is the connected user a GM, writes allowed in the bridge settings?)")
         return result
@@ -458,6 +469,20 @@ def sync(root, backend, apply=False, force=False):
         if steps["clocks"] or steps["clocks_remove"]:
             backend.sync(op="merge-setting", key=CLOCKS, set=steps["clocks"], remove=steps["clocks_remove"])
     return steps, done
+
+
+def world_guard(config, world, apply):
+    """Why this campaign must not be synced with the connected world, or None. `campaign.yaml` names its
+    worlds (`world`: an id or a list, a test world beside the players' one): the GM's browser may be in another."""
+    declared = config.get("world") or []
+    declared = [declared] if isinstance(declared, str) else declared
+    if world["id"] in declared:
+        return None
+    if declared:
+        return f"this campaign syncs with {', '.join(declared)} (campaign.yaml `world`), not with {world['id']}"
+    if apply:
+        return f"campaign.yaml names no world: add `world: {world['id']}` to sync this campaign with {world['title']}"
+    return None
 
 
 def pull(root, backend):
