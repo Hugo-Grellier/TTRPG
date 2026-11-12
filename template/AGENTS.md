@@ -15,9 +15,11 @@ With a shell, update the tools first, then check the campaign against them:
 
 ```sh
 git submodule update --init --remote tools
-python3 -c 'import yaml' 2>/dev/null || pip install -r tools/requirements.txt
 tools/bin/ttrpg check
 ```
+
+If `check` says Python packages are missing, run the install line it prints
+(a virtual environment in `tools/.venv`, ignored by Git).
 
 If the update brings new errors, fix the notes (or tell the GM) and commit
 the `tools` bump with the fixes. Dependabot also opens a pull request when

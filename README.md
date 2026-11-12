@@ -4,9 +4,13 @@ Tools for preparing tabletop campaigns kept as plain Markdown in a private Git
 repository, editable from any editor, Obsidian, or AI agent, and checked for
 coherence on every commit.
 
+A GM starting from nothing follows `docs/getting-started.md` (install,
+first campaign, connecting Foundry, the sync loop, first sync of a world the
+players use).
+
 ```sh
-pip install -r requirements.txt && npm ci        # PyYAML; Node only for Foundry import
-bin/ttrpg new ../Campaign/campaign-x --name "X" --language fr --tools-url <git url of this repo>
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && npm ci   # Node only for Foundry import
+bin/ttrpg new ../Campaign/campaign-x --name "X" --language fr
 cd ../Campaign/campaign-x
 tools/bin/ttrpg import-foundry --module ~/foundrydata/Data/modules/<adventure-module>
 tools/bin/ttrpg pdf-text km /path/to/adventure.pdf --title "Adventure"

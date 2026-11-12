@@ -6,9 +6,22 @@ description: Bring the running Foundry world up to date with the campaign notes 
 # Sync the Foundry world
 
 Needs the `foundry-mcp` backend (fork with the `sync-world` tool) running and
-a GM browser connected to the world. `tools/bin/ttrpg foundry` talks to it on
-`127.0.0.1:31414`; if it says the backend is not reachable, ask the GM to start
-Claude Code with the foundry-mcp server and open the world as GM.
+a GM browser connected to the world, with the bridge module active there.
+`tools/bin/ttrpg foundry` talks to the backend on `127.0.0.1:31414` and says
+what is missing: backend not running (it prints the command; one-time setup
+in `tools/docs/getting-started.md`), or no GM browser in the world.
+
+Every command prints the world the GM's browser is in. `campaign.yaml` names
+the worlds this campaign may sync (`world: <id>` or a list); `apply` and
+`pull` refuse another world, and `apply` refuses until one is named. Adding
+the id is the GM's decision: show them the world line and ask, never add a
+world to get past the refusal.
+
+Images in notes and the hex hover panel are files, served by the campaign's
+own module: when `plan` notes that `ttrpg-<id>` is not active, or after
+images changed, run `tools/bin/ttrpg export-foundry --install <Foundry
+Data/modules>` (or hand the GM `.cache/foundry/ttrpg-<id>/` to copy to the
+server) and have the GM enable the module in the world.
 
 ## Steps
 
