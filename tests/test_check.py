@@ -267,6 +267,13 @@ class FakeWorld:
                 out.append(item)
             return {"documents": out}
         done = {"created": 0, "updated": 0, "deleted": 0, "missing": []}
+        # Like the bridge: a document whose parent is absent when the call starts is reported, not created.
+        # (Scenes are the world's own: always there.)
+        present = {f"{d['documentName']}.{d['_id']}" for d in self.docs.values()}
+        orphans = [d for d in calls.get("create", [])
+                   if d.get("parent") and not d["parent"].startswith("Scene.") and d["parent"] not in present]
+        done["missing"] = [f"{d['parent']}.{d['documentName']}.{d['_id']}" for d in orphans]
+        calls["create"] = [d for d in calls.get("create", []) if d not in orphans]
         for doc in calls.get("create", []) + calls.get("adopt", []):
             self.docs[doc["_id"]] = json.loads(json.dumps(doc))
         for doc in calls.get("update", []):
@@ -294,7 +301,7 @@ class LiveSyncTest(unittest.TestCase):
             foundry_live.sync(a, world, apply=True)
             first = set(world.docs)
             steps, done = foundry_live.sync(b, world, apply=True)
-            self.assertEqual((done["created"], done["deleted"]), (3, 0))  # folder, entry, page
+            self.assertEqual((done["created"], done["deleted"], done["missing"]), (3, 0, []))  # folder, entry, page
             self.assertTrue(first <= set(world.docs))
             steps, _ = foundry_live.sync(a, world)
             self.assertEqual([len(steps[x]) for x in ("create", "update", "delete", "edited")], [0, 0, 0, 0])

@@ -234,14 +234,16 @@ def plan(documents, world):
 
 
 def batches(action, documents):
-    """Consecutive calls of at most BATCH bytes, keeping the given order."""
-    batch, size = [], 0
+    """Consecutive calls of at most BATCH bytes, keeping the given order. A document never shares a call with
+    its parent: the bridge skips, as missing, what hangs on a document absent when the call starts."""
+    batch, size, made = [], 0, set()
     for document in documents:
         length = len(json.dumps(document, ensure_ascii=False).encode())
-        if batch and size + length > BATCH:
+        if batch and (size + length > BATCH or document.get("parent") in made):
             yield {action: batch}
-            batch, size = [], 0
+            batch, size, made = [], 0, set()
         batch.append(document)
+        made.add(f"{document['documentName']}.{document['_id']}")
         size += length
     if batch:
         yield {action: batch}
