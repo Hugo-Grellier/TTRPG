@@ -137,8 +137,9 @@ reported.
 - **Curious players.** Foundry sends every journal to every connected
   browser and only hides what a player may not open. A player who opens the
   browser's developer console can read GM pages, as with any journal a GM
-  writes in Foundry. Every note is synced (except untouched adventure text);
-  there is no per-note opt-out yet.
+  writes in Foundry. Every note is synced (except untouched adventure text),
+  by choice: the tools assume a table where the GM trusts the players not to
+  go looking.
 - Verified with Foundry 14 and pf2e 8.6 only. Clocks need the module Global
   Progress Clocks; the date uses Simple Calendar Reborn when active, else
   the pf2e world clock; revealed map cells need World Explorer.
